@@ -4,6 +4,7 @@ import ProductGallery from '../components/ProductGallery';
 import DynamicForm from '../components/DynamicForm';
 import { dummyProducts } from '../data/dummyData';
 import type { Product } from '../types/types';
+import { FiGift, FiExternalLink, FiCheck, FiTag, FiClock } from 'react-icons/fi';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,9 +12,9 @@ const ProductDetails: React.FC = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Simulate loading delay for better UX
     setTimeout(() => {
       const foundProduct = dummyProducts.find(p => p._id === id) || null;
       setProduct(foundProduct);
@@ -26,6 +27,7 @@ const ProductDetails: React.FC = () => {
       productId: id,
       productName: product?.name,
       quantity,
+      selectedVariants,
       customerData: formData
     });
     setFormSubmitted(true);
@@ -34,6 +36,22 @@ const ProductDetails: React.FC = () => {
   const calculateSavings = () => {
     if (!product?.discountPrice) return 0;
     return ((product.price - product.discountPrice) / product.price) * 100;
+  };
+
+  const handleVariantChange = (category: string, value: string) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [category]: value
+    }));
+  };
+
+  const isOfferActive = (offer: any) => {
+    if (!offer.isActive) return false;
+    if (offer.validUntil) {
+      const validDate = new Date(offer.validUntil);
+      return validDate > new Date();
+    }
+    return true;
   };
 
   if (loading) {
@@ -168,7 +186,7 @@ const ProductDetails: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Description */}
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Product Description</h3>
@@ -176,6 +194,117 @@ const ProductDetails: React.FC = () => {
                 <p>{product.description}</p>
               </div>
             </div>
+
+            {/* Reference Links */}
+            {product.references && (Object.keys(product.references).length > 0) && (
+              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FiExternalLink className="text-red-500" />
+                  Follow Us
+                </h3>
+                <div className="flex gap-4">
+                  {product.references.facebook && (
+                    <a
+                      href={product.references.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Facebook
+                    </a>
+                  )}
+                  {product.references.instagram && (
+                    <a
+                      href={product.references.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors"
+                    >
+                      Instagram
+                    </a>
+                  )}
+                  {product.references.tiktok && (
+                    <a
+                      href={product.references.tiktok}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      TikTok
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Predefined Fields (Sizes, Colors, etc.) */}
+            {product.predefinedFields.some(field => field.isActive && field.selectedOptions.length > 0) && (
+              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Available Options</h3>
+                <div className="space-y-4">
+                  {product.predefinedFields
+                    .filter(field => field.isActive && field.selectedOptions.length > 0)
+                    .map(field => (
+                      <div key={field.category}>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 capitalize">
+                          {field.category}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {field.selectedOptions.map(option => (
+                            <button
+                              key={option}
+                              onClick={() => handleVariantChange(field.category, option)}
+                              className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
+                                selectedVariants[field.category] === option
+                                  ? 'border-red-500 bg-red-50 text-red-700'
+                                  : 'border-gray-200 hover:border-red-300 text-gray-700'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Offers Section */}
+            {product.offers && product.offers.filter(offer => isOfferActive(offer)).length > 0 && (
+              <div className="bg-gradient-to-r from-red-50 to-red-100 p-6 rounded-2xl shadow-lg border-2 border-red-200">
+                <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
+                  <FiGift className="text-red-600" />
+                  Special Offers
+                </h3>
+                <div className="space-y-4">
+                  {product.offers
+                    .filter(offer => isOfferActive(offer))
+                    .map(offer => (
+                      <div key={offer.id} className="bg-white p-4 rounded-xl border border-red-200">
+                        <div className="flex items-center gap-3 mb-2">
+                          <FiTag className="text-red-500" />
+                          <h4 className="font-bold text-red-700">{offer.title}</h4>
+                          {offer.discount && (
+                            <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                              {offer.discount}% OFF
+                            </span>
+                          )}
+                        </div>
+                        {offer.description && (
+                          <p className="text-red-600 mb-2">{offer.description}</p>
+                        )}
+                        {offer.validUntil && (
+                          <div className="flex items-center gap-2 text-red-500 text-sm">
+                            <FiClock size={14} />
+                            <span>Valid until: {new Date(offer.validUntil).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
@@ -222,9 +351,7 @@ const ProductDetails: React.FC = () => {
                 {formSubmitted ? (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
+                      <FiCheck className="w-8 h-8 text-green-500" />
                     </div>
                     <h3 className="text-2xl font-bold text-green-600 mb-4">Thank You!</h3>
                     <p className="text-gray-600 mb-6">
