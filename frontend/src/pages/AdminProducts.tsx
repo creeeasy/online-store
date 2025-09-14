@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FiPlus, FiAlertCircle, FiRefreshCw, FiSearch, FiX } from 'react-icons/fi';
+import { FiPlus, FiAlertCircle, FiX, FiGrid, FiList } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 // Components
@@ -17,7 +17,7 @@ import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } fro
 
 // Types
 import { PREDEFINED_CATEGORIES, INITIAL_PRODUCT_STATE } from '../constants/products';
-import type { IProduct, ApiError } from '../types/product';
+import type { IProduct } from '../types/product';
 
 interface ValidationError {
   field: string;
@@ -25,18 +25,16 @@ interface ValidationError {
 }
 
 const AdminProducts: React.FC = () => {
-  const queryClient = useQueryClient();
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<IProduct | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { data: productsData, isLoading, isError, error, refetch, isFetching } = useProducts({
     page: currentPage,
     limit: 10,
-    ...(searchQuery && { q: searchQuery })
   });
 
   const createProductMutation = useCreateProduct();
@@ -46,7 +44,7 @@ const AdminProducts: React.FC = () => {
   // Helper function to extract validation errors
   const extractValidationErrors = (error: any): ValidationError[] => {
     const errors: ValidationError[] = [];
-        console.log(error,"errors")
+    console.log(error, "errors");
 
     if (error?.errors && Array.isArray(error.errors)) {
       error.errors.forEach((err: any) => {
@@ -92,7 +90,7 @@ const AdminProducts: React.FC = () => {
   const handleSaveProduct = async (id: string, productData: Partial<IProduct>) => {
     try {
       clearErrors();
-      console.log(productData)
+      console.log(productData);
       await updateProductMutation.mutateAsync({ id, data: productData });
       setEditingProduct(null);
     } catch (error: any) {
@@ -115,7 +113,7 @@ const AdminProducts: React.FC = () => {
     } catch (error: any) {
       console.error('Error creating product:', error);
       const errors = extractValidationErrors(error);
-      console.log(errors)
+      console.log(errors);
       setValidationErrors(errors);
       
       // Show general error toast if no specific field errors
@@ -129,12 +127,6 @@ const AdminProducts: React.FC = () => {
     setEditingProduct(null);
     setShowForm(false);
     clearErrors();
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    refetch();
   };
 
   const handleRetry = () => {
@@ -174,6 +166,7 @@ const AdminProducts: React.FC = () => {
     acc[error.field].push(error.message);
     return acc;
   }, {} as Record<string, string[]>);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-rose-50">
       <style>{`
@@ -207,9 +200,9 @@ const AdminProducts: React.FC = () => {
       `}</style>
       
       {/* Header */}
-      <div className="bg-white border-b-4 border-red-500 shadow-sm">
+      <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
                 Product Management
@@ -219,45 +212,41 @@ const AdminProducts: React.FC = () => {
             <button
               onClick={() => setShowForm(true)}
               disabled={createProductMutation.isPending}
-              className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiPlus size={20} />
               Add Product
             </button>
           </div>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex gap-3 max-w-md">
-            <div className="flex-1 relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none transition-colors"
-              />
+          {/* Search and View Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mt-6">
+            
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <span className="text-sm text-gray-500">View:</span>
+              <div className="bg-gray-100 rounded-lg p-1 flex">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <FiGrid size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  <FiList size={18} />
+                </button>
+              </div>
             </div>
-            <button
-              type="submit"
-              disabled={isFetching}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
-            >
-              {isFetching ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-              ) : (
-                <FiSearch size={16} />
-              )}
-              Search
-            </button>
-          </form>
+          </div>
         </div>
       </div>
 
       {/* Enhanced Error Display */}
       {validationErrors.length > 0 && (
         <div className="container mx-auto px-4 py-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-shake">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-shake">
             <div className="flex items-start justify-between">
               <div className="flex items-start flex-1">
                 <FiAlertCircle className="text-red-500 mr-3 mt-0.5 flex-shrink-0" size={20} />
@@ -300,22 +289,20 @@ const AdminProducts: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {showForm && (
             <div className="xl:col-span-1">
-              <ProductForm
-              
-                product={INITIAL_PRODUCT_STATE}
-                onSubmit={handleCreateProduct}
-                onCancel={handleCancel}
-                isLoading={createProductMutation.isPending}
-                validationErrors={groupedErrors}
-              />
+              <div className="sticky top-6">
+                <ProductForm
+                  product={INITIAL_PRODUCT_STATE}
+                  onSubmit={handleCreateProduct}
+                  onCancel={handleCancel}
+                  isLoading={createProductMutation.isPending}
+                  validationErrors={groupedErrors}
+                />
+              </div>
             </div>
           )}
           
           <div className={showForm ? "xl:col-span-2" : "xl:col-span-3"}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {searchQuery ? `Search Results for "${searchQuery}"` : 'All Products'}
-              </h2>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
                 {isFetching && (
                   <div className="flex items-center gap-2 text-red-600">
@@ -323,11 +310,11 @@ const AdminProducts: React.FC = () => {
                     <span className="text-sm">Loading...</span>
                   </div>
                 )}
-                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                  {products.length} products
+                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+                  {products.length} {products.length === 1 ? 'product' : 'products'}
                 </span>
                 {pagination && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
                     Page {pagination.page} of {pagination.pages}
                   </span>
                 )}
@@ -335,53 +322,28 @@ const AdminProducts: React.FC = () => {
             </div>
             
             {products.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-100">
+              <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <FiPlus className="text-red-500" size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  {searchQuery ? 'No Products Found' : 'No Products Yet'}
-                </h3>
-                <p className="text-gray-600 max-w-md mx-auto mb-6">
-                  {searchQuery 
-                    ? `No products match your search for "${searchQuery}". Try adjusting your search terms.`
-                    : 'Get started by adding your first product to showcase in your store.'
-                  }
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">No products yet</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Get started by adding your first product to the catalog.
                 </p>
-                {searchQuery ? (
-                  <div className="flex gap-3 justify-center">
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setCurrentPage(1);
-                        refetch();
-                      }}
-                      className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200"
-                    >
-                      <FiRefreshCw size={18} />
-                      Clear Search
-                    </button>
-                    <button
-                      onClick={() => setShowForm(true)}
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200"
-                    >
-                      <FiPlus size={18} />
-                      Add Product
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 mx-auto"
-                  >
-                    <FiPlus size={18} />
-                    Add Your First Product
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 mx-auto"
+                >
+                  <FiPlus size={18} />
+                  Add Your First Product
+                </button>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                  : "flex flex-col gap-4"
+                }>
                   {products.map((product: IProduct) => (
                     <div key={product._id} className="animate-slide-in">
                       <ProductCard
@@ -390,6 +352,7 @@ const AdminProducts: React.FC = () => {
                         onDelete={handleDeleteClick}
                         isEditing={editingProduct?._id === product._id}
                         isDeleting={deletingProduct?._id === product._id}
+                        viewMode={viewMode}
                       />
                     </div>
                   ))}

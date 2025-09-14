@@ -82,3 +82,20 @@ export interface ApiError {
   status?: number;
   details?: any;
 }
+export interface IProductStats {
+  totalProducts: number;
+  onSaleCount: number;
+  withActiveOffers: number;
+  categoryStats: Array<{
+    _id: string;
+    totalProducts: number;
+  }>;
+  recentProducts: Array<{
+    _id: string;
+    name: string;
+    price: number;
+    discountPrice?: number;
+    images: string[];
+    createdAt: string;
+  }>;
+}

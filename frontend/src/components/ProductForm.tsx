@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiSave, FiX, FiPlus, FiTrash2, FiCheck, FiDollarSign, FiEyeOff, FiGift, FiImage, FiLink, FiPackage, FiTag } from 'react-icons/fi';
+import { FiSave, FiX, FiPlus, FiTrash2, FiCheck, FiDollarSign, FiEyeOff, FiGift, FiLink, FiPackage, FiTag } from 'react-icons/fi';
 import { ValidatedInput, ValidatedTextarea, FieldWrapper } from './ValidationErrorDisplay';
 import { PREDEFINED_CATEGORIES } from '../constants/products';
 import type { IDynamicField, IHiddenField, IOffer, IProduct } from '../types/product';

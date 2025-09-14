@@ -6,9 +6,15 @@ interface DynamicFormProps {
   productId: string;
   dynamicFields: DynamicField[];
   onSubmit: (formData: Record<string, string>) => void;
+  submitting?: boolean;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({ productId, dynamicFields, onSubmit }) => {
+const DynamicForm: React.FC<DynamicFormProps> = ({ 
+  productId, 
+  dynamicFields, 
+  onSubmit, 
+  submitting = false 
+}) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
   const handleInputChange = (key: string, value: string) => {
@@ -42,6 +48,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ productId, dynamicFields, onS
           value={formData.name || ''}
           onChange={(e) => handleInputChange('name', e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+          disabled={submitting}
         />
       </div>
       
@@ -58,6 +65,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ productId, dynamicFields, onS
           value={formData.phone || ''}
           onChange={(e) => handleInputChange('phone', e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+          disabled={submitting}
         />
       </div>
       
@@ -75,15 +83,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ productId, dynamicFields, onS
             value={formData[field.key] || ''}
             onChange={(e) => handleInputChange(field.key, e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
+            disabled={submitting}
           />
         </div>
       ))}
       
       <button
         type="submit"
-        className="w-full bg-red-500 text-white py-3 px-6 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-300"
+        disabled={submitting}
+        className="w-full bg-red-500 text-white py-3 px-6 rounded-xl font-semibold hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
       >
-        Submit Inquiry
+        {submitting ? 'Submitting...' : 'Submit Inquiry'}
       </button>
     </form>
   );

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productAPI } from '../utils/api';
-import type { ApiError, IProduct } from '../types/product';
+import { productAPI, type ApiResponse } from '../utils/api';
+import type { ApiError, IProduct, IProductStats } from '../types/product';
 import { toast } from 'react-toastify';
 
 // Enhanced error handling utility
@@ -113,10 +113,13 @@ export const useDeleteProduct = () => {
 };
 
 export const useProductStats = () => {
-  return useQuery({
+  return useQuery<ApiResponse<IProductStats>, ApiError>({
     queryKey: ['product-stats'],
     queryFn: productAPI.getProductStats,
     staleTime: 10 * 60 * 1000, // 10 minutes
+    onError: (error) => {
+      toast.error(error.message || 'Failed to fetch product statistics');
+    },
   });
 };
 

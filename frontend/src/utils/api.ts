@@ -1,3 +1,5 @@
+import type { IProductStats } from "../types/product";
+
 // utils/api.ts
 export const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -325,9 +327,9 @@ export const productAPI = {
     return apiCall(`/products/search${queryParams ? `?${queryParams}` : ''}`);
   },
 
-  getProductStats: () => {
-    return apiCall('/products/stats/overview');
-  },
+ getProductStats: () => {
+  return apiCall<IProductStats>('/products/stats/overview');
+},
 
   bulkUpdateProducts: (productIds: string[], updateData: any) => {
     if (!productIds || productIds.length === 0) {

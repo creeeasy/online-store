@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import {  getCurrentUser } from '../store/slices/authSlice';
+import { getCurrentUser } from '../store/slices/authSlice';
 import { FiUser, FiLogOut, FiMenu, FiX, FiSettings } from 'react-icons/fi';
 import { logoutAdmin } from '../hooks/useAuth';
 
@@ -12,7 +12,6 @@ const AdminNavbar: React.FC = () => {
   const location = useLocation();
   
   const { user } = useAppSelector((state) => state.auth);
-  const { isLoading } = useAppSelector((state) => state.loading);
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,7 +74,10 @@ const AdminNavbar: React.FC = () => {
   };
 
   const isActivePath = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path);
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -154,9 +156,9 @@ const AdminNavbar: React.FC = () => {
                 </Link>
                 
                 <Link 
-                  to="/admin/submissions" 
+                  to="/admin/inquiries" 
                   className={`relative px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                    isActivePath('/admin/submissions')
+                    isActivePath('/admin/inquiries')
                       ? 'bg-red-100 text-red-700 shadow-md'
                       : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
                   }`}
@@ -274,9 +276,9 @@ const AdminNavbar: React.FC = () => {
             </Link>
             
             <Link 
-              to="/admin/submissions" 
+              to="/admin/inquiries" 
               className={`block py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
-                isActivePath('/admin/submissions')
+                isActivePath('/admin/inquiries')
                   ? 'bg-red-100 text-red-700 shadow-md'
                   : 'text-gray-700 hover:text-red-500 hover:bg-red-50'
               }`}

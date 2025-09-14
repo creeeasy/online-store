@@ -1,4 +1,4 @@
-// App.tsx (Updated version)
+// App.tsx (Fixed version)
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -18,6 +18,7 @@ import ClientNavbar from './components/ClientNavbar';
 import AdminNavbar from './components/AdminNavbar';
 import GlobalLoadingOverlay from './components/GlobalLoadingOverlay';
 import ProtectedRoute from './components/ProtectedRoute';
+import InquiryDashboard from './pages/InquiryDashboard';
 
 // Create QueryClient instance
 const queryClient = new QueryClient();
@@ -38,11 +39,11 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<><ClientNavbar /><Home /></>} />
           <Route path="/products/:id" element={<><ClientNavbar /><ProductDetails /></>} />
           
-          {/* Auth routes */}
+          {/* Auth routes - redirect to /admin if already authenticated */}
           <Route
             path="/admin/login"
             element={
-              <ProtectedRoute requireAuth={false}>
+              <ProtectedRoute requireAuth={false} redirectTo="/admin">
                 <AdminLogin />
               </ProtectedRoute>
             }
@@ -50,7 +51,7 @@ const AppContent: React.FC = () => {
           <Route
             path="/register"
             element={
-              <ProtectedRoute requireAuth={false}>
+              <ProtectedRoute requireAuth={false} redirectTo="/admin">
                 <Register />
               </ProtectedRoute>
             }
@@ -60,7 +61,7 @@ const AppContent: React.FC = () => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute redirectTo="/admin/login">
                 <AdminNavbar />
                 <AdminDashboard />
               </ProtectedRoute>
@@ -69,18 +70,19 @@ const AppContent: React.FC = () => {
           <Route
             path="/admin/products"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute redirectTo="/admin/login">
                 <AdminNavbar />
                 <AdminProducts />
               </ProtectedRoute>
             }
           />
+       
           <Route
-            path="/admin/submissions"
+            path="/admin/inquiries"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute redirectTo="/admin/login">
                 <AdminNavbar />
-                <AdminSubmissions />
+                <InquiryDashboard />
               </ProtectedRoute>
             }
           />
