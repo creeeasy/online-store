@@ -1,351 +1,259 @@
-
 // controllers/orderInquiryController.ts
 import { Request, Response } from 'express';
 import Product from '../models/Product';
-import { validationResult } from 'express-validator';
 import OrderInquiry from '../models/OrderInquiry';
+import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
+
 export class OrderInquiryController {
   // Create new order inquiry
-  static async createInquiry(req: Request, res: Response) {
-    try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array()
-        });
-      }
+  static createInquiry = asyncHandler(async (req: Request, res: Response) => {
+    // Check for validation errors
+    const validationError = ResponseHandler.validationError(res, req);
+    if (validationError) return;
 
-      const { 
-        productId, 
-        customerData, 
-        quantity = 1, 
-        selectedVariants = {},
-        notes 
-      } = req.body;
+    const { 
+      productId, 
+      customerData, 
+      quantity = 1, 
+      selectedVariants = {},
+      notes 
+    } = req.body;
 
-      // Verify product exists
-      const product = await Product.findById(productId);
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: 'Product not found'
-        });
-      }
-
-      // Calculate total price
-      const price = product.discountPrice || product.price;
-      const totalPrice = price * quantity;
-
-      // Create new inquiry
-      const inquiry = new OrderInquiry({
-        productId,
-        productName: product.name,
-        customerData,
-        quantity,
-        selectedVariants,
-        totalPrice,
-        notes
-      });
-
-      await inquiry.save();
-
-      // Populate product details in response
-      await inquiry.populate('product');
-
-      res.status(201).json({
-        success: true,
-        message: 'Order inquiry created successfully',
-        data: { inquiry }
-      });
-
-    } catch (error) {
-      console.error('Error creating order inquiry:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create order inquiry',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    // Verify product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return ResponseHandler.notFound(res, 'Product');
     }
-  }
+
+    // Calculate total price
+    const price = product.discountPrice || product.price;
+    const totalPrice = price * quantity;
+
+    // Create new inquiry
+    const inquiry = new OrderInquiry({
+      productId,
+      productName: product.name,
+      customerData,
+      quantity,
+      selectedVariants,
+      totalPrice,
+      notes
+    });
+
+    await inquiry.save();
+
+    // Populate product details in response
+    await inquiry.populate('product');
+
+    ResponseHandler.success(
+      res,
+      { inquiry },
+      'Order inquiry created successfully',
+      201
+    );
+  });
 
   // Get all inquiries with filtering and pagination
-  static async getAllInquiries(req: Request, res: Response) {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
+  static getAllInquiries = asyncHandler(async (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
-      // Build filter object
-      const filter: any = {};
-      
-      if (req.query.status) {
-        filter.status = req.query.status;
-      }
-      
-      if (req.query.productId) {
-        filter.productId = req.query.productId;
-      }
-
-      if (req.query.phone) {
-        filter['customerData.phone'] = { 
-          $regex: req.query.phone, 
-          $options: 'i' 
-        };
-      }
-
-      if (req.query.name) {
-        filter['customerData.name'] = { 
-          $regex: req.query.name, 
-          $options: 'i' 
-        };
-      }
-
-      // Date range filter
-      if (req.query.startDate || req.query.endDate) {
-        filter.createdAt = {};
-        if (req.query.startDate) {
-          filter.createdAt.$gte = new Date(req.query.startDate as string);
-        }
-        if (req.query.endDate) {
-          filter.createdAt.$lte = new Date(req.query.endDate as string);
-        }
-      }
-
-      // Execute query
-      const inquiries = await OrderInquiry.find(filter)
-        .populate('product', 'name price discountPrice images')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
-
-      const total = await OrderInquiry.countDocuments(filter);
-      const totalPages = Math.ceil(total / limit);
-      console.log(inquiries)
-      res.json({
-        success: true,
-        data: {
-          inquiries,
-          pagination: {
-            currentPage: page,
-            totalPages,
-            totalItems: total,
-            itemsPerPage: limit,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1
-          }
-        }
-      });
-
-    } catch (error) {
-      console.error('Error fetching inquiries:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch inquiries',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    // Build filter object
+    const filter: any = {};
+    
+    if (req.query.status) {
+      filter.status = req.query.status;
     }
-  }
+    
+    if (req.query.productId) {
+      filter.productId = req.query.productId;
+    }
+
+    if (req.query.phone) {
+      filter['customerData.phone'] = { 
+        $regex: req.query.phone, 
+        $options: 'i' 
+      };
+    }
+
+    if (req.query.name) {
+      filter['customerData.name'] = { 
+        $regex: req.query.name, 
+        $options: 'i' 
+      };
+    }
+
+    // Date range filter
+    if (req.query.startDate || req.query.endDate) {
+      filter.createdAt = {};
+      if (req.query.startDate) {
+        filter.createdAt.$gte = new Date(req.query.startDate as string);
+      }
+      if (req.query.endDate) {
+        filter.createdAt.$lte = new Date(req.query.endDate as string);
+      }
+    }
+
+    // Execute query
+    const inquiries = await OrderInquiry.find(filter)
+      .populate('product', 'name price discountPrice images')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await OrderInquiry.countDocuments(filter);
+
+    ResponseHandler.paginated(
+      res,
+      inquiries,
+      total,
+      page,
+      limit,
+      'Inquiries retrieved successfully'
+    );
+  });
 
   // Get inquiry by ID
-  static async getInquiryById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+  static getInquiryById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-      const inquiry = await OrderInquiry.findById(id)
-        .populate('product', 'name price discountPrice images dynamicFields predefinedFields');
+    const inquiry = await OrderInquiry.findById(id)
+      .populate('product', 'name price discountPrice images dynamicFields predefinedFields');
 
-      if (!inquiry) {
-        return res.status(404).json({
-          success: false,
-          message: 'Order inquiry not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        data: { inquiry }
-      });
-
-    } catch (error) {
-      console.error('Error fetching inquiry:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch inquiry',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    if (!inquiry) {
+      return ResponseHandler.notFound(res, 'Order inquiry');
     }
-  }
+
+    ResponseHandler.success(
+      res,
+      { inquiry },
+      'Inquiry retrieved successfully'
+    );
+  });
 
   // Update inquiry
-  static async updateInquiry(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const updates = req.body;
+  static updateInquiry = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const updates = req.body;
 
-      // Remove fields that shouldn't be updated directly
-      delete updates._id;
-      delete updates.createdAt;
-      delete updates.updatedAt;
+    // Remove fields that shouldn't be updated directly
+    delete updates._id;
+    delete updates.createdAt;
+    delete updates.updatedAt;
 
-      const inquiry = await OrderInquiry.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true, runValidators: true }
-      ).populate('product', 'name price discountPrice images');
+    const inquiry = await OrderInquiry.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).populate('product', 'name price discountPrice images');
 
-      if (!inquiry) {
-        return res.status(404).json({
-          success: false,
-          message: 'Order inquiry not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Order inquiry updated successfully',
-        data: { inquiry }
-      });
-
-    } catch (error) {
-      console.error('Error updating inquiry:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update inquiry',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    if (!inquiry) {
+      return ResponseHandler.notFound(res, 'Order inquiry');
     }
-  }
+
+    ResponseHandler.success(
+      res,
+      { inquiry },
+      'Order inquiry updated successfully'
+    );
+  });
 
   // Update inquiry status
-  static async updateInquiryStatus(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const { status, notes } = req.body;
+  static updateInquiryStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, notes } = req.body;
 
-      const validStatuses = ['pending', 'contacted', 'converted', 'cancelled'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
-        });
-      }
-
-      const updateData: any = { status };
-      if (notes !== undefined) {
-        updateData.notes = notes;
-      }
-
-      const inquiry = await OrderInquiry.findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      ).populate('product', 'name price discountPrice images');
-
-      if (!inquiry) {
-        return res.status(404).json({
-          success: false,
-          message: 'Order inquiry not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Inquiry status updated successfully',
-        data: { inquiry }
-      });
-
-    } catch (error) {
-      console.error('Error updating inquiry status:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update inquiry status',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    const validStatuses = ['pending', 'contacted', 'converted', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return ResponseHandler.error(
+        res,
+        'Invalid status. Must be one of: ' + validStatuses.join(', '),
+        400,
+        undefined,
+        'VALIDATION_ERROR'
+      );
     }
-  }
+
+    const updateData: any = { status };
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
+    const inquiry = await OrderInquiry.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate('product', 'name price discountPrice images');
+
+    if (!inquiry) {
+      return ResponseHandler.notFound(res, 'Order inquiry');
+    }
+
+    ResponseHandler.success(
+      res,
+      { inquiry },
+      'Inquiry status updated successfully'
+    );
+  });
 
   // Delete inquiry
-  static async deleteInquiry(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
+  static deleteInquiry = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-      const inquiry = await OrderInquiry.findByIdAndDelete(id);
+    const inquiry = await OrderInquiry.findByIdAndDelete(id);
 
-      if (!inquiry) {
-        return res.status(404).json({
-          success: false,
-          message: 'Order inquiry not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Order inquiry deleted successfully',
-        data: { deletedInquiry: inquiry }
-      });
-
-    } catch (error) {
-      console.error('Error deleting inquiry:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to delete inquiry',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    if (!inquiry) {
+      return ResponseHandler.notFound(res, 'Order inquiry');
     }
-  }
+
+    ResponseHandler.success(
+      res,
+      { deletedInquiry: inquiry },
+      'Order inquiry deleted successfully'
+    );
+  });
 
   // Get inquiries statistics
-  static async getInquiriesStats(req: Request, res: Response) {
-    try {
-      const stats = await OrderInquiry.aggregate([
-        {
-          $group: {
-            _id: '$status',
-            count: { $sum: 1 },
-            totalValue: { $sum: '$totalPrice' }
-          }
+  static getInquiriesStats = asyncHandler(async (req: Request, res: Response) => {
+    const stats = await OrderInquiry.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          totalValue: { $sum: '$totalPrice' }
         }
-      ]);
+      }
+    ]);
 
-      const totalInquiries = await OrderInquiry.countDocuments();
-      const recentInquiries = await OrderInquiry.countDocuments({
-        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-      });
+    const totalInquiries = await OrderInquiry.countDocuments();
+    const recentInquiries = await OrderInquiry.countDocuments({
+      createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+    });
 
-      // Top products by inquiry count
-      const topProducts = await OrderInquiry.aggregate([
-        {
-          $group: {
-            _id: '$productId',
-            productName: { $first: '$productName' },
-            inquiryCount: { $sum: 1 },
-            totalValue: { $sum: '$totalPrice' }
-          }
-        },
-        { $sort: { inquiryCount: -1 } },
-        { $limit: 10 }
-      ]);
-
-      res.json({
-        success: true,
-        data: {
-          statusStats: stats,
-          totalInquiries,
-          recentInquiries,
-          topProducts
+    // Top products by inquiry count
+    const topProducts = await OrderInquiry.aggregate([
+      {
+        $group: {
+          _id: '$productId',
+          productName: { $first: '$productName' },
+          inquiryCount: { $sum: 1 },
+          totalValue: { $sum: '$totalPrice' }
         }
-      });
+      },
+      { $sort: { inquiryCount: -1 } },
+      { $limit: 10 }
+    ]);
 
-    } catch (error) {
-      console.error('Error fetching inquiries stats:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch inquiries statistics',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  }
+    ResponseHandler.success(
+      res,
+      {
+        statusStats: stats,
+        totalInquiries,
+        recentInquiries,
+        topProducts
+      },
+      'Inquiry statistics retrieved successfully'
+    );
+  });
 }

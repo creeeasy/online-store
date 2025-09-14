@@ -1,8 +1,10 @@
+// controllers/authController.ts (Refactored)
 import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import User from '../models/User';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest, UserPayload } from '../types';
+import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -17,63 +19,62 @@ export const register = [
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
 
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
+  validateRequest, // Add validation middleware
 
-      const { username, email, password, role } = req.body;
+  asyncHandler(async (req: Request, res: Response) => {
+    const { username, email, password, role } = req.body;
 
-      // Check if user exists
-      const existingUser = await User.findOne({
-        $or: [{ email }, { username }],
-      });
-      console.log(email,username)
-      console.log(existingUser)
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User already exists with this email or username',
-        });
-      }
+    // Check if user exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
 
-      // Create user
-      const user = await User.create({
-        username,
-        email,
-        password,
-        role: role || 'user',
-      });
-
-      // Generate token
-      const token = generateToken({
-        id: user._id.toString(),
-        role: user.role,
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully',
-        data: {
-          token,
-          user: {
-            id: user._id.toString(),
-            username: user.username,
-            email: user.email,
-            role: user.role,
-          },
-        },
-      });
-    } catch (error) {
-      next(error);
+    if (existingUser) {
+      return ResponseHandler.error(
+        res,
+        'User already exists with this email or username',
+        400,
+        [{
+          field: existingUser.email === email ? 'email' : 'username',
+          message: `${existingUser.email === email ? 'Email' : 'Username'} already exists`,
+          value: existingUser.email === email ? email : username,
+          location: 'body'
+        }],
+        'USER_ALREADY_EXISTS'
+      );
     }
-  },
+
+    // Create user
+    const user = await User.create({
+      username,
+      email,
+      password,
+      role: role || 'user',
+    });
+
+    // Generate token
+    const token = generateToken({
+      id: user._id.toString(),
+      role: user.role,
+    });
+
+    const userData = {
+      token,
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    };
+
+    return ResponseHandler.success(
+      res,
+      userData,
+      'User registered successfully',
+      201
+    );
+  }),
 ];
 
 // @desc    Login user
@@ -84,108 +85,74 @@ export const login = [
   body('email').isEmail().withMessage('Please include a valid email'),
   body('password').exists().withMessage('Password is required'),
 
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
+  validateRequest,
 
-      const { email, password } = req.body;
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
 
-      // Check for user
-      const user = await User.findOne({ email }).select('+password');
+    // Check for user
+    const user = await User.findOne({ email }).select('+password');
 
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials',
-        });
-      }
-
-      // Check if password matches
-      const isMatch = await user.comparePassword(password);
-
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials',
-        });
-      }
-
-      // Generate token
-      const token = generateToken({
-        id: user._id.toString(),
-        role: user.role,
-      });
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          token,
-          user: {
-            id: user._id.toString(),
-            username: user.username,
-            email: user.email,
-            role: user.role,
-          },
-        },
-      });
-    } catch (error) {
-      next(error);
+    if (!user) {
+      return ResponseHandler.unauthorized(res, 'Invalid credentials');
     }
-  },
+
+    // Check if password matches
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return ResponseHandler.unauthorized(res, 'Invalid credentials');
+    }
+
+    // Generate token
+    const token = generateToken({
+      id: user._id.toString(),
+      role: user.role,
+    });
+
+    const userData = {
+      token,
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    };
+
+    return ResponseHandler.success(res, userData, 'Login successful');
+  }),
 ];
 
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
-export const getMe = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const user = await User.findById(req.user?.id);
+export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user?.id);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: user._id.toString(),
-          username: user.username,
-          email: user.email,
-          role: user.role,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
+  if (!user) {
+    return ResponseHandler.notFound(res, 'User');
   }
-};
 
-export const validateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    // If protect middleware passed, token is valid
-    res.json({
-      success: true,
-      message: 'Token is valid',
-      data: {
-        user: {
-          id: req.user?.id,
-          role: req.user?.role,
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  const userData = {
+    user: {
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    },
+  };
+
+  return ResponseHandler.success(res, userData, 'User profile retrieved successfully');
+});
+
+export const validateToken = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userData = {
+    user: {
+      id: req.user?.id,
+      role: req.user?.role,
+    },
+  };
+
+  return ResponseHandler.success(res, userData, 'Token is valid');
+});

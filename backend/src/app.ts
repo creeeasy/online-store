@@ -21,8 +21,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Enable CORS
 app.use(cors({
-  origin: '*', // Or ['http://localhost:3000']
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+    callback(null, true); // Reflect the requesting origin
+  },
+  credentials: true,
 }));
+
+
 
 // Set security headers
 app.use(helmet());

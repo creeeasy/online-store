@@ -16,7 +16,7 @@ const router = express.Router();
 
 router.get('/', getProducts);
 router.get('/search', searchProducts);
-router.get('/stats/overview', protect, authorize('admin'), getProductStats);
+router.get('/stats', protect, authorize('admin'), getProductStats);
 router.get('/:id', getProduct);
 router.post('/', protect, authorize('admin'), createProduct);
 router.put('/:id', protect, authorize('admin'), updateProduct);

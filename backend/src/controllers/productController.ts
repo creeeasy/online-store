@@ -1,8 +1,9 @@
 // controllers/productController.ts
-import { Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import { Request, Response } from 'express';
+import { body } from 'express-validator';
 import Product, { IProduct } from '../models/Product';
 import { AuthRequest } from '../types';
+import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
 
 // Predefined categories configuration
 const PREDEFINED_CATEGORIES = {
@@ -13,7 +14,7 @@ const PREDEFINED_CATEGORIES = {
 };
 
 // Enhanced validation rules with better error messages
-const productValidationRules = {
+export const productValidationRules = {
   create: [
     body('name')
       .trim()
@@ -22,28 +23,27 @@ const productValidationRules = {
       .isLength({ min: 2, max: 100 })
       .withMessage('Product name must be between 2 and 100 characters'),
     
-body('price')
-  .optional()
-  .isNumeric()
-  .withMessage('Price must be a valid number')
-  .isFloat({ min: 0.01 })
-  .withMessage('Price must be greater than 0')
-  .toFloat(),
+    body('price')
+      .optional()
+      .isNumeric()
+      .withMessage('Price must be a valid number')
+      .isFloat({ min: 0.01 })
+      .withMessage('Price must be greater than 0')
+      .toFloat(),
 
-body('discountPrice')
-  .optional()
-  .isNumeric()
-  .withMessage('Discount price must be a valid number')
-  .isFloat({ min: 0 })
-  .withMessage('Discount price cannot be negative')
-  .toFloat()
-  .custom((value, { req }) => {
-    if (req.body.price && value >= req.body.price) {
-      throw new Error('Discount price must be less than the original price');
-    }
-    return true;
-  }),
-
+    body('discountPrice')
+      .optional()
+      .isNumeric()
+      .withMessage('Discount price must be a valid number')
+      .isFloat({ min: 0 })
+      .withMessage('Discount price cannot be negative')
+      .toFloat()
+      .custom((value, { req }) => {
+        if (req.body.price && value >= req.body.price) {
+          throw new Error('Discount price must be less than the original price');
+        }
+        return true;
+      }),
     
     body('description')
       .trim()
@@ -146,21 +146,12 @@ body('discountPrice')
       .withMessage('Price must be greater than 0'),
     
     body('discountPrice')
-  .optional()
-  .isNumeric()
-  .withMessage('Discount price must be a valid number')
-  .isFloat({ min: 0 })
-  .withMessage('Discount price cannot be negative')
-  .toFloat()
-/* .custom((value, { req }) => {
-    if (req.body.price && value >= req.body.price) {
-      throw new Error('Discount price must be less than the original price');
-    }
-    return true;
-  }
-
-) */
-  ,
+      .optional()
+      .isNumeric()
+      .withMessage('Discount price must be a valid number')
+      .isFloat({ min: 0 })
+      .withMessage('Discount price cannot be negative')
+      .toFloat(),
     
     body('description')
       .optional()
@@ -185,23 +176,6 @@ body('discountPrice')
   ]
 };
 
-// Enhanced error response helper
-const sendValidationError = (res: Response, errors: any[]) => {
-  const formattedErrors = errors.map(error => ({
-    field: error.path || error.param,
-    message: error.msg,
-    value: error.value,
-    location: error.location || 'body'
-  }));
-
-  return res.status(400).json({
-    success: false,
-    message: 'Validation failed. Please check the provided data.',
-    errors: formattedErrors,
-    timestamp: new Date().toISOString()
-  });
-};
-
 // Helper function to initialize predefined fields
 const initializePredefinedFields = () => {
   return Object.keys(PREDEFINED_CATEGORIES).map(category => ({
@@ -215,162 +189,102 @@ const initializePredefinedFields = () => {
 // @desc    Get all products with advanced filtering
 // @route   GET /api/products
 // @access  Public
-export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-    
-    // Build filter query
-    let filter: any = {};
-    
-    // Category filter
-    if (req.query.category) {
-      filter['predefinedFields.category'] = req.query.category;
-      filter['predefinedFields.isActive'] = true;
-    }
-    
-    // Price range filter
-    if (req.query.minPrice || req.query.maxPrice) {
-      filter.price = {};
-      if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice as string);
-      if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice as string);
-    }
-    
-    // Sale items filter
-    if (req.query.onSale === 'true') {
-      filter.discountPrice = { $exists: true, $lt: filter.price?.$gte || 0 };
-    }
-    
-    // Active offers filter
-    if (req.query.hasOffers === 'true') {
-      filter['offers.isActive'] = true;
-      filter['offers.validUntil'] = { $gt: new Date() };
-    }
-
-    const products = await Product.find(filter)
-      .populate('createdBy', 'username email')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
-
-    const total = await Product.countDocuments(filter);
-
-    res.json({
-      success: true,
-      data: {
-        products,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    next(error);
+export const getProducts = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  
+  // Build filter query
+  let filter: any = {};
+  
+  // Category filter
+  if (req.query.category) {
+    filter['predefinedFields.category'] = req.query.category;
+    filter['predefinedFields.isActive'] = true;
   }
-};
+  
+  // Price range filter
+  if (req.query.minPrice || req.query.maxPrice) {
+    filter.price = {};
+    if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice as string);
+    if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice as string);
+  }
+  
+  // Sale items filter
+  if (req.query.onSale === 'true') {
+    filter.discountPrice = { $exists: true, $lt: filter.price?.$gte || 0 };
+  }
+  
+  // Active offers filter
+  if (req.query.hasOffers === 'true') {
+    filter['offers.isActive'] = true;
+    filter['offers.validUntil'] = { $gt: new Date() };
+  }
+
+  const products = await Product.find(filter)
+    .populate('createdBy', 'username email')
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+
+  const total = await Product.countDocuments(filter);
+
+  ResponseHandler.paginated(
+    res,
+    products,
+    total,
+    page,
+    limit,
+    'Products retrieved successfully'
+  );
+});
 
 // @desc    Get single product
 // @route   GET /api/products/:id
 // @access  Public
-export const getProduct = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const product = await Product.findById(req.params.id).populate(
-      'createdBy',
-      'username email'
-    );
+export const getProduct = asyncHandler(async (req: Request, res: Response) => {
+  const product = await Product.findById(req.params.id).populate(
+    'createdBy',
+    'username email'
+  );
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    res.json({
-      success: true,
-      data: { product },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    next(error);
+  if (!product) {
+    return ResponseHandler.notFound(res, 'Product');
   }
-};
+
+  ResponseHandler.success(
+    res,
+    { product },
+    'Product retrieved successfully'
+  );
+});
 
 // @desc    Create product
 // @route   POST /api/products
 // @access  Private/Admin
 export const createProduct = [
   ...productValidationRules.create,
+  validateRequest,
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    // Initialize predefined fields if not provided
+    const predefinedFields = req.body.predefinedFields || initializePredefinedFields();
 
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return sendValidationError(res, errors.array());
-      }
+    const productData = {
+      ...req.body,
+      predefinedFields,
+      createdBy: req.user?.id,
+    };
 
-      // Initialize predefined fields if not provided
-      const predefinedFields = req.body.predefinedFields || initializePredefinedFields();
+    const product = await Product.create(productData);
+    await product.populate('createdBy', 'username email');
 
-      const productData = {
-        ...req.body,
-        predefinedFields,
-        createdBy: req.user?.id,
-      };
-
-      const product = await Product.create(productData);
-      await product.populate('createdBy', 'username email');
-
-      res.status(201).json({
-        success: true,
-        message: 'Product created successfully',
-        data: { product },
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      if (error.code === 11000) {
-        const duplicateField = Object.keys(error.keyValue)[0];
-        const duplicateValue = error.keyValue[duplicateField];
-        
-        return res.status(400).json({
-          success: false,
-          message: 'Duplicate entry detected',
-          errors: [{
-            field: duplicateField,
-            message: `A product with ${duplicateField} "${duplicateValue}" already exists`,
-            value: duplicateValue,
-            location: 'body'
-          }],
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // Handle mongoose validation errors
-      if (error.name === 'ValidationError') {
-        const validationErrors = Object.values(error.errors).map((err: any) => ({
-          field: err.path,
-          message: err.message,
-          value: err.value,
-          location: 'body'
-        }));
-        
-        return res.status(400).json({
-          success: false,
-          message: 'Product validation failed',
-          errors: validationErrors,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      next(error);
-    }
-  },
+    ResponseHandler.success(
+      res,
+      { product },
+      'Product created successfully',
+      201
+    );
+  })
 ];
 
 // @desc    Update product
@@ -378,321 +292,221 @@ export const createProduct = [
 // @access  Private/Admin
 export const updateProduct = [
   ...productValidationRules.update,
+  validateRequest,
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    let product = await Product.findById(req.params.id);
 
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      console.log(req.body)
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return sendValidationError(res, errors.array());
-      }
-
-      let product = await Product.findById(req.params.id);
-
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: 'Product not found',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Check if user owns the product or is admin
-      if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Not authorized to update this product',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      product = await Product.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-          runValidators: true,
-        }
-      ).populate('createdBy', 'username email');
-
-      res.json({
-        success: true,
-        message: 'Product updated successfully',
-        data: { product },
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      if (error.code === 11000) {
-        const duplicateField = Object.keys(error.keyValue)[0];
-        const duplicateValue = error.keyValue[duplicateField];
-        
-        return res.status(400).json({
-          success: false,
-          message: 'Duplicate entry detected',
-          errors: [{
-            field: duplicateField,
-            message: `A product with ${duplicateField} "${duplicateValue}" already exists`,
-            value: duplicateValue,
-            location: 'body'
-          }],
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // Handle mongoose validation errors
-      if (error.name === 'ValidationError') {
-        const validationErrors = Object.values(error.errors).map((err: any) => ({
-          field: err.path,
-          message: err.message,
-          value: err.value,
-          location: 'body'
-        }));
-        
-        return res.status(400).json({
-          success: false,
-          message: 'Product validation failed',
-          errors: validationErrors,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      next(error);
+    if (!product) {
+      return ResponseHandler.notFound(res, 'Product');
     }
-  },
+
+    // Check if user owns the product or is admin
+    if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+      return ResponseHandler.forbidden(res, 'Not authorized to update this product');
+    }
+
+    product = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate('createdBy', 'username email');
+
+    ResponseHandler.success(
+      res,
+      { product },
+      'Product updated successfully'
+    );
+  })
 ];
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
-export const deleteProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const product = await Product.findById(req.params.id);
+export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const product = await Product.findById(req.params.id);
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Check if user owns the product or is admin
-    if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to delete this product',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    await Product.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: 'Product deleted successfully',
-      data: {},
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    next(error);
+  if (!product) {
+    return ResponseHandler.notFound(res, 'Product');
   }
-};
+
+  // Check if user owns the product or is admin
+  if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+    return ResponseHandler.forbidden(res, 'Not authorized to delete this product');
+  }
+
+  await Product.findByIdAndDelete(req.params.id);
+
+  ResponseHandler.success(
+    res,
+    {},
+    'Product deleted successfully'
+  );
+});
 
 // @desc    Search products
 // @route   GET /api/products/search
 // @access  Public
-export const searchProducts = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { q, category, minPrice, maxPrice, onSale, hasOffers } = req.query;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+export const searchProducts = asyncHandler(async (req: Request, res: Response) => {
+  const { q, category, minPrice, maxPrice, onSale, hasOffers } = req.query;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
 
-    let query: any = {};
+  let query: any = {};
 
-    // Text search
-    if (q) {
-      query.$text = { $search: q as string };
-    }
-
-    // Category filter
-    if (category) {
-      query['predefinedFields.category'] = category;
-      query['predefinedFields.isActive'] = true;
-    }
-
-    // Price range filter
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = parseFloat(minPrice as string);
-      if (maxPrice) query.price.$lte = parseFloat(maxPrice as string);
-    }
-
-    // Sale items filter
-    if (onSale === 'true') {
-      query.discountPrice = { $exists: true, $lt: query.price?.$gte || 0 };
-    }
-
-    // Active offers filter
-    if (hasOffers === 'true') {
-      query['offers.isActive'] = true;
-      query['offers.validUntil'] = { $gt: new Date() };
-    }
-
-    const products = await Product.find(query)
-      .populate('createdBy', 'username email')
-      .skip(skip)
-      .limit(limit)
-      .sort({ score: { $meta: 'textScore' }, createdAt: -1 });
-
-    const total = await Product.countDocuments(query);
-
-    res.json({
-      success: true,
-      data: {
-        products,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    next(error);
+  // Text search
+  if (q) {
+    query.$text = { $search: q as string };
   }
-};
 
+  // Category filter
+  if (category) {
+    query['predefinedFields.category'] = category;
+    query['predefinedFields.isActive'] = true;
+  }
+
+  // Price range filter
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = parseFloat(minPrice as string);
+    if (maxPrice) query.price.$lte = parseFloat(maxPrice as string);
+  }
+
+  // Sale items filter
+  if (onSale === 'true') {
+    query.discountPrice = { $exists: true, $lt: query.price?.$gte || 0 };
+  }
+
+  // Active offers filter
+  if (hasOffers === 'true') {
+    query['offers.isActive'] = true;
+    query['offers.validUntil'] = { $gt: new Date() };
+  }
+
+  const products = await Product.find(query)
+    .populate('createdBy', 'username email')
+    .skip(skip)
+    .limit(limit)
+    .sort({ score: { $meta: 'textScore' }, createdAt: -1 });
+
+  const total = await Product.countDocuments(query);
+
+  ResponseHandler.paginated(
+    res,
+    products,
+    total,
+    page,
+    limit,
+    'Products search results'
+  );
+});
 
 // @desc    Bulk update products
 // @route   PATCH /api/products/bulk
 // @access  Private/Admin
-export const bulkUpdateProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const { productIds, updateData } = req.body;
+export const bulkUpdateProducts = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { productIds, updateData } = req.body;
 
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-      return res.status(400).json({
-        success: false,
+  if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+    return ResponseHandler.error(
+      res,
+      'Product IDs are required and must be a non-empty array',
+      400,
+      [{
+        field: 'productIds',
         message: 'Product IDs are required and must be a non-empty array',
-        errors: [{
-          field: 'productIds',
-          message: 'Product IDs are required and must be a non-empty array',
-          value: productIds,
-          location: 'body'
-        }],
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (!updateData || Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Update data is required',
-        errors: [{
-          field: 'updateData',
-          message: 'Update data is required and cannot be empty',
-          value: updateData,
-          location: 'body'
-        }],
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    const result = await Product.updateMany(
-      { _id: { $in: productIds }, createdBy: req.user?.id },
-      updateData,
-      { runValidators: true }
-    );
-
-    res.json({
-      success: true,
-      message: `${result.modifiedCount} products updated successfully`,
-      data: { 
-        modifiedCount: result.modifiedCount,
-        matchedCount: result.matchedCount
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error: any) {
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map((err: any) => ({
-        field: err.path,
-        message: err.message,
-        value: err.value,
+        value: productIds,
         location: 'body'
-      }));
-      
-      return res.status(400).json({
-        success: false,
-        message: 'Bulk update validation failed',
-        errors: validationErrors,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    next(error);
+      }],
+      'VALIDATION_ERROR'
+    );
   }
-};
-  export const getProductStats = async(req: Request, res: Response)=> {
-    try {
-      // Compter le total
-      const totalProducts = await Product.countDocuments();
 
-      // Produits en promo (discountPrice < price)
-      const onSaleCount = await Product.countDocuments({
-        discountPrice: { $exists: true, $ne: null },
-        $expr: { $lt: ["$discountPrice", "$price"] }
-      });
-
-      // Produits avec au moins une offre active
-      const withActiveOffers = await Product.countDocuments({
-        offers: { 
-          $elemMatch: { 
-            isActive: true, 
-            validUntil: { $gt: new Date() } 
-          } 
-        }
-      });
-
-      // Stats par catégorie prédéfinie
-      const categoryStats = await Product.aggregate([
-        { $unwind: "$predefinedFields" },
-        { $match: { "predefinedFields.isActive": true } },
-        { 
-          $group: {
-            _id: "$predefinedFields.category",
-            totalProducts: { $sum: 1 }
-          } 
-        },
-        { $sort: { totalProducts: -1 } }
-      ]);
-
-      // Derniers produits créés (ex: 5 derniers)
-      const recentProducts = await Product.find()
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("name price discountPrice images createdAt");
-
-      res.json({
-        success: true,
-        data: {
-          totalProducts,
-          onSaleCount,
-          withActiveOffers,
-          categoryStats,
-          recentProducts
-        }
-      });
-
-    } catch (error) {
-      console.error("Error fetching product stats:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch product statistics",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
+  if (!updateData || Object.keys(updateData).length === 0) {
+    return ResponseHandler.error(
+      res,
+      'Update data is required',
+      400,
+      [{
+        field: 'updateData',
+        message: 'Update data is required and cannot be empty',
+        value: updateData,
+        location: 'body'
+      }],
+      'VALIDATION_ERROR'
+    );
   }
+
+  const result = await Product.updateMany(
+    { _id: { $in: productIds }, createdBy: req.user?.id },
+    updateData,
+    { runValidators: true }
+  );
+
+  ResponseHandler.success(
+    res,
+    { 
+      modifiedCount: result.modifiedCount,
+      matchedCount: result.matchedCount
+    },
+    `${result.modifiedCount} products updated successfully`
+  );
+});
+
+// @desc    Get product statistics
+// @route   GET /api/products/stats
+// @access  Public
+export const getProductStats = asyncHandler(async (req: Request, res: Response) => {
+  // Count total products
+  const totalProducts = await Product.countDocuments();
+
+  // Products on sale (discountPrice < price)
+  const onSaleCount = await Product.countDocuments({
+    discountPrice: { $exists: true, $ne: null },
+    $expr: { $lt: ["$discountPrice", "$price"] }
+  });
+
+  // Products with at least one active offer
+  const withActiveOffers = await Product.countDocuments({
+    offers: { 
+      $elemMatch: { 
+        isActive: true, 
+        validUntil: { $gt: new Date() } 
+      } 
+    }
+  });
+
+  // Stats by predefined category
+  const categoryStats = await Product.aggregate([
+    { $unwind: "$predefinedFields" },
+    { $match: { "predefinedFields.isActive": true } },
+    { 
+      $group: {
+        _id: "$predefinedFields.category",
+        totalProducts: { $sum: 1 }
+      } 
+    },
+    { $sort: { totalProducts: -1 } }
+  ]);
+
+  // Recently created products (e.g., last 5)
+  const recentProducts = await Product.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select("name price discountPrice images createdAt");
+
+  ResponseHandler.success(
+    res,
+    {
+      totalProducts,
+      onSaleCount,
+      withActiveOffers,
+      categoryStats,
+      recentProducts
+    },
+    'Product statistics retrieved successfully'
+  );
+});
