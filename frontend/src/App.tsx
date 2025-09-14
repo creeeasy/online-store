@@ -13,7 +13,6 @@ import AdminLogin from './pages/AdminLogin';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
-import AdminSubmissions from './pages/AdminSubmissions';
 import ClientNavbar from './components/ClientNavbar';
 import AdminNavbar from './components/AdminNavbar';
 import GlobalLoadingOverlay from './components/GlobalLoadingOverlay';

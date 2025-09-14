@@ -8,13 +8,15 @@ interface DeleteModalProps {
   onClose: () => void;
   product: IProduct | null;
   onConfirm: (id: string) => Promise<void>;
+  isLoading?: boolean; // 👈 external loading state
 }
 
 const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ 
   isOpen, 
   onClose, 
   product, 
-  onConfirm 
+  onConfirm,
+  isLoading = false
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -35,6 +37,9 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
       setIsDeleting(false);
     }
   };
+
+  // unified loading state (internal + external)
+  const deletingState = isDeleting || isLoading;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -76,26 +81,26 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h4 className="font-medium text-gray-800 mb-2">Impact Assessment</h4>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• This product has {product.dynamicFields.length} custom fields</li>
-              <li>• {product.predefinedFields.filter(f => f.isActive).length} predefined fields will be removed</li>
-              <li>• {product.offers.length} associated offers will be deleted</li>
-            </ul>
+              <li>• This product has {product.dynamicFields?.length ?? 0} custom fields</li>
+              <li>• {(product.predefinedFields?.filter(f => f.isActive).length ?? 0)} predefined fields will be removed</li>
+              <li>• {product.offers?.length ?? 0} associated offers will be deleted</li>
+              </ul>
           </div>
 
           <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
-              disabled={isDeleting}
+              disabled={deletingState}
               className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              disabled={isDeleting}
+              disabled={deletingState}
               className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
             >
-              {isDeleting ? (
+              {deletingState ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Deleting...

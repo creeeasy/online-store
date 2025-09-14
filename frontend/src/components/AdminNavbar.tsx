@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { getCurrentUser } from '../store/slices/authSlice';
+import { getCurrentUser, logoutAdmin } from '../store/slices/authSlice';
 import { FiUser, FiLogOut, FiMenu, FiX, FiSettings } from 'react-icons/fi';
-import { logoutAdmin } from '../hooks/useAuth';
 
 const AdminNavbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -186,18 +185,12 @@ const AdminNavbar: React.FC = () => {
                     {username}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {user?.role === 'admin' ? 'Administrator' : user?.role || 'User'}
+                    Administrator
                   </span>
                 </div>
               </div>
 
-              {/* Settings Button */}
-              <Link
-                to="/admin/settings"
-                className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300"
-              >
-                <FiSettings className="w-5 h-5" />
-              </Link>
+            
 
               {/* Logout Button */}
               <button
@@ -236,7 +229,7 @@ const AdminNavbar: React.FC = () => {
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-800">{username}</span>
                 <span className="text-xs text-gray-500">
-                  {user?.role === 'admin' ? 'Administrator' : user?.role || 'User'}
+                  Administrator
                 </span>
               </div>
             </div>
@@ -293,16 +286,7 @@ const AdminNavbar: React.FC = () => {
               </div>
             </Link>
 
-            <Link 
-              to="/admin/settings" 
-              className="block py-3 px-4 text-gray-700 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <div className="flex items-center space-x-3">
-                <FiSettings className="w-5 h-5" />
-                <span>Settings</span>
-              </div>
-            </Link>
+          
           </div>
         </div>
       </nav>

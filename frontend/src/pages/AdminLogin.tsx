@@ -2,14 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import {  clearError } from '../store/slices/authSlice';
+import { loginAdmin, clearError } from '../store/slices/authSlice';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
-import { loginAdmin } from '../hooks/useAuth';
 
 const AdminLogin: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, error } = useAppSelector((state) => state.auth);
-  const { isLoading } = useAppSelector((state) => state.loading);
+  const { isAuthenticated, error, isLoading } = useAppSelector((state) => state.auth);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -63,8 +61,6 @@ const AdminLogin: React.FC = () => {
 
         {/* Form */}
         <div className="p-8">
-         
-
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">

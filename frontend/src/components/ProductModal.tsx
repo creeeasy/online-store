@@ -1,8 +1,8 @@
 import React from 'react';
 import Modal from './Modal';
 import ProductForm from './ProductForm';
-import { PREDEFINED_CATEGORIES } from '../constants/products';
 import type { IProduct } from '../types/product';
+import type { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
 
 interface ProductModalProps {
   isOpen: boolean;

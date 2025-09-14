@@ -1,39 +1,4 @@
-export interface IDynamicField {
-  key: string;
-  placeholder: string;
-  _id?: string;
-}
-
-export interface IPredefinedField {
-  category: string;
-  options: string[];
-  selectedOptions: string[];
-  isActive: boolean;
-  _id?: string;
-}
-
-export interface IReferenceLinks {
-  facebook?: string;
-  instagram?: string;
-  tiktok?: string;
-}
-
-export interface IOffer {
-  id: string;
-  title: string;
-  description: string;
-  discount: number;
-  validUntil: string;
-  isActive: boolean;
-  _id?: string;
-}
-
-export interface IHiddenField {
-  key: string;
-  value: string;
-  description: string;
-  _id?: string;
-}
+import type { PaginationData, ValidationErrorDetail } from "./api";
 
 export interface IProduct {
   _id: string;
@@ -42,46 +7,32 @@ export interface IProduct {
   discountPrice?: number;
   description: string;
   images: string[];
-  dynamicFields: IDynamicField[];
-  predefinedFields: IPredefinedField[];
-  references: IReferenceLinks;
-  offers: IOffer[];
-  hiddenFields: IHiddenField[];
-  createdBy?: {
-    _id: string;
-    username: string;
-    email: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-  __v?: number;
+  dynamicFields?: Array<{
+    key: string;
+    placeholder: string;
+    isRequired: boolean;
+  }>;
+  predefinedFields?: Array<{
+    category: string;
+    options: string[];
+    selectedOptions: string[];
+    isActive: boolean;
+  }>;
+  offers?: Array<{
+    title: string;
+    discount: number;
+    validUntil?: Date;
+    isActive: boolean;
+  }>;
+  hiddenFields?: Array<{
+    key: string;
+    value: string;
+  }>;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ProductsResponse {
-  success: boolean;
-  data: {
-    products: IProduct[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      pages: number;
-    };
-  };
-}
-
-export interface ProductResponse {
-  success: boolean;
-  message: string;
-  data: {
-    product: IProduct;
-  };
-}
-export interface ApiError {
-  message: string;
-  status?: number;
-  details?: any;
-}
 export interface IProductStats {
   totalProducts: number;
   onSaleCount: number;
@@ -90,12 +41,31 @@ export interface IProductStats {
     _id: string;
     totalProducts: number;
   }>;
-  recentProducts: Array<{
-    _id: string;
-    name: string;
-    price: number;
-    discountPrice?: number;
-    images: string[];
-    createdAt: string;
-  }>;
+  recentProducts: IProduct[];
+}
+
+export interface ApiError {
+  message: string;
+  status: number;
+  validationErrors?: ValidationErrorDetail[];
+  errorCode?: string;
+}
+
+export interface ProductsResponse {
+  success: boolean;
+  message: string;
+  data: IProduct[];
+  timestamp: string;
+  pagination?: PaginationData;
+}
+
+export interface ProductFilters {
+  page?: number;
+  limit?: number;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  onSale?: boolean;
+  hasOffers?: boolean;
+  q?: string;
 }

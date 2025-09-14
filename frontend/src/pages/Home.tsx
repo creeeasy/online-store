@@ -9,7 +9,7 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   // Extract products safely
-  const products = data?.data?.products ?? [];
+  const products = data?.data ?? [];
 
   if (isLoading) {
     return (

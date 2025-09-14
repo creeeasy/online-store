@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { FiPlus, FiAlertCircle, FiX, FiGrid, FiList } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
@@ -13,11 +12,17 @@ import Pagination from '../components/Pagination';
 import ProductForm from '../components/ProductForm';
 
 // Hooks
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useProducts';
+import { 
+  useProducts, 
+  useCreateProduct, 
+  useUpdateProduct, 
+  useDeleteProduct,
+} from '../hooks/useProducts';
 
 // Types
-import { PREDEFINED_CATEGORIES, INITIAL_PRODUCT_STATE } from '../constants/products';
-import type { IProduct } from '../types/product';
+import {  INITIAL_PRODUCT_STATE } from '../constants/products';
+import type { IProduct, ApiError } from '../types/product';
+import { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
 
 interface ValidationError {
   field: string;
@@ -32,25 +37,30 @@ const AdminProducts: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: productsData, isLoading, isError, error, refetch, isFetching } = useProducts({
+  const { 
+    data: productsResponse, 
+    isLoading, 
+    isError, 
+    error, 
+    refetch, 
+    isFetching 
+  } = useProducts({
     page: currentPage,
     limit: 10,
   });
-
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
   const deleteProductMutation = useDeleteProduct();
 
-  // Helper function to extract validation errors
-  const extractValidationErrors = (error: any): ValidationError[] => {
+  // Helper function to extract validation errors from ApiError
+  const extractValidationErrors = (error: ApiError): ValidationError[] => {
     const errors: ValidationError[] = [];
-    console.log(error, "errors");
-
-    if (error?.errors && Array.isArray(error.errors)) {
-      error.errors.forEach((err: any) => {
+    
+    if (error?.validationErrors && Array.isArray(error.validationErrors)) {
+      error.validationErrors.forEach((err) => {
         errors.push({
-          field: err.param || err.field || 'general',
-          message: err.msg || err.message || 'Invalid value'
+          field: err.field || 'general',
+          message: err.message || 'Invalid value'
         });
       });
     } else if (error?.message) {
@@ -90,7 +100,6 @@ const AdminProducts: React.FC = () => {
   const handleSaveProduct = async (id: string, productData: Partial<IProduct>) => {
     try {
       clearErrors();
-      console.log(productData);
       await updateProductMutation.mutateAsync({ id, data: productData });
       setEditingProduct(null);
     } catch (error: any) {
@@ -100,7 +109,7 @@ const AdminProducts: React.FC = () => {
       
       // Show general error toast if no specific field errors
       if (errors.length === 0 || errors.every(e => e.field === 'general')) {
-        toast.error(error?.response?.data?.message || error?.message || 'Failed to update product');
+        toast.error(error.message || 'Failed to update product');
       }
     }
   };
@@ -113,12 +122,11 @@ const AdminProducts: React.FC = () => {
     } catch (error: any) {
       console.error('Error creating product:', error);
       const errors = extractValidationErrors(error);
-      console.log(errors);
       setValidationErrors(errors);
       
       // Show general error toast if no specific field errors
       if (errors.length === 0 || errors.every(e => e.field === 'general')) {
-        toast.error(error?.response?.data?.message || error?.message || 'Failed to create product');
+        toast.error(error.message || 'Failed to create product');
       }
     }
   };
@@ -154,9 +162,8 @@ const AdminProducts: React.FC = () => {
       />
     );
   }
-
-  const products = productsData?.data?.products || [];
-  const pagination = productsData?.data?.pagination;
+  const products = productsResponse?.data || [];
+  const pagination = productsResponse?.pagination;
 
   // Group validation errors by field for better display
   const groupedErrors = validationErrors.reduce((acc, error) => {
@@ -315,7 +322,7 @@ const AdminProducts: React.FC = () => {
                 </span>
                 {pagination && (
                   <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                    Page {pagination.page} of {pagination.pages}
+                    Page {pagination.currentPage} of {pagination.totalPages}
                   </span>
                 )}
               </div>
@@ -358,12 +365,14 @@ const AdminProducts: React.FC = () => {
                   ))}
                 </div>
 
-                {pagination && pagination.pages > 1 && (
+                {pagination && pagination.totalPages > 1 && (
                   <div className="mt-8">
                     <Pagination
                       currentPage={currentPage}
-                      totalPages={pagination.pages}
+                      totalPages={pagination.totalPages}
                       onPageChange={setCurrentPage}
+                      hasNextPage={pagination.hasNextPage}
+                      hasPrevPage={pagination.hasPrevPage}
                     />
                   </div>
                 )}

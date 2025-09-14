@@ -77,50 +77,53 @@ export const InquiryUtils = {
     };
   },
 
-  exportInquiriesToCSV: (inquiries: OrderInquiry[]) => {
-    const headers = [
-      'ID',
-      'Product Name',
-      'Customer Name',
-      'Phone',
-      'Reference',
-      'Quantity',
-      'Total Price',
-      'Status',
-      'Created At',
-      'Notes'
-    ];
+exportInquiriesToCSV: (inquiries: (OrderInquiry | undefined)[]) => {
+  const validInquiries = inquiries.filter((inq): inq is OrderInquiry => inq !== undefined);
 
-    const rows = inquiries.map(inquiry => [
-      inquiry._id,
-      inquiry.productName,
-      inquiry.customerData.name,
-      inquiry.customerData.phone,
-      inquiry.customerData.reference,
-      inquiry.quantity || 1,
-      inquiry.totalPrice || 0,
-      inquiry.status,
-      inquiry.createdAt,
-      inquiry.notes || ''
-    ]);
+  const headers = [
+    'ID',
+    'Product Name',
+    'Customer Name',
+    'Phone',
+    'Reference',
+    'Quantity',
+    'Total Price',
+    'Status',
+    'Created At',
+    'Notes'
+  ];
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+  const rows = validInquiries.map(inquiry => [
+    inquiry._id,
+    inquiry.productName,
+    inquiry.customerData.name,
+    inquiry.customerData.phone,
+    inquiry.customerData.reference,
+    inquiry.quantity || 1,
+    inquiry.totalPrice || 0,
+    inquiry.status,
+    inquiry.createdAt,
+    inquiry.notes || ''
+  ]);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `order-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${cell}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `order-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
+}
+
 };
 
 // Advanced filters and search utilities

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import orderInquiryAPI, { InquiryUtils } from '../utils/orderInquiryAPI';
+import { useBulkDeleteOrderInquiries, useBulkUpdateOrderInquiryStatus, useOrderInquiry } from '../hooks/useOrderInquiry';
+import InquiryUtils from '../utils/orderInquiryUtils';
 
 interface InquiryActionsProps {
   selectedIds: string[];
@@ -8,35 +9,40 @@ interface InquiryActionsProps {
 
 const InquiryActions: React.FC<InquiryActionsProps> = ({ selectedIds, onSelectionChange }) => {
   const [action, setAction] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+
+  const bulkDeleteMutation = useBulkDeleteOrderInquiries();
+  const bulkUpdateMutation = useBulkUpdateOrderInquiryStatus();
+
+  const isProcessing = bulkDeleteMutation.isPending || bulkUpdateMutation.isPending;
 
   const handleBulkAction = async () => {
     if (!action || selectedIds.length === 0) return;
 
-    setIsProcessing(true);
     try {
       if (action === 'delete') {
-        await orderInquiryAPI.bulkDelete(selectedIds);
+        await bulkDeleteMutation.mutateAsync(selectedIds);
       } else if (['pending', 'contacted', 'converted', 'cancelled'].includes(action)) {
-        await orderInquiryAPI.bulkUpdateStatus(selectedIds, action as any);
+        await bulkUpdateMutation.mutateAsync({ ids: selectedIds, status: action });
       } else if (action === 'export') {
-        // Fetch full details for selected inquiries
-        const inquiries = await Promise.all(
-          selectedIds.map(id => 
-            orderInquiryAPI.getInquiryById(id).then(res => res.data?.inquiry)
+        // Use queries to fetch each inquiry
+        const results = await Promise.all(
+          selectedIds.map(id =>
+            useOrderInquiry(id).refetch() // manually refetch
           )
         );
-        InquiryUtils.exportInquiriesToCSV(inquiries.filter(Boolean) as any);
+        const inquiries = results
+          .map(r => r.data)
+          .filter(Boolean);
+
+        if (inquiries.length > 0) {
+          InquiryUtils.exportInquiriesToCSV(inquiries);
+        }
       }
 
-      // Clear selection after action
       onSelectionChange([]);
       setAction('');
     } catch (error) {
       console.error('Bulk action failed:', error);
-      alert('Action failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
     }
   };
 

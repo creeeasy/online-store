@@ -1,8 +1,6 @@
-// store/slices/loadingSlice.ts
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import {  checkAuthStatus, getCurrentUser, validateToken } from './authSlice';
+import { checkAuthStatus, getCurrentUser, validateToken } from './authSlice';
 import type { LoadingState } from '../types';
-import { loginAdmin, logoutAdmin } from '../../hooks/useAuth';
 
 const initialState: LoadingState = {
   isLoading: false,
@@ -24,40 +22,21 @@ const loadingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-    .addCase(getCurrentUser.pending, (state) => {
-  state.isLoading = true;
-  state.loadingMessage = 'Loading user data...';
-})
-.addCase(getCurrentUser.fulfilled, (state) => {
-  state.isLoading = false;
-  state.loadingMessage = null;
-})
-.addCase(getCurrentUser.rejected, (state) => {
-  state.isLoading = false;
-  state.loadingMessage = null;
-})
-    .addCase(loginAdmin.pending, (state) => {
+      // getCurrentUser loading states
+      .addCase(getCurrentUser.pending, (state) => {
         state.isLoading = true;
-        state.loadingMessage = 'Logging in...';
+        state.loadingMessage = 'Loading user data...';
       })
-      .addCase(loginAdmin.fulfilled, (state) => {
+      .addCase(getCurrentUser.fulfilled, (state) => {
         state.isLoading = false;
         state.loadingMessage = null;
       })
-      .addCase(loginAdmin.rejected, (state) => {
+      .addCase(getCurrentUser.rejected, (state) => {
         state.isLoading = false;
         state.loadingMessage = null;
       })
       
-      .addCase(logoutAdmin.pending, (state) => {
-        state.isLoading = true;
-        state.loadingMessage = 'Logging out...';
-      })
-      .addCase(logoutAdmin.fulfilled, (state) => {
-        state.isLoading = false;
-        state.loadingMessage = null;
-      })
-      
+      // checkAuthStatus loading states
       .addCase(checkAuthStatus.pending, (state) => {
         state.isLoading = true;
         state.loadingMessage = 'Checking authentication...';
@@ -84,7 +63,6 @@ const loadingSlice = createSlice({
         state.isLoading = false;
         state.loadingMessage = null;
       });
-      
   },
 });
 

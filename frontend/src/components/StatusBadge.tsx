@@ -1,6 +1,5 @@
 import React from 'react';
-import { InquiryUtils } from '../utils/orderInquiryAPI';
-InquiryUtils
+import InquiryUtils from '../utils/orderInquiryUtils';
 
 interface StatusBadgeProps {
   status: string;

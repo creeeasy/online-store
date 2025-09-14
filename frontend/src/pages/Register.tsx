@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import {  clearError } from '../store/slices/authSlice';
+import {  clearError, registerAdmin } from '../store/slices/authSlice';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiAlertCircle, FiUserPlus } from 'react-icons/fi';
-import { registerAdmin } from '../hooks/useAuth';
 
 const Register: React.FC = () => {
   const dispatch = useAppDispatch();
