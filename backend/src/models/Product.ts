@@ -100,12 +100,12 @@ const ProductSchema = new Schema({
   discountPrice: { 
     type: Number, 
     min: [0, 'Discount price cannot be negative'],
-    validate: {
+   /* validate: {
       validator: function(this: IProduct, value: number) {
         return value <= this.price;
       },
       message: 'Discount price cannot be higher than regular price'
-    }
+    } */
   },
   description: { 
     type: String, 

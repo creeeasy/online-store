@@ -146,17 +146,21 @@ body('discountPrice')
       .withMessage('Price must be greater than 0'),
     
     body('discountPrice')
-      .optional()
-      .isNumeric()
-      .withMessage('Discount price must be a valid number')
-      .isFloat({ min: 0 })
-      .withMessage('Discount price cannot be negative')
-      .custom((value, { req }) => {
-        if (value && req.body.price && parseFloat(value) >= parseFloat(req.body.price)) {
-          throw new Error('Discount price must be less than the original price');
-        }
-        return true;
-      }),
+  .optional()
+  .isNumeric()
+  .withMessage('Discount price must be a valid number')
+  .isFloat({ min: 0 })
+  .withMessage('Discount price cannot be negative')
+  .toFloat()
+/* .custom((value, { req }) => {
+    if (req.body.price && value >= req.body.price) {
+      throw new Error('Discount price must be less than the original price');
+    }
+    return true;
+  }
+
+) */
+  ,
     
     body('description')
       .optional()
@@ -561,39 +565,6 @@ export const searchProducts = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// @desc    Get product statistics
-// @route   GET /api/products/stats/overview
-// @access  Private/Admin
-export const getProductStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const totalProducts = await Product.countDocuments();
-    const productsWithOffers = await Product.countDocuments({
-      'offers.isActive': true,
-      'offers.validUntil': { $gt: new Date() }
-    });
-    const productsOnSale = await Product.countDocuments({
-      discountPrice: { $exists: true, $lt: '$price' }
-    });
-    
-    const recentProducts = await Product.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('createdBy', 'username');
-
-    res.json({
-      success: true,
-      data: {
-        totalProducts,
-        productsWithOffers,
-        productsOnSale,
-        recentProducts
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // @desc    Bulk update products
 // @route   PATCH /api/products/bulk
@@ -665,3 +636,63 @@ export const bulkUpdateProducts = async (req: AuthRequest, res: Response, next: 
     next(error);
   }
 };
+  export const getProductStats = async(req: Request, res: Response)=> {
+    try {
+      // Compter le total
+      const totalProducts = await Product.countDocuments();
+
+      // Produits en promo (discountPrice < price)
+      const onSaleCount = await Product.countDocuments({
+        discountPrice: { $exists: true, $ne: null },
+        $expr: { $lt: ["$discountPrice", "$price"] }
+      });
+
+      // Produits avec au moins une offre active
+      const withActiveOffers = await Product.countDocuments({
+        offers: { 
+          $elemMatch: { 
+            isActive: true, 
+            validUntil: { $gt: new Date() } 
+          } 
+        }
+      });
+
+      // Stats par catégorie prédéfinie
+      const categoryStats = await Product.aggregate([
+        { $unwind: "$predefinedFields" },
+        { $match: { "predefinedFields.isActive": true } },
+        { 
+          $group: {
+            _id: "$predefinedFields.category",
+            totalProducts: { $sum: 1 }
+          } 
+        },
+        { $sort: { totalProducts: -1 } }
+      ]);
+
+      // Derniers produits créés (ex: 5 derniers)
+      const recentProducts = await Product.find()
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("name price discountPrice images createdAt");
+
+      res.json({
+        success: true,
+        data: {
+          totalProducts,
+          onSaleCount,
+          withActiveOffers,
+          categoryStats,
+          recentProducts
+        }
+      });
+
+    } catch (error) {
+      console.error("Error fetching product stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch product statistics",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  }
