@@ -1,5 +1,32 @@
-// models/Product.ts
 import mongoose, { Schema, Document } from 'mongoose';
+
+// Define Wilaya (Region) enum
+export const WILAYAS = [
+  'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar', 'Blida', 'Bouira',
+  'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Algiers', 'Djelfa', 'Jijel', 'Sétif', 'Saïda',
+  'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla',
+  'Oran', 'El Bayadh', 'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued', 'Khenchela',
+  'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane', 'Timimoun', 'Bordj Badji Mokhtar',
+  'Ouled Djellal', 'Béni Abbès', 'In Salah', 'In Guezzam', 'Touggourt', 'Djanet', 'El M\'Ghair', 'El Meniaa'
+] as const;
+
+export type Wilaya = typeof WILAYAS[number];
+
+export interface IOffer {
+  title: string;
+  discount: number; // Discount percentage (1-99)
+  validUntil?: Date;
+  isActive: boolean;
+  _id?: mongoose.Types.ObjectId;
+}
+
+const OfferSchema = new Schema({
+  title: { type: String, required: true, trim: true },
+  description: { type: String, trim: true },
+  discount: { type: Number, min: 0, max: 100, default: 0 },
+  validUntil: { type: Date },
+  isActive: { type: Boolean, default: true }
+});
 
 export interface IDynamicField {
   key: string;
@@ -21,15 +48,6 @@ export interface IReferenceLinks {
   tiktok?: string;
 }
 
-export interface IOffer {
-  title: string;
-  description: string;
-  discount: number;
-  validUntil: Date;
-  isActive: boolean;
-  _id?: mongoose.Types.ObjectId;
-}
-
 export interface IHiddenField {
   key: string;
   value: string;
@@ -45,45 +63,14 @@ export interface IProduct extends Document {
   images: string[];
   dynamicFields: IDynamicField[];
   predefinedFields: IPredefinedField[];
-  references: IReferenceLinks;
   offers: IOffer[];
   hiddenFields: IHiddenField[];
   createdBy: mongoose.Types.ObjectId;
+  reference?: string; // Added reference field
   createdAt: Date;
   updatedAt: Date;
 }
 
-const DynamicFieldSchema = new Schema({
-  key: { type: String, required: true, trim: true },
-  placeholder: { type: String, required: true, trim: true }
-});
-
-const PredefinedFieldSchema = new Schema({
-  category: { type: String, required: true, trim: true },
-  options: [{ type: String, trim: true }],
-  selectedOptions: [{ type: String, trim: true }],
-  isActive: { type: Boolean, default: false }
-});
-
-const ReferenceLinksSchema = new Schema({
-  facebook: { type: String, trim: true },
-  instagram: { type: String, trim: true },
-  tiktok: { type: String, trim: true }
-});
-
-const OfferSchema = new Schema({
-  title: { type: String, required: true, trim: true },
-  description: { type: String, trim: true },
-  discount: { type: Number, min: 0, max: 100, default: 0 },
-  validUntil: { type: Date },
-  isActive: { type: Boolean, default: true }
-});
-
-const HiddenFieldSchema = new Schema({
-  key: { type: String, required: true, trim: true },
-  value: { type: String, required: true, trim: true },
-  description: { type: String, trim: true }
-});
 
 const ProductSchema = new Schema({
   name: { 
@@ -99,13 +86,7 @@ const ProductSchema = new Schema({
   },
   discountPrice: { 
     type: Number, 
-    min: [0, 'Discount price cannot be negative'],
-   /* validate: {
-      validator: function(this: IProduct, value: number) {
-        return value <= this.price;
-      },
-      message: 'Discount price cannot be higher than regular price'
-    } */
+    min: [0, 'Discount price cannot be negative']
   },
   description: { 
     type: String, 
@@ -121,15 +102,31 @@ const ProductSchema = new Schema({
       message: 'Invalid image URL format'
     }
   }],
-  dynamicFields: [DynamicFieldSchema],
-  predefinedFields: [PredefinedFieldSchema],
-  references: ReferenceLinksSchema,
+  dynamicFields: [{
+    key: { type: String, required: true, trim: true },
+    placeholder: { type: String, required: true, trim: true }
+  }],
+  predefinedFields: [{
+    category: { type: String, required: true, trim: true },
+    options: [{ type: String, trim: true }],
+    selectedOptions: [{ type: String, trim: true }],
+    isActive: { type: Boolean, default: false }
+  }],
   offers: [OfferSchema],
-  hiddenFields: [HiddenFieldSchema],
+  hiddenFields: [{
+    key: { type: String, required: true, trim: true },
+    value: { type: String, required: true, trim: true },
+    description: { type: String, trim: true }
+  }],
   createdBy: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
+  },
+  reference: { 
+    type: String, 
+    trim: true,
+    maxlength: [200, 'Reference cannot exceed 200 characters']
   }
 }, {
   timestamps: true,
@@ -147,40 +144,5 @@ ProductSchema.index({
 
 // Index for category search
 ProductSchema.index({ 'predefinedFields.category': 1, 'predefinedFields.isActive': 1 });
-
-// Virtual for checking if product is on sale
-ProductSchema.virtual('isOnSale').get(function(this: IProduct) {
-  return this.discountPrice !== undefined && this.discountPrice < this.price;
-});
-
-// Virtual for discount percentage
-//ProductSchema.virtual('discountPercentage').get(function(this: IProduct) {
-//  if (!this.isOnSale) return 0;
-//  return Math.round(((this.price - this.discountPrice!) / this.price) * 100);
-//});
-
-// Pre-save middleware to validate offers
-ProductSchema.pre('save', function(next) {
-  const product = this as IProduct;
-  
-  // Validate that at least one image exists
-  if (product.images.length === 0) {
-    return next(new Error('At least one image is required'));
-  }
-  
-  // Validate dynamic fields have unique keys
-  const dynamicFieldKeys = product.dynamicFields.map(f => f.key);
-  if (new Set(dynamicFieldKeys).size !== dynamicFieldKeys.length) {
-    return next(new Error('Dynamic field keys must be unique'));
-  }
-  
-  // Validate hidden fields have unique keys
-  const hiddenFieldKeys = product.hiddenFields.map(f => f.key);
-  if (new Set(hiddenFieldKeys).size !== hiddenFieldKeys.length) {
-    return next(new Error('Hidden field keys must be unique'));
-  }
-  
-  next();
-});
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

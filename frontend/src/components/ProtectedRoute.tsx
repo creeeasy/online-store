@@ -1,80 +1,51 @@
-// components/ProtectedRoute.tsx (Fixed version)
-import React, { useEffect } from 'react';
+// components/ProtectedRoute.tsx
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../hooks/redux';
-import { checkAuthStatus } from '../store/slices/authSlice';
-import { setLoading, clearLoading } from '../store/slices/loadingSlice';
+import { useAppSelector } from '../hooks/redux';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
   requiredRole?: string | string[];
   redirectTo?: string;
-  loadingMessage?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requireAuth = true,
   requiredRole,
   redirectTo,
-  loadingMessage = 'Checking authentication...'
 }) => {
-  const dispatch = useAppDispatch();
   const location = useLocation();
-  const { isAuthenticated, user, isLoading: authLoading } = useAppSelector((state) => state.auth);
-  const { isLoading: globalLoading, loadingMessage: currentLoadingMessage } = useAppSelector((state) => state.loading);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      if (requireAuth && !isAuthenticated && !authLoading) {
-        dispatch(setLoading({ isLoading: true, message: loadingMessage }));
-        await dispatch(checkAuthStatus());
-        dispatch(clearLoading());
-      }
-    };
-
-    checkAuthentication();
-  }, [dispatch, requireAuth, isAuthenticated, authLoading, loadingMessage]);
-
-  // Show loading while checking auth status
-  if ((globalLoading || authLoading) && requireAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center flex-col">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-        {currentLoadingMessage && (
-          <span className="ml-3 text-gray-600 mt-3">{currentLoadingMessage}</span>
-        )}
-      </div>
-    );
-  }
-
-  // If authentication is required but user is not authenticated
+  // Case 1: Route requires authentication but user is NOT authenticated
   if (requireAuth && !isAuthenticated) {
-    const fallbackPath = redirectTo || '/admin/login';
-    return <Navigate to={fallbackPath} state={{ from: location }} replace />;
+    const loginPath = redirectTo || '/admin/login';
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
-  // If authentication is NOT required but user IS authenticated (login/register pages)
+  // Case 2: Route does NOT require authentication but user IS authenticated
+  // (e.g., login/register pages when already logged in)
   if (!requireAuth && isAuthenticated) {
-    const fallbackPath = redirectTo || '/admin';
-    return <Navigate to={fallbackPath} replace />;
+    const dashboardPath = redirectTo || '/admin';
+    return <Navigate to={dashboardPath} replace />;
   }
 
-  // Check role-based access (only if authenticated and role is required)
+  // Case 3: Check role-based access (only if authenticated and role is required)
   if (requireAuth && isAuthenticated && requiredRole && user) {
     const userRole = user.role;
-    const hasRequiredRole = Array.isArray(requiredRole) 
+    const hasRequiredRole = Array.isArray(requiredRole)
       ? requiredRole.includes(userRole)
       : userRole === requiredRole;
 
     if (!hasRequiredRole) {
-      const accessDeniedPath = redirectTo || '/admin/access-denied';
-      return <Navigate to={accessDeniedPath} replace />;
+      // You can create an access denied page or redirect to dashboard
+      return <Navigate to="/admin" replace />;
     }
   }
 
-  // Render children if all checks pass
+  // All checks passed - render the protected content
   return <>{children}</>;
 };
 

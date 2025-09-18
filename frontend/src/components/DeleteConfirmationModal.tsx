@@ -1,27 +1,37 @@
 import React, { useState } from 'react';
 import { FiCheck, FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import Modal from './Modal';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { closeModal } from '../store/slices/modalSlice';
 import type { IProduct } from '../types/product';
 
 interface DeleteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product: IProduct | null;
   onConfirm: (id: string) => Promise<void>;
-  isLoading?: boolean; // 👈 external loading state
+  isLoading?: boolean; 
 }
 
 const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  product, 
   onConfirm,
   isLoading = false
 }) => {
+  const dispatch = useAppDispatch();
+  const { isOpen, modalType, modalProps } = useAppSelector((state) => state.modal);
+  
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Only render if this is the correct modal type
+  if (!isOpen || modalType !== 'deleteProduct') return null;
+
+  const product: IProduct | null = modalProps.product || null;
+
   if (!product) return null;
+
+  const handleClose = () => {
+    dispatch(closeModal());
+    setIsSuccess(false);
+    setIsDeleting(false);
+  };
 
   const handleConfirm = async () => {
     setIsDeleting(true);
@@ -29,9 +39,7 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
       await onConfirm(product._id);
       setIsSuccess(true);
       setTimeout(() => {
-        onClose();
-        setIsSuccess(false);
-        setIsDeleting(false);
+        handleClose();
       }, 1500);
     } catch (error) {
       setIsDeleting(false);
@@ -42,7 +50,7 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
   const deletingState = isDeleting || isLoading;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal>
       {isSuccess ? (
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -84,12 +92,12 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
               <li>• This product has {product.dynamicFields?.length ?? 0} custom fields</li>
               <li>• {(product.predefinedFields?.filter(f => f.isActive).length ?? 0)} predefined fields will be removed</li>
               <li>• {product.offers?.length ?? 0} associated offers will be deleted</li>
-              </ul>
+            </ul>
           </div>
 
           <div className="flex justify-end space-x-3">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               disabled={deletingState}
               className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
             >

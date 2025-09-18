@@ -1,12 +1,17 @@
+// hooks/useAuth.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { resetAuth } from '../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import type { User } from '../store/types';
-import { clearAuthToken, setAuthToken, type ApiError } from '../utils/apiClient';
+import { useAppDispatch, useAppSelector } from './redux';
+import { loginUser, registerUser, resetAuth } from '../store/slices/authSlice';
 import { authAPI } from '../utils/authAPI';
-import { useAppDispatch } from './redux';
+import { clearAuthToken, setAuthToken, type ApiError } from '../utils/apiClient';
+import type { User } from '../store/types';
 
-export const useLoginAdmin = () => {
+// Use Redux for login (to maintain consistency with your existing setup)
+export const useLogin = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   return useMutation<
     User,
@@ -14,39 +19,59 @@ export const useLoginAdmin = () => {
     { email: string; password: string }
   >({
     mutationFn: async (credentials) => {
-      const response = await authAPI.login(credentials);
-      
-      // Set the token in the API client
-      setAuthToken(response.token);
-      
-      // Store token in localStorage
-      localStorage.setItem('authToken', response.token);
-      
-      return response.user;
+      const result = await dispatch(loginUser(credentials));
+      if (loginUser.rejected.match(result)) {
+        throw result.payload;
+      }
+      return result.payload;
     },
-    onSuccess: (user) => {
-      // Store user data in localStorage
-      localStorage.setItem('adminUser', JSON.stringify(user));
-      
+    onSuccess: () => {
       toast.success('Login successful!');
+      navigate('/admin');
     },
     onError: (error) => {
-      clearAuthToken();
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('adminUser');
-      
       if (error.validationErrors && error.validationErrors.length > 0) {
-        // Validation errors are handled in the form
-        return;
+        return; // Let form handle validation errors
       }
-      
       toast.error(error.message || 'Login failed');
     },
   });
 };
 
-export const useLogoutAdmin = () => {
+// Use Redux for registration
+export const useRegister = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  return useMutation<
+    User,
+    ApiError,
+    { username: string; email: string; password: string; role: 'admin' }
+  >({
+    mutationFn: async (registrationData) => {
+      const result = await dispatch(registerUser(registrationData));
+      if (registerUser.rejected.match(result)) {
+        throw result.payload;
+      }
+      return result.payload;
+    },
+    onSuccess: () => {
+      toast.success('Registration successful!');
+      navigate('/admin');
+    },
+    onError: (error) => {
+      if (error.validationErrors && error.validationErrors.length > 0) {
+        return; // Let form handle validation errors
+      }
+      toast.error(error.message || 'Registration failed');
+    },
+  });
+};
+
+// Use React Query for logout (since it's simpler)
+export const useLogout = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -54,7 +79,6 @@ export const useLogoutAdmin = () => {
       try {
         await authAPI.logout();
       } catch (error) {
-        // Even if server logout fails, we still want to clear client state
         console.warn('Server logout failed, clearing client state anyway');
       }
       
@@ -73,22 +97,29 @@ export const useLogoutAdmin = () => {
       queryClient.clear();
       
       toast.success('Logged out successfully');
+      navigate('/admin/login');
     },
     onError: (error: ApiError) => {
       // Still clear state even if server logout failed
-      clearAuthToken();
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('adminUser');
       dispatch(resetAuth());
       queryClient.clear();
       
       toast.error(error.message || 'Logout failed');
+      navigate('/admin/login');
     },
   });
 };
 
-// Optional: Hook for token refresh
+// Custom hook to get auth state
+export const useAuthState = () => {
+  const authState = useAppSelector((state) => state.auth);
+  return authState;
+};
+
+// Optional: Token refresh hook
 export const useRefreshToken = () => {
+  const dispatch = useAppDispatch();
+
   return useMutation({
     mutationFn: async () => {
       const response = await authAPI.refreshToken();
@@ -97,12 +128,12 @@ export const useRefreshToken = () => {
       return response.token;
     },
     onError: (error: ApiError) => {
-      clearAuthToken();
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('adminUser');
-      
-      if (error.status !== 401) {
+      if (error.status === 401) {
+        // Token refresh failed, user needs to login again
+        dispatch(resetAuth());
+      } else {
         toast.error('Session refresh failed. Please login again.');
+        dispatch(resetAuth());
       }
     },
   });

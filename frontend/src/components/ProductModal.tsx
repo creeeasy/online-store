@@ -3,37 +3,43 @@ import Modal from './Modal';
 import ProductForm from './ProductForm';
 import type { IProduct } from '../types/product';
 import type { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { closeModal } from '../store/slices/modalSlice';
 
 interface ProductModalProps {
-  isOpen: boolean;
-  isLoading:boolean;
-  onClose: () => void;
-  product: IProduct | null;
   onSave: (id: string, productData: Partial<IProduct>) => Promise<void>;
-   validationErrors?: Record<string, string[]>;
   predefinedCategories: typeof PREDEFINED_CATEGORIES;
+  isLoading?: boolean;
+  validationErrors?: Record<string, string[]>;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  product, 
+const ProductModal: React.FC<ProductModalProps> = ({
   onSave,
-  isLoading,
-    validationErrors = {},
+  isLoading = false,
+  validationErrors = {},
 }) => {
+  const dispatch = useAppDispatch();
+  const { isOpen, product } = useAppSelector((state) => state.modal);
+
+  if (!isOpen) return null;
+
   const handleSubmit = async (productData: Partial<IProduct>) => {
-    if (product) {
+    if (product && product._id) {
       await onSave(product._id, productData);
+      dispatch(closeModal());
     }
   };
 
+  const handleCancel = () => {
+    dispatch(closeModal());
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal>
       <ProductForm
         product={product ?? {}}
         onSubmit={handleSubmit}
-        onCancel={onClose}
+        onCancel={handleCancel}
         isEditing={!!product}
         isLoading={isLoading}
         validationErrors={validationErrors}

@@ -1,17 +1,15 @@
 import type { SuccessResponse } from '../types/api';
-import type { IProduct, IProductStats, ProductFilters, ProductsResponse } from '../types/product';
+import type { IProduct, IProductStats, ProductFilters, ProductsResponse, CloneProductRequest } from '../types/product';
 import { apiClient, ApiError } from './apiClient';
 
 export const productAPI = {
   // Get all products with filtering
-// utils/productAPI.ts
-  getProducts: async (filters?: ProductFilters): Promise<SuccessResponse<ProductsResponse>> => {
+  getProducts: async (filters?: ProductFilters): Promise<ProductsResponse> => {
     try {
       const response = await apiClient.get<ProductsResponse>('/products', {
         params: filters
       });
-      console.log(response)
-      return response; // Extract the data array
+      return response;
     } catch (error) {
       throw error as ApiError;
     }
@@ -90,6 +88,19 @@ export const productAPI = {
     try {
       const response = await apiClient.get<SuccessResponse<IProductStats>>('/products/stats');
       return response.data;
+    } catch (error) {
+      throw error as ApiError;
+    }
+  },
+
+  // NEW: Clone product
+  cloneProduct: async (id: string, reference?: string): Promise<IProduct> => {
+    try {
+      const response = await apiClient.post<{ product: IProduct }>(
+        `/products/${id}/clone`,
+        { reference }
+      );
+      return response.data.product;
     } catch (error) {
       throw error as ApiError;
     }

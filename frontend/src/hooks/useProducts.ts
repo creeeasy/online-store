@@ -19,7 +19,7 @@ export const getFieldValidationError = (error: ApiError | null, field: string): 
 };
 
 export const useProducts = (filters?: ProductFilters) => {
-  return useQuery<SuccessResponse<ProductsResponse>, ApiError>({
+  return useQuery<ProductsResponse, ApiError>({
     queryKey: ['products', filters],
     queryFn: () => productAPI.getProducts(filters),
     retry: (failureCount, error: ApiError) => {
@@ -145,5 +145,48 @@ export const useBulkUpdateProducts = () => {
 export const useSearchProducts = () => {
   return useMutation<ProductsResponse, ApiError, ProductFilters>({
     mutationFn: (filters) => productAPI.searchProducts(filters),
+  });
+};
+
+// NEW: Clone product mutation
+export const useCloneProduct = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<IProduct, ApiError, { id: string; reference?: string }>({
+    mutationFn: ({ id, reference }) => productAPI.cloneProduct(id, reference),
+    onSuccess: (data) => {
+      // Invalidate products list
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product-stats'] });
+      
+      toast.success('Product cloned successfully!');
+    },
+    onError: (error: ApiError) => {
+      const handledError = handleApiError(error);
+      
+      if (!handledError.validationErrors || handledError.validationErrors.length === 0) {
+        toast.error(handledError.message);
+      }
+    },
+  });
+};
+
+// NEW: Get wilayas list (static data)
+export const useWilayas = () => {
+  // This is a static query since wilayas don't change
+  return useQuery<string[]>({
+    queryKey: ['wilayas'],
+    queryFn: async () => {
+      // Return the predefined list of Algerian wilayas
+      return [
+        'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar', 'Blida', 'Bouira',
+        'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Algiers', 'Djelfa', 'Jijel', 'Sétif', 'Saïda',
+        'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla',
+        'Oran', 'El Bayadh', 'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued', 'Khenchela',
+        'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane', 'Timimoun', 'Bordj Badji Mokhtar',
+        'Ouled Djellal', 'Béni Abbès', 'In Salah', 'In Guezzam', 'Touggourt', 'Djanet', 'El M\'Ghair', 'El Meniaa'
+      ];
+    },
+    staleTime: Infinity, // Never stale since it's static data
   });
 };

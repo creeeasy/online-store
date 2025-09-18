@@ -1,12 +1,11 @@
+// store/slices/loadingSlice.ts
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { checkAuthStatus, getCurrentUser, validateToken } from './authSlice';
+import { validateToken, loginUser, registerUser } from './authSlice';
 import type { LoadingState } from '../types';
-
 const initialState: LoadingState = {
   isLoading: false,
   loadingMessage: null,
 };
-
 const loadingSlice = createSlice({
   name: 'loading',
   initialState,
@@ -22,35 +21,7 @@ const loadingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // getCurrentUser loading states
-      .addCase(getCurrentUser.pending, (state) => {
-        state.isLoading = true;
-        state.loadingMessage = 'Loading user data...';
-      })
-      .addCase(getCurrentUser.fulfilled, (state) => {
-        state.isLoading = false;
-        state.loadingMessage = null;
-      })
-      .addCase(getCurrentUser.rejected, (state) => {
-        state.isLoading = false;
-        state.loadingMessage = null;
-      })
-      
-      // checkAuthStatus loading states
-      .addCase(checkAuthStatus.pending, (state) => {
-        state.isLoading = true;
-        state.loadingMessage = 'Checking authentication...';
-      })
-      .addCase(checkAuthStatus.fulfilled, (state) => {
-        state.isLoading = false;
-        state.loadingMessage = null;
-      })
-      .addCase(checkAuthStatus.rejected, (state) => {
-        state.isLoading = false;
-        state.loadingMessage = null;
-      })
-      
-      // Token validation loading states
+      // validateToken loading states
       .addCase(validateToken.pending, (state) => {
         state.isLoading = true;
         state.loadingMessage = 'Validating session...';
@@ -62,9 +33,34 @@ const loadingSlice = createSlice({
       .addCase(validateToken.rejected, (state) => {
         state.isLoading = false;
         state.loadingMessage = null;
+      })
+      // loginUser loading states
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true;
+        state.loadingMessage = 'Logging in...';
+      })
+      .addCase(loginUser.fulfilled, (state) => {
+        state.isLoading = false;
+        state.loadingMessage = null;
+      })
+      .addCase(loginUser.rejected, (state) => {
+        state.isLoading = false;
+        state.loadingMessage = null;
+      })
+      // registerUser loading states
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.loadingMessage = 'Registering user...';
+      })
+      .addCase(registerUser.fulfilled, (state) => {
+        state.isLoading = false;
+        state.loadingMessage = null;
+      })
+      .addCase(registerUser.rejected, (state) => {
+        state.isLoading = false;
+        state.loadingMessage = null;
       });
   },
 });
-
 export const { setLoading, clearLoading } = loadingSlice.actions;
 export default loadingSlice.reducer;

@@ -12,7 +12,6 @@ export const INITIAL_PRODUCT_STATE = {
     selectedOptions: [],
     isActive: false
   })),
-  references: {},
   offers: [],
   hiddenFields: []
 };

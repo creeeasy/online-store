@@ -8,7 +8,6 @@ export interface Product {
   images: string[];
   dynamicFields: DynamicField[];
   predefinedFields: PredefinedFieldGroup[];
-  references: ReferenceLinks;
   offers: Offer[];
   hiddenFields: HiddenField[];
   createdAt?: string;
@@ -28,11 +27,6 @@ export interface PredefinedFieldGroup {
   isActive: boolean;
 }
 
-export interface ReferenceLinks {
-  facebook?: string;
-  instagram?: string;
-  tiktok?: string;
-}
 
 export interface Offer {
   id: string;

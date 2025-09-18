@@ -1,5 +1,14 @@
 import type { PaginationData, ValidationErrorDetail } from "./api";
 
+export interface IOffer {
+  _id?: string;
+  title: string;
+  description?: string;
+  discount: number;
+  validUntil?: Date;
+  isActive: boolean;
+}
+
 export interface IProduct {
   _id: string;
   name: string;
@@ -11,26 +20,39 @@ export interface IProduct {
     key: string;
     placeholder: string;
     isRequired: boolean;
+    _id?: string;
   }>;
   predefinedFields?: Array<{
     category: string;
     options: string[];
     selectedOptions: string[];
     isActive: boolean;
+    _id?: string;
   }>;
-  offers?: Array<{
-    title: string;
-    discount: number;
-    validUntil?: Date;
-    isActive: boolean;
-  }>;
+  offers?: IOffer[];
   hiddenFields?: Array<{
     key: string;
     value: string;
+    description?: string;
+    _id?: string;
   }>;
+  reference?: string; // Reference field for client source tracking
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IDynamicField {
+  key: string;
+  placeholder: string;
+  _id?: string;
+}
+
+export interface IHiddenField {
+  key: string;
+  value: string;
+  description: string;
+  _id?: string;
 }
 
 export interface IProductStats {
@@ -68,4 +90,10 @@ export interface ProductFilters {
   onSale?: boolean;
   hasOffers?: boolean;
   q?: string;
+}
+
+// NEW: Clone product request interface
+export interface CloneProductRequest {
+  id: string;
+  reference?: string;
 }

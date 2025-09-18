@@ -1,10 +1,10 @@
-// App.tsx (Fixed version)
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { useAppDispatch } from './hooks/redux';
-import { checkAuthStatus } from './store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from './hooks/redux';
+import { validateToken, resetAuth } from './store/slices/authSlice';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import Home from './pages/Home';
@@ -18,16 +18,51 @@ import AdminNavbar from './components/AdminNavbar';
 import GlobalLoadingOverlay from './components/GlobalLoadingOverlay';
 import ProtectedRoute from './components/ProtectedRoute';
 import InquiryDashboard from './pages/InquiryDashboard';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Create QueryClient instance
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const AppContent: React.FC = () => {
   const dispatch = useAppDispatch();
+  const { isLoading } = useAppSelector((state) => state.auth);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    dispatch(checkAuthStatus());
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      
+      if (token) {
+        try {
+          await dispatch(validateToken()).unwrap();
+        } catch (error) {
+          // Token is invalid, clear everything
+          dispatch(resetAuth());
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+
+    initializeAuth();
   }, [dispatch]);
+
+  // Show loading screen while initializing
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+        <span className="ml-3 text-gray-600">Initializing...</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -35,10 +70,26 @@ const AppContent: React.FC = () => {
       <Router>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<><ClientNavbar /><Home /></>} />
-          <Route path="/products/:id" element={<><ClientNavbar /><ProductDetails /></>} />
-          
-          {/* Auth routes - redirect to /admin if already authenticated */}
+          <Route 
+            path="/" 
+            element={
+              <>
+                <ClientNavbar />
+                <Home />
+              </>
+            } 
+          />
+          <Route 
+            path="/products/:id" 
+            element={
+              <>
+                <ClientNavbar />
+                <ProductDetails />
+              </>
+            } 
+          />
+
+          {/* Auth routes - only accessible when NOT authenticated */}
           <Route
             path="/admin/login"
             element={
@@ -55,36 +106,44 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          
+
           {/* Protected admin routes */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute redirectTo="/admin/login">
-                <AdminNavbar />
-                <AdminDashboard />
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <AdminDashboard />
+                </>
               </ProtectedRoute>
             }
           />
           <Route
             path="/admin/products"
             element={
-              <ProtectedRoute redirectTo="/admin/login">
-                <AdminNavbar />
-                <AdminProducts />
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <AdminProducts />
+                </>
               </ProtectedRoute>
             }
           />
-       
           <Route
             path="/admin/inquiries"
             element={
-              <ProtectedRoute redirectTo="/admin/login">
-                <AdminNavbar />
-                <InquiryDashboard />
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <InquiryDashboard />
+                </>
               </ProtectedRoute>
             }
           />
+
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </>
@@ -95,7 +154,9 @@ const App: React.FC = () => {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </QueryClientProvider>
     </Provider>
   );

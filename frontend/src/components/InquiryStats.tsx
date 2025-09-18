@@ -1,34 +1,33 @@
 import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import { useOrderInquiryStats } from '../hooks/useOrderInquiry';
-
-// Utility functions for formatting and styling
-const InquiryUtils = {
-  getStatusColor: (status: string) => {
+import { useTheme } from '../contexts/ThemeContext';
+const InquiryStats: React.FC = () => {
+  const { theme } = useTheme();
+  const { data: stats, isLoading, error } = useOrderInquiryStats();
+  const getStatusColor = (status: string): React.CSSProperties => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-400';
+        return { backgroundColor: '#FFD700' };
       case 'contacted':
-        return 'bg-blue-400';
+        return { backgroundColor: '#1E90FF' };
       case 'converted':
-        return 'bg-green-400';
+        return { backgroundColor: '#32CD32' };
       case 'cancelled':
-        return 'bg-red-400';
+        return { backgroundColor: '#FF6347' };
       default:
-        return 'bg-gray-400';
+        return { backgroundColor: '#A9A9A9' };
     }
-  },
-
-  formatPrice: (price: number) => {
+  };
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
-  },
-
-  getStatusLabel: (status: string) => {
+  };
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending':
         return 'Pending';
@@ -41,100 +40,121 @@ const InquiryUtils = {
       default:
         return status.charAt(0).toUpperCase() + status.slice(1);
     }
-  }
-};
-
-const InquiryStats: React.FC = () => {
-  const { data: stats, isLoading, error } = useOrderInquiryStats();
-
+  };
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    boxShadow: theme.shadows.md,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    border: `1px solid ${theme.colors.border}`,
+  };
+  const headingStyle: React.CSSProperties = {
+    fontSize: '1.125rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.textSecondary,
+  };
+  const valueStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: theme.fonts.bold,
+    color: theme.colors.primaryDark,
+  };
+  const listTitleStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
+  };
+  const listItemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: `${theme.spacing.sm} 0`,
+  };
   if (isLoading) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Inquiry Statistics</h3>
-        <div className="flex justify-center py-4">
+      <div style={cardStyle}>
+        <h3 style={headingStyle}>Inquiry Statistics</h3>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: theme.spacing.md }}>
           <LoadingSpinner size="md" />
         </div>
       </div>
     );
   }
-
   if (error) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Inquiry Statistics</h3>
-        <div className="text-red-600">
+      <div style={cardStyle}>
+        <h3 style={headingStyle}>Inquiry Statistics</h3>
+        <div style={{ color: theme.colors.primaryDark }}>
           Error loading statistics: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       </div>
     );
   }
-
   if (!stats) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Inquiry Statistics</h3>
-        <div className="text-gray-500">No statistics available</div>
+      <div style={cardStyle}>
+        <h3 style={headingStyle}>Inquiry Statistics</h3>
+        <div style={{ color: theme.colors.textSecondary }}>No statistics available</div>
       </div>
     );
   }
-
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Inquiry Statistics</h3>
-      
-      {/* Total Inquiries */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-600">Total Inquiries</span>
-          <span className="text-2xl font-bold text-indigo-600">{stats.totalInquiries}</span>
+    <div style={cardStyle}>
+      <h3 style={headingStyle}>Inquiry Statistics</h3>
+      <div style={{ marginBottom: theme.spacing.lg }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={labelStyle}>Total Inquiries</span>
+          <span style={valueStyle}>{stats.totalInquiries}</span>
         </div>
-        <div className="mt-1 text-xs text-gray-500">
+        <div style={{ marginTop: theme.spacing.xs, fontSize: '0.75rem', color: theme.colors.textMuted }}>
           {stats.recentInquiries} in the last 7 days
         </div>
       </div>
-
-      {/* Status Breakdown */}
-      <div className="mb-6">
-        <h4 className="text-sm font-medium text-gray-600 mb-3">Status Breakdown</h4>
-        <div className="space-y-2">
+      <div style={{ marginBottom: theme.spacing.lg }}>
+        <h4 style={listTitleStyle}>Status Breakdown</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
           {stats.statusStats.map((statusStat) => (
-            <div key={statusStat._id} className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span 
-                  className={`inline-block w-3 h-3 rounded-full mr-2 ${InquiryUtils.getStatusColor(statusStat._id)}`}
+            <div key={statusStat._id} style={listItemStyle}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span
+                  style={{ display: 'inline-block', width: '0.75rem', height: '0.75rem', borderRadius: '9999px', marginRight: theme.spacing.sm, ...getStatusColor(statusStat._id) }}
                 ></span>
-                <span className="text-sm text-gray-600 capitalize">
-                  {InquiryUtils.getStatusLabel(statusStat._id)}
+                <span style={{ fontSize: '0.875rem', color: theme.colors.textSecondary, textTransform: 'capitalize' }}>
+                  {getStatusLabel(statusStat._id)}
                 </span>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-gray-900">{statusStat.count}</div>
-                <div className="text-xs text-gray-500">
-                  {InquiryUtils.formatPrice(statusStat.totalValue)}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: theme.fonts.medium, color: theme.colors.text }}>{statusStat.count}</div>
+                <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary }}>
+                  {formatPrice(statusStat.totalValue)}
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Top Products */}
       {stats.topProducts && stats.topProducts.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-3">Top Products</h4>
-          <div className="space-y-2">
+          <h4 style={listTitleStyle}>Top Products</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
             {stats.topProducts.slice(0, 5).map((product, index) => (
-              <div key={product._id} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="text-xs font-medium text-gray-400 mr-2">{index + 1}.</span>
-                  <span className="text-sm text-gray-600 truncate max-w-[120px]" title={product.productName}>
+              <div key={product._id} style={listItemStyle}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: theme.fonts.medium, color: theme.colors.textMuted, marginRight: theme.spacing.sm }}>{index + 1}.</span>
+                  <span style={{ fontSize: '0.875rem', color: theme.colors.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }} title={product.productName}>
                     {product.productName}
                   </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">{product.inquiryCount}</div>
-                  <div className="text-xs text-gray-500">
-                    {InquiryUtils.formatPrice(product.totalValue)}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: theme.fonts.medium, color: theme.colors.text }}>{product.inquiryCount}</div>
+                  <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary }}>
+                    {formatPrice(product.totalValue)}
                   </div>
                 </div>
               </div>
@@ -142,16 +162,13 @@ const InquiryStats: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Empty state for top products */}
       {stats.topProducts && stats.topProducts.length === 0 && (
         <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-3">Top Products</h4>
-          <div className="text-xs text-gray-500">No product inquiries yet</div>
+          <h4 style={listTitleStyle}>Top Products</h4>
+          <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary }}>No product inquiries yet</div>
         </div>
       )}
     </div>
   );
 };
-
 export default InquiryStats;

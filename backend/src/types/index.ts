@@ -25,15 +25,6 @@ export interface IProduct {
     selectedOptions: string[];
     isActive: boolean;
   }>;
-  references: Record<string, string>;
-  offers: Array<{
-    id: string;
-    title: string;
-    description: string;
-    discount: number;
-    validUntil: string;
-    isActive: boolean;
-  }>;
   hiddenFields: Array<{
     key: string;
     value: string;

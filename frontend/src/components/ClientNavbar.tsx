@@ -1,64 +1,170 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-
+import { Link, useLocation } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 const ClientNavbar: React.FC = () => {
+  const { theme } = useTheme();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
+  const getNavLinkStyle = (path: string) => {
+    const isActive = location.pathname === path;
+    const baseStyle: React.CSSProperties = {
+      padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+      borderRadius: theme.borderRadius.lg,
+      fontWeight: theme.fonts.medium,
+      color: isActive ? theme.colors.primary : theme.colors.textSecondary,
+      transition: 'all 0.3s ease',
+      textDecoration: 'none',
+    };
+    const activeStyle: React.CSSProperties = {
+      backgroundColor: theme.colors.backgroundSecondary,
+      color: theme.colors.primary,
+      boxShadow: theme.shadows.sm,
+    };
+    const hoverStyle: React.CSSProperties = {
+      backgroundColor: theme.colors.backgroundSecondary,
+      color: theme.colors.primary,
+    };
+    return {
+      ...baseStyle,
+      ...(isActive ? activeStyle : {}),
+      ':hover': hoverStyle,
+    };
+  };
+  const navStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    transition: 'all 0.5s ease',
+    backgroundColor: isScrolled
+      ? `${theme.colors.surface}F2`
+      : theme.colors.surface,
+    backdropFilter: isScrolled ? 'blur(12px)' : 'none',
+    boxShadow: isScrolled ? theme.shadows.lg : theme.shadows.md,
+    borderBottom: isScrolled
+      ? `1px solid ${theme.colors.primaryLight}40`
+      : 'none',
+  };
+  const logoWrapperStyle: React.CSSProperties = {
+    position: 'relative',
+  };
+  const logoIconStyle: React.CSSProperties = {
+    width: '2.5rem',
+    height: '2.5rem',
+    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+    borderRadius: theme.borderRadius.lg,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: theme.shadows.md,
+    transition: 'all 0.3s ease',
+  };
+  const logoTextStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: theme.fonts.bold,
+    background: `linear-gradient(90deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    transition: 'all 0.3s ease',
+  };
+  const taglineStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    color: theme.colors.textSecondary,
+    marginTop: '-4px',
+    transition: 'color 0.3s ease',
+  };
+  const menuButtonStyle: React.CSSProperties = {
+    padding: theme.spacing.sm,
+    color: theme.colors.textSecondary,
+    borderRadius: theme.borderRadius.lg,
+    transition: 'all 0.3s ease',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+  };
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-lg shadow-xl border-b border-red-100' 
-          : 'bg-white shadow-lg'
-      }`}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
+      <nav style={navStyle}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: `${theme.spacing.md} ${theme.spacing.md}`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {/* Logo Section */}
-            <Link 
-              to="/" 
-              className="group flex items-center space-x-3"
+            <Link
+              to="/"
+              style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm, textDecoration: 'none' }}
             >
-              <div className="relative">
-                {/* Logo Icon */}
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
-                </div>
-                {/* Glow effect */}
-                <div className="absolute inset-0 w-10 h-10 bg-red-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-md"></div>
+              <div
+                style={logoIconStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.boxShadow = theme.shadows.lg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = theme.shadows.md;
+                }}
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
               </div>
-              
-              {/* Brand Text */}
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300">
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span
+                  style={logoTextStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(90deg, ${theme.colors.primaryDark}, ${theme.colors.primary})`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(90deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`;
+                  }}
+                >
                   Cheerful Shop
                 </span>
-                <span className="text-xs text-gray-500 -mt-1 group-hover:text-red-400 transition-colors duration-300">
+                <span
+                  style={taglineStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = theme.colors.primaryLight;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = theme.colors.textSecondary;
+                  }}
+                >
                   Discover • Shop • Love
                 </span>
               </div>
             </Link>
-
-         
+            {/* Desktop Navigation */}
+            <div style={{ display: 'none', gap: theme.spacing.sm, '@media (min-width: 768px)': { display: 'flex' } }}>
+              <Link to="/" style={getNavLinkStyle('/')}>Home</Link>
+              <Link to="/products" style={getNavLinkStyle('/products')}>Products</Link>
+              <Link to="/contact" style={getNavLinkStyle('/contact')}>Contact</Link>
+              <Link to="/admin" style={getNavLinkStyle('/admin')}>Admin</Link>
+            </div>
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300"
+              style={{
+                ...menuButtonStyle,
+                '@media (min-width: 768px)': { display: 'none' }
+              }}
             >
-              <svg 
-                className={`w-6 h-6 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-90' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                style={{ width: '24px', height: '24px', transition: 'transform 0.3s ease', transform: isMobileMenuOpen ? 'rotate(90deg)' : 'rotate(0)' }}
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 {isMobileMenuOpen ? (
@@ -70,13 +176,26 @@ const ClientNavbar: React.FC = () => {
             </button>
           </div>
         </div>
-
+        {/* Mobile Menu Content */}
+        <div style={{
+          maxHeight: isMobileMenuOpen ? '200px' : '0',
+          overflow: 'hidden',
+          transition: 'max-height 0.5s ease',
+          backgroundColor: theme.colors.surface,
+          borderTop: isMobileMenuOpen ? `1px solid ${theme.colors.border}` : 'none',
+          padding: isMobileMenuOpen ? theme.spacing.md : '0',
+          '@media (min-width: 768px)': { display: 'none' }
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+            <Link to="/" style={getNavLinkStyle('/')} onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+            <Link to="/products" style={getNavLinkStyle('/products')} onClick={() => setIsMobileMenuOpen(false)}>Products</Link>
+            <Link to="/contact" style={getNavLinkStyle('/contact')} onClick={() => setIsMobileMenuOpen(false)}>Contact</Link>
+            <Link to="/admin" style={getNavLinkStyle('/admin')} onClick={() => setIsMobileMenuOpen(false)}>Admin</Link>
+          </div>
+        </div>
       </nav>
-      
-      {/* Spacer to prevent content overlap */}
-      <div className="h-20"></div>
+      <div style={{ height: '80px' }} />
     </>
   );
 };
-
 export default ClientNavbar;

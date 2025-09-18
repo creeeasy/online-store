@@ -1,7 +1,6 @@
-// controllers/productController.ts
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import Product, { IProduct } from '../models/Product';
+import Product, { IProduct, WILAYAS } from '../models/Product';
 import { AuthRequest } from '../types';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
 
@@ -86,15 +85,7 @@ export const productValidationRules = {
       .isArray()
       .withMessage('Offers must be an array'),
     
-    body('offers.*.title')
-      .if(body('offers').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Offer title is required')
-      .isLength({ max: 100 })
-      .withMessage('Offer title cannot exceed 100 characters'),
-    
-    body('offers.*.discount')
+      body('offers.*.discount')
       .if(body('offers').exists())
       .isInt({ min: 1, max: 99 })
       .withMessage('Discount must be between 1 and 99 percent'),
@@ -126,7 +117,13 @@ export const productValidationRules = {
       .if(body('hiddenFields').exists())
       .trim()
       .notEmpty()
-      .withMessage('Hidden field value cannot be empty')
+      .withMessage('Hidden field value cannot be empty'),
+    
+    body('reference')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Reference cannot exceed 200 characters')
   ],
   
   update: [
@@ -172,7 +169,22 @@ export const productValidationRules = {
     body('offers.*.discount')
       .optional()
       .isInt({ min: 1, max: 99 })
-      .withMessage('Discount must be between 1 and 99 percent')
+      .withMessage('Discount must be between 1 and 99 percent'),
+    
+    body('offers.*.discountPercentage')
+      .optional()
+      .isInt({ min: 0, max: 100 })
+      .withMessage('Discount percentage must be between 0 and 100'),
+    
+    body('offers.*.wilaya')
+      .optional()
+      .isIn(WILAYAS)
+      .withMessage('Wilaya must be one of the valid Algerian regions'),
+    
+    body('offers.*.phone')
+      .optional()
+      .matches(/^0/)
+      .withMessage('Phone number must start with 0')
   ]
 };
 
@@ -269,10 +281,19 @@ export const createProduct = [
     // Initialize predefined fields if not provided
     const predefinedFields = req.body.predefinedFields || initializePredefinedFields();
 
+    // Auto-detect reference from query parameters if not provided
+    let reference = req.body.reference;
+    if (!reference && req.query.ref) {
+      reference = req.query.ref as string;
+    } else if (!reference && req.query.utm_source) {
+      reference = req.query.utm_source as string;
+    }
+
     const productData = {
       ...req.body,
       predefinedFields,
       createdBy: req.user?.id,
+      reference
     };
 
     const product = await Product.create(productData);
@@ -333,18 +354,18 @@ export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response
   }
 
   // Check if user owns the product or is admin
-  if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
-    return ResponseHandler.forbidden(res, 'Not authorized to delete this product');
-  }
+    if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+      return ResponseHandler.forbidden(res, 'Not authorized to delete this product');
+    }
 
-  await Product.findByIdAndDelete(req.params.id);
+    await Product.findByIdAndDelete(req.params.id);
 
-  ResponseHandler.success(
-    res,
-    {},
-    'Product deleted successfully'
-  );
-});
+    ResponseHandler.success(
+      res,
+      {},
+      'Product deleted successfully'
+    );
+  });
 
 // @desc    Search products
 // @route   GET /api/products/search
@@ -510,3 +531,47 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     'Product statistics retrieved successfully'
   );
 });
+
+// @desc    Clone an existing product
+// @route   POST /api/products/:id/clone
+// @access  Private/Admin
+export const cloneProduct = [
+  body('reference')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Reference cannot exceed 200 characters'),
+  validateRequest,
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const productId = req.params.id;
+    
+    // Find the original product
+    const originalProduct = await Product.findById(productId);
+    
+    if (!originalProduct) {
+      return ResponseHandler.notFound(res, 'Product');
+    }
+    
+    // Create a copy of the product data
+    const productData = {
+      ...originalProduct.toObject(),
+      _id: undefined, // Remove the original ID
+      name: `${originalProduct.name} (Copy)`, // Append "Copy" to the name
+      createdBy: req.user?.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      reference: req.body.reference || originalProduct.reference // Allow reference override
+    };
+    
+    // Create the cloned product
+    const clonedProduct = await Product.create(productData);
+    await clonedProduct.populate('createdBy', 'username email');
+    
+    ResponseHandler.success(
+      res,
+      { product: clonedProduct },
+      'Product cloned successfully',
+      201
+    );
+  })
+];
