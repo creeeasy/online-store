@@ -5,8 +5,10 @@ import Pagination from './Pagination';
 import LoadingSpinner from './LoadingSpinner';
 import { useOrderInquiries } from '../hooks/useOrderInquiry';
 import type { OrderInquiryFilters } from '../types/orderInquiry';
+import { useTheme } from '../contexts/ThemeContext';
 
 const InquiryList: React.FC = () => {
+  const { theme } = useTheme();
   const [filters, setFilters] = useState<OrderInquiryFilters>({
     page: 1,
     limit: 10,
@@ -26,23 +28,151 @@ const InquiryList: React.FC = () => {
     refetch();
   };
 
+  // Theme-based styles
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    boxShadow: theme.shadows.md,
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.border}`
+  };
+
+  const innerContainerStyle: React.CSSProperties = {
+    padding: theme.spacing.xl
+  };
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '1.125rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text,
+    margin: 0
+  };
+
+  const refreshButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.borderRadius.md,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.surface,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+    transition: 'all 0.2s ease',
+    boxShadow: theme.shadows.sm
+  });
+
+  const loadingContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: `${theme.spacing.xl} 0`
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: `${theme.spacing.xl} 0`
+  };
+
+  const emptyStateContentStyle: React.CSSProperties = {
+    textAlign: 'center',
+    color: theme.colors.textSecondary
+  };
+
+  const emptyStateTitleStyle: React.CSSProperties = {
+    marginTop: theme.spacing.sm,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text
+  };
+
+  const emptyStateDescriptionStyle: React.CSSProperties = {
+    marginTop: theme.spacing.xs,
+    fontSize: '0.875rem',
+    color: theme.colors.textSecondary
+  };
+
+  const errorContainerStyle: React.CSSProperties = {
+    backgroundColor: `${theme.colors.primary}10`,
+    border: `1px solid ${theme.colors.primary}30`,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg
+  };
+
+  const errorContentStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md
+  };
+
+  const errorIconStyle: React.CSSProperties = {
+    flexShrink: 0,
+    width: '1.25rem',
+    height: '1.25rem',
+    color: theme.colors.primary
+  };
+
+  const errorTextStyle: React.CSSProperties = {
+    flex: 1
+  };
+
+  const errorTitleStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.primaryDark,
+    margin: 0
+  };
+
+  const errorMessageStyle: React.CSSProperties = {
+    marginTop: theme.spacing.sm,
+    fontSize: '0.875rem',
+    color: theme.colors.primaryDark
+  };
+
+  const errorButtonStyle: React.CSSProperties = {
+    marginTop: theme.spacing.md,
+    backgroundColor: `${theme.colors.primary}20`,
+    color: theme.colors.primaryDark,
+    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+    borderRadius: theme.borderRadius.md,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  };
+
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+      <div style={errorContainerStyle}>
+        <div style={errorContentStyle}>
+          <div style={{ flexShrink: 0 }}>
+            <svg style={errorIconStyle} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error loading inquiries</h3>
-            <p className="mt-2 text-sm text-red-700">{errorMessage}</p>
+          <div style={errorTextStyle}>
+            <h3 style={errorTitleStyle}>Error loading inquiries</h3>
+            <p style={errorMessageStyle}>{errorMessage}</p>
             <button
               onClick={handleRefresh}
-              className="mt-3 bg-red-100 text-red-700 px-3 py-1 rounded-md text-sm font-medium hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              style={errorButtonStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.colors.primary}30`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.colors.primary}20`;
+              }}
             >
               Try Again
             </button>
@@ -53,17 +183,33 @@ const InquiryList: React.FC = () => {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-medium text-gray-900">Order Inquiries</h2>
+    <div style={containerStyle}>
+      <div style={innerContainerStyle}>
+        <div style={headerStyle}>
+          <h2 style={titleStyle}>Order Inquiries</h2>
           <button
             onClick={handleRefresh}
             disabled={isLoading}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            style={refreshButtonStyle(isLoading)}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = theme.colors.surface;
+              }
+            }}
           >
             <svg 
-              className={`-ml-1 mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} 
+              style={{
+                marginLeft: '-0.25rem',
+                marginRight: theme.spacing.sm,
+                width: '1rem',
+                height: '1rem',
+                animation: isLoading ? 'spin 1s linear infinite' : 'none'
+              }}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -77,7 +223,7 @@ const InquiryList: React.FC = () => {
         <InquiryFilters filters={filters} onChange={handleFilterChange} />
         
         {isLoading ? (
-          <div className="flex justify-center py-8">
+          <div style={loadingContainerStyle}>
             <LoadingSpinner size="lg" />
           </div>
         ) : data ? (
@@ -88,29 +234,44 @@ const InquiryList: React.FC = () => {
                 currentPage={data.pagination.currentPage}
                 totalPages={data.pagination.totalPages}
                 onPageChange={handlePageChange}
-                totalItems={data.pagination.totalItems}
-                itemsPerPage={data.pagination.itemsPerPage}
-                hasNextPage={data.pagination.hasNextPage}
-                hasPrevPage={data.pagination.hasPrevPage}
               />
             )}
           </>
         ) : (
-          <div className="flex justify-center py-8">
-            <div className="text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <div style={emptyStateStyle}>
+            <div style={emptyStateContentStyle}>
+              <svg 
+                style={{
+                  margin: '0 auto',
+                  width: '3rem',
+                  height: '3rem',
+                  color: theme.colors.textMuted
+                }}
+                stroke="currentColor" 
+                fill="none" 
+                viewBox="0 0 48 48"
+              >
                 <path d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No inquiries found</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 style={emptyStateTitleStyle}>No inquiries found</h3>
+              <p style={emptyStateDescriptionStyle}>
                 {Object.keys(filters).length > 2 ? 'Try adjusting your filters.' : 'No inquiries have been submitted yet.'}
               </p>
             </div>
           </div>
         )}
       </div>
+      
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
-};
+}
 
 export default InquiryList;

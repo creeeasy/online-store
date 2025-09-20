@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiX } from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { closeModal } from '../store/slices/modalSlice';
 
@@ -8,6 +9,7 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ children }) => {
+  const { theme } = useTheme();
   const dispatch = useAppDispatch();
   const { isOpen } = useAppSelector((state) => state.modal);
 
@@ -17,26 +19,96 @@ const Modal: React.FC<ModalProps> = ({ children }) => {
     dispatch(closeModal());
   };
 
+  // Theme-based styles
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 50,
+    overflowY: 'auto'
+  };
+
+  const backdropStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Light transparent background
+    backdropFilter: 'blur(8px)', // Blur effect
+    WebkitBackdropFilter: 'blur(8px)', // Safari support
+    transition: 'all 0.3s ease',
+    cursor: 'pointer'
+  };
+
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    minHeight: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.lg
+  };
+
+  const modalStyle: React.CSSProperties = {
+    position: 'relative',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    boxShadow: theme.shadows.lg,
+    maxWidth: '32rem', // max-w-2xl equivalent
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    border: `1px solid ${theme.colors.border}`
+  };
+
+  const closeButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: theme.spacing.lg,
+    right: theme.spacing.lg,
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: theme.colors.textSecondary,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    zIndex: 10,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const contentStyle: React.CSSProperties = {
+    padding: theme.spacing.xl,
+    maxHeight: '90vh',
+    overflowY: 'auto'
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div style={overlayStyle}>
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        style={backdropStyle}
         onClick={handleClose}
-      ></div>
+      />
       
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div style={containerStyle}>
         <div 
-          className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+          style={modalStyle}
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+            style={closeButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+              e.currentTarget.style.color = theme.colors.primary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = theme.colors.textSecondary;
+            }}
+            aria-label="Close modal"
           >
             <FiX size={20} />
           </button>
           
-          <div className="p-6 max-h-[90vh] overflow-y-auto">
+          <div style={contentStyle}>
             {children}
           </div>
         </div>

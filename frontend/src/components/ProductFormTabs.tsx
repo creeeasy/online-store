@@ -1,56 +1,162 @@
 // src/components/ProductForm/ProductFormTabs.tsx
 import React from 'react';
 import { FiPackage, FiCheck, FiGift, FiEyeOff, FiTag, FiX } from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
 
 const tabConfig = [
-  { id: 'basic', label: 'Basic Info', icon: FiPackage, color: 'from-red-500 to-red-600' },
-  { id: 'predefined', label: 'Categories', icon: FiCheck, color: 'from-red-500 to-red-600' },
-  { id: 'offers', label: 'Offers', icon: FiGift, color: 'from-red-500 to-red-600' },
-  { id: 'hidden', label: 'Hidden', icon: FiEyeOff, color: 'from-red-500 to-red-600' },
-  { id: 'dynamic', label: 'Custom Fields', icon: FiTag, color: 'from-red-500 to-red-600' },
+  { id: 'basic', label: 'Basic Info', icon: FiPackage },
+  { id: 'predefined', label: 'Categories', icon: FiCheck },
+  { id: 'offers', label: 'Offers', icon: FiGift },
+  { id: 'hidden', label: 'Hidden', icon: FiEyeOff },
+  { id: 'dynamic', label: 'Custom Fields', icon: FiTag },
 ];
 
 interface ProductFormTabsProps {
   activeTab: string;
   setActiveTab: (tabId: string) => void;
-  onCancel: () => void;
-  isEditing: boolean;
+  onCancel?: () => void;
+  isEditing?: boolean;
 }
 
-const ProductFormTabs: React.FC<ProductFormTabsProps> = ({ activeTab, setActiveTab, onCancel, isEditing }) => {
+const ProductFormTabs: React.FC<ProductFormTabsProps> = ({ 
+  activeTab, 
+  setActiveTab, 
+  onCancel, 
+  isEditing = false 
+}) => {
+  const { theme } = useTheme();
   const currentTab = tabConfig.find(tab => tab.id === activeTab);
 
+  // Theme-based styles
+  const headerContainerStyle: React.CSSProperties = {
+    background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.primaryDark} 100%)`,
+    padding: theme.spacing.xl,
+    color: theme.colors.secondary
+  };
+
+  const headerContentStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.lg
+  };
+
+  const headerLeftStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.md
+  };
+
+  const iconContainerStyle: React.CSSProperties = {
+    padding: theme.spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.borderRadius.md,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: theme.fonts.bold,
+    margin: 0,
+    color: theme.colors.secondary
+  };
+
+  const subtitleStyle: React.CSSProperties = {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: '0.875rem',
+    margin: 0,
+    marginTop: theme.spacing.xs
+  };
+
+  const closeButtonStyle: React.CSSProperties = {
+    padding: theme.spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    border: 'none',
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.secondary,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const tabsContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '2px',
+    overflowX: 'auto'
+  };
+
+  const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    borderTopLeftRadius: theme.borderRadius.md,
+    borderTopRightRadius: theme.borderRadius.md,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    border: 'none',
+    cursor: 'pointer',
+    backgroundColor: isActive 
+      ? theme.colors.secondary 
+      : 'rgba(255, 255, 255, 0.2)',
+    color: isActive 
+      ? theme.colors.text 
+      : theme.colors.secondary
+  });
+
   return (
-    <div className={`bg-gradient-to-r ${currentTab?.color} p-6 text-white`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+    <div style={headerContainerStyle}>
+      <div style={headerContentStyle}>
+        <div style={headerLeftStyle}>
+          <div style={iconContainerStyle}>
             {currentTab?.icon && React.createElement(currentTab.icon, { size: 24 })}
           </div>
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 style={titleStyle}>
               {isEditing ? 'Edit Product' : 'Add New Product'}
             </h2>
-            <p className="text-white text-opacity-80">Manage product details and configuration</p>
+            <p style={subtitleStyle}>Manage product details and configuration</p>
           </div>
         </div>
-        <button
-          onClick={onCancel}
-          className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all"
-        >
-          <FiX size={20} />
-        </button>
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            style={closeButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            aria-label="Close form"
+          >
+            <FiX size={20} />
+          </button>
+        )}
       </div>
-      <div className="flex space-x-1 overflow-x-auto">
+      
+      <div style={tabsContainerStyle}>
         {tabConfig.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-              activeTab === tab.id
-                ? 'bg-white text-gray-900'
-                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
-            }`}
+            style={tabButtonStyle(activeTab === tab.id)}
+            onMouseEnter={(e) => {
+              if (activeTab !== tab.id) {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== tab.id) {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+              }
+            }}
           >
             {React.createElement(tab.icon, { size: 16 })}
             {tab.label}

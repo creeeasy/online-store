@@ -31,6 +31,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
     onClone?.(product);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(product);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(product);
+  };
+
   // Theme-based styles
   const cardStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
@@ -39,6 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     border: `1px solid ${theme.colors.border}`,
     transition: 'all 0.3s ease',
     cursor: 'pointer',
+    position: 'relative',
   };
 
   const buttonStyle: React.CSSProperties = {
@@ -70,6 +81,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ...buttonStyle,
     backgroundColor: theme.colors.secondary,
     boxShadow: theme.shadows.sm,
+    width: '32px',
+    height: '32px',
+  };
+
+  const deleteButtonStyle: React.CSSProperties = {
+    ...iconButtonStyle,
+    backgroundColor: '#fef2f2',
+    color: '#ef4444',
+  };
+
+  const cloneButtonStyle: React.CSSProperties = {
+    ...iconButtonStyle,
+    backgroundColor: '#f0f9ff',
+    color: theme.colors.accent,
   };
 
   if (viewMode === 'list') {
@@ -83,10 +108,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = theme.shadows.lg;
           e.currentTarget.style.transform = 'translateY(-2px)';
+          
+          // Show action buttons on hover
+          const actionButtons = e.currentTarget.querySelector('[data-actions]') as HTMLElement;
+          if (actionButtons) {
+            actionButtons.style.opacity = '1';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = theme.shadows.md;
           e.currentTarget.style.transform = 'translateY(0)';
+          
+          // Hide action buttons on leave
+          const actionButtons = e.currentTarget.querySelector('[data-actions]') as HTMLElement;
+          if (actionButtons) {
+            actionButtons.style.opacity = '0';
+          }
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
@@ -97,7 +134,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             flexShrink: 0 
           }}>
             <img
-              src={product.images[0] || 'https://picsum.photos/300/300?random=default'}
+              src={product.images?.[0] || 'https://picsum.photos/300/300?random=default'}
               alt={product.name}
               style={{
                 width: '100%',
@@ -165,24 +202,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           </div>
           
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: theme.spacing.sm,
-            opacity: 0,
-            transition: 'opacity 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            const parent = e.currentTarget.closest('[data-card]');
-            if (parent) {
-              e.currentTarget.style.opacity = '1';
-            }
-          }}>
+          <div 
+            data-actions
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: theme.spacing.sm,
+              opacity: 0,
+              transition: 'opacity 0.3s ease',
+            }}
+          >
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(product);
-              }}
+              onClick={handleEdit}
               style={{
                 ...iconButtonStyle,
                 color: theme.colors.primary,
@@ -191,28 +222,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
             >
               <FiEdit size={16} />
             </button>
+            {onClone && (
+              <button
+                onClick={handleClone}
+                style={cloneButtonStyle}
+                title="Clone product"
+              >
+                <FiCopy size={16} />
+              </button>
+            )}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onClone?.(product);
-              }}
-              style={{
-                ...iconButtonStyle,
-                color: theme.colors.accent,
-              }}
-              title="Clone product"
-            >
-              <FiCopy size={16} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(product);
-              }}
-              style={{
-                ...iconButtonStyle,
-                color: '#ef4444',
-              }}
+              onClick={handleDelete}
+              style={deleteButtonStyle}
               title="Delete product"
             >
               <FiTrash2 size={16} />
@@ -223,6 +244,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     );
   }
 
+  // Grid view
   return (
     <div 
       style={cardStyle}
@@ -230,15 +252,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = theme.shadows.lg;
         e.currentTarget.style.transform = 'scale(1.02)';
+        
+        // Show overlay and action buttons on hover
+        const overlay = e.currentTarget.querySelector('[data-overlay]') as HTMLElement;
+        const actions = e.currentTarget.querySelector('[data-hover-actions]') as HTMLElement;
+        if (overlay) overlay.style.opacity = '1';
+        if (actions) actions.style.opacity = '1';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = theme.shadows.md;
         e.currentTarget.style.transform = 'scale(1)';
+        
+        // Hide overlay and action buttons on leave
+        const overlay = e.currentTarget.querySelector('[data-overlay]') as HTMLElement;
+        const actions = e.currentTarget.querySelector('[data-hover-actions]') as HTMLElement;
+        if (overlay) overlay.style.opacity = '0';
+        if (actions) actions.style.opacity = '0';
       }}
     >
       <div style={{ position: 'relative', height: '192px', overflow: 'hidden' }}>
         <img
-          src={product.images[0] || 'https://picsum.photos/300/300?random=default'}
+          src={product.images?.[0] || 'https://picsum.photos/300/300?random=default'}
           alt={product.name}
           style={{
             width: '100%',
@@ -253,28 +287,34 @@ const ProductCard: React.FC<ProductCardProps> = ({
             e.currentTarget.style.transform = 'scale(1)';
           }}
         />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)',
-          opacity: 0,
-          transition: 'opacity 0.3s ease',
-        }} />
         
-        <div style={{
-          position: 'absolute',
-          top: theme.spacing.sm,
-          right: theme.spacing.sm,
-          display: 'flex',
-          gap: theme.spacing.sm,
-          opacity: 0,
-          transition: 'opacity 0.3s ease',
-        }}>
+        {/* Hover overlay */}
+        <div 
+          data-overlay
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)',
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
+          }} 
+        />
+        
+        {/* Action buttons on hover */}
+        <div 
+          data-hover-actions
+          style={{
+            position: 'absolute',
+            top: theme.spacing.sm,
+            right: theme.spacing.sm,
+            display: 'flex',
+            gap: theme.spacing.sm,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
+          }}
+        >
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(product);
-            }}
+            onClick={handleEdit}
             style={{
               ...iconButtonStyle,
               backgroundColor: `${theme.colors.secondary}E6`,
@@ -284,25 +324,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
           >
             <FiEdit size={16} />
           </button>
+          {onClone && (
+            <button
+              onClick={handleClone}
+              style={{
+                ...iconButtonStyle,
+                backgroundColor: `${theme.colors.secondary}E6`,
+                color: theme.colors.accent,
+              }}
+              title="Clone product"
+            >
+              <FiCopy size={16} />
+            </button>
+          )}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClone?.(product);
-            }}
-            style={{
-              ...iconButtonStyle,
-              backgroundColor: `${theme.colors.secondary}E6`,
-              color: theme.colors.accent,
-            }}
-            title="Clone product"
-          >
-            <FiCopy size={16} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(product);
-            }}
+            onClick={handleDelete}
             style={{
               ...iconButtonStyle,
               backgroundColor: `${theme.colors.secondary}E6`,
@@ -314,6 +350,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </button>
         </div>
         
+        {/* Sale badge */}
         {product.discountPrice && (
           <div style={{ position: 'absolute', top: theme.spacing.sm, left: theme.spacing.sm }}>
             <span style={{
@@ -378,6 +415,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
         
+        {/* Product features */}
         <div style={{ 
           marginBottom: theme.spacing.md,
           fontSize: '0.875rem',
@@ -418,6 +456,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
         
+        {/* Bottom action buttons */}
         <div style={{ display: 'flex', gap: theme.spacing.sm }}>
           <button
             onClick={(e) => {
@@ -435,10 +474,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             View Details
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(product);
-            }}
+            onClick={handleEdit}
             style={{
               ...primaryButtonStyle,
               flex: 1,
@@ -450,8 +486,49 @@ const ProductCard: React.FC<ProductCardProps> = ({
             Edit
           </button>
         </div>
+
+        {/* Additional action buttons row for clone and delete */}
+        <div style={{ 
+          display: 'flex', 
+          gap: theme.spacing.sm, 
+          marginTop: theme.spacing.sm 
+        }}>
+          {onClone && (
+            <button
+              onClick={handleClone}
+              style={{
+                ...buttonStyle,
+                flex: 1,
+                gap: theme.spacing.sm,
+                padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                backgroundColor: '#f0f9ff',
+                color: theme.colors.accent,
+                fontWeight: theme.fonts.medium,
+              }}
+            >
+              <FiCopy size={16} />
+              Clone
+            </button>
+          )}
+          <button
+            onClick={handleDelete}
+            style={{
+              ...buttonStyle,
+              flex: 1,
+              gap: theme.spacing.sm,
+              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+              backgroundColor: '#fef2f2',
+              color: '#ef4444',
+              fontWeight: theme.fonts.medium,
+            }}
+          >
+            <FiTrash2 size={16} />
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );
 };
-export default  ProductCard;
+
+export default ProductCard;

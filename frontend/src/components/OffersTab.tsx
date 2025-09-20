@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiPercent } from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IOffer } from '../types/product';
-import { ValidatedInput, ValidatedTextarea } from './ValidationErrorDisplay';
+import { ValidatedInput, ValidatedTextarea, ValidatedCheckbox } from './ValidationErrorDisplay';
 
 interface OffersTabProps {
   formData: Partial<IProduct>;
@@ -10,15 +11,17 @@ interface OffersTabProps {
 }
 
 const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validationErrors }) => {
+  const { theme } = useTheme();
   const [newOffer, setNewOffer] = useState<Partial<IOffer>>({
     title: '',
     description: '',
     discount: 0,
-    validUntil: '',
     isActive: true
   });
 
   const addOffer = () => {
+    if (!newOffer.title?.trim() || !newOffer.discount) return;
+    
     setFormData(prev => ({
       ...prev,
       offers: [...(prev.offers || []), { ...newOffer } as IOffer]
@@ -27,7 +30,6 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
       title: '',
       description: '',
       discount: 0,
-      validUntil: '',
       isActive: true
     });
   };
@@ -43,91 +45,241 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
     setFormData(prev => ({ ...prev, offers: newOffers }));
   };
 
+  // Theme-based styles
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing.lg
+  };
+
+  const headerStyle: React.CSSProperties = {
+    fontSize: '1.125rem',
+    fontWeight: theme.fonts.semiBold,
+    color: theme.colors.text,
+    margin: 0,
+    marginBottom: theme.spacing.md
+  };
+
+  const offerCardStyle: React.CSSProperties = {
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    boxShadow: theme.shadows.sm
+  };
+
+  const offerHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md
+  };
+
+  const offerNumberStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.textSecondary,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs
+  };
+
+  const removeButtonStyle: React.CSSProperties = {
+    color: '#ef4444',
+    backgroundColor: 'transparent',
+    border: 'none',
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.md
+  };
+
+  const addOfferSectionStyle: React.CSSProperties = {
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.border}`,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing.md
+  };
+
+  const addOfferHeaderStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text,
+    margin: 0
+  };
+
+  const addButtonStyle: React.CSSProperties = {
+    width: '100%',
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.secondary,
+    border: 'none',
+    borderRadius: theme.borderRadius.lg,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm
+  };
+
+  const disabledButtonStyle: React.CSSProperties = {
+    ...addButtonStyle,
+    backgroundColor: theme.colors.textMuted,
+    cursor: 'not-allowed',
+    opacity: 0.6
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    textAlign: 'center',
+    padding: theme.spacing.xl,
+    color: theme.colors.textSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: theme.borderRadius.lg,
+    border: `2px dashed ${theme.colors.border}`
+  };
+
+  const checkboxRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md
+  };
+
+  const isAddDisabled = !newOffer.title?.trim() || !newOffer.discount;
+
   return (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Special Offers</h3>
-      <div className="space-y-3 mb-4">
-        {(formData.offers || []).map((offer, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">Offer {index + 1}</span>
-              <button
-                type="button"
-                onClick={() => removeOffer(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <FiTrash2 size={16} />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <ValidatedInput
-                label="Offer Title"
-                fieldName={`offers.${index}.title`}
+    <div style={containerStyle}>
+      <h3 style={headerStyle}>Special Offers</h3>
+      
+      {/* Existing Offers */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+        {(formData.offers || []).length === 0 ? (
+          <div style={emptyStateStyle}>
+            <p style={{ margin: 0, fontSize: '0.875rem', fontStyle: 'italic' }}>
+              No offers added yet. Create your first offer below.
+            </p>
+          </div>
+        ) : (
+          (formData.offers || []).map((offer, index) => (
+            <div key={index} style={offerCardStyle}>
+              <div style={offerHeaderStyle}>
+                <div style={offerNumberStyle}>
+                  <FiPercent size={16} />
+                  <span>Offer {index + 1}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeOffer(index)}
+                  style={removeButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title="Remove offer"
+                >
+                  <FiTrash2 size={16} />
+                </button>
+              </div>
+
+              <div style={gridStyle}>
+                <ValidatedInput
+                  label="Offer Title"
+                  fieldName={`offers.${index}.title`}
+                  errors={validationErrors}
+                  required
+                  type="text"
+                  value={offer.title}
+                  onChange={(e) => updateOffer(index, 'title', e.target.value)}
+                  placeholder="e.g., Black Friday Sale"
+                />
+                <ValidatedInput
+                  label="Discount (%)"
+                  fieldName={`offers.${index}.discount`}
+                  errors={validationErrors}
+                  required
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={offer.discount}
+                  onChange={(e) => updateOffer(index, 'discount', parseInt(e.target.value) || 0)}
+                  placeholder="e.g., 20"
+                />
+              </div>
+
+              <ValidatedTextarea
+                label="Offer Description"
+                fieldName={`offers.${index}.description`}
                 errors={validationErrors}
-                required
-                type="text"
-                value={offer.title}
-                onChange={(e) => updateOffer(index, 'title', e.target.value)}
-                placeholder="e.g., Black Friday Sale"
+                value={offer.description || ''}
+                onChange={(e) => updateOffer(index, 'description', e.target.value)}
+                placeholder="Describe this offer (optional)..."
+                rows={2}
               />
-              <ValidatedInput
-                label="Discount Percentage"
-                fieldName={`offers.${index}.discount`}
-                errors={validationErrors}
-                required
-                type="number"
-                min="1"
-                max="99"
-                value={offer.discount}
-                onChange={(e) => updateOffer(index, 'discount', parseInt(e.target.value) || 0)}
-                placeholder="e.g., 20"
-              />
-            </div>
-            <ValidatedTextarea
-              label="Offer Description"
-              fieldName={`offers.${index}.description`}
-              errors={validationErrors}
-              value={offer.description || ''}
-              onChange={(e) => updateOffer(index, 'description', e.target.value)}
-              placeholder="Describe this offer..."
-              rows={2}
-            />
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+
+              <div style={checkboxRowStyle}>
+                <ValidatedCheckbox
+                  label="Active Offer"
+                  fieldName={`offers.${index}.isActive`}
+                  description="This offer will be visible to customers"
+                  errors={validationErrors}
                   checked={offer.isActive !== false}
                   onChange={(e) => updateOffer(index, 'isActive', e.target.checked)}
-                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                 />
-                Active
-              </label>
-              <ValidatedInput
-                label="Valid Until"
-                fieldName={`offers.${index}.validUntil`}
-                errors={validationErrors}
-                type="datetime-local"
-                value={offer.validUntil ? new Date(offer.validUntil).toISOString().slice(0, 16) : ''}
-                onChange={(e) => updateOffer(index, 'validUntil', e.target.value)}
-              />
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
-      <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h4 className="font-medium text-gray-700">Add New Offer</h4>
-        <ValidatedInput
-          label="Offer Title"
-          fieldName="newOffer.title"
-          errors={validationErrors}
-          required
-          type="text"
-          value={newOffer.title}
-          onChange={(e) => setNewOffer({ ...newOffer, title: e.target.value })}
-          placeholder="e.g., Black Friday Sale"
-        />
+
+      {/* Add New Offer Section */}
+      <div style={addOfferSectionStyle}>
+        <h4 style={addOfferHeaderStyle}>Add New Offer</h4>
+        
+        <div style={gridStyle}>
+          <ValidatedInput
+            label="Offer Title"
+            fieldName="newOffer.title"
+            errors={validationErrors}
+            required
+            type="text"
+            value={newOffer.title || ''}
+            onChange={(e) => setNewOffer({ ...newOffer, title: e.target.value })}
+            placeholder="e.g., Black Friday Sale"
+          />
+          <ValidatedInput
+            label="Discount (%)"
+            fieldName="newOffer.discount"
+            errors={validationErrors}
+            required
+            type="number"
+            min="1"
+            max="99"
+            value={newOffer.discount || ''}
+            onChange={(e) => setNewOffer({ ...newOffer, discount: parseInt(e.target.value) || 0 })}
+            placeholder="e.g., 20"
+          />
+        </div>
+
         <ValidatedTextarea
-          label="Offer Description"
+          label="Offer Description (Optional)"
           fieldName="newOffer.description"
           errors={validationErrors}
           value={newOffer.description || ''}
@@ -135,32 +287,24 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
           placeholder="Describe this offer..."
           rows={2}
         />
-        <ValidatedInput
-          label="Discount Percentage"
-          fieldName="newOffer.discount"
-          errors={validationErrors}
-          required
-          type="number"
-          min="1"
-          max="99"
-          value={newOffer.discount || ''}
-          onChange={(e) => setNewOffer({ ...newOffer, discount: parseInt(e.target.value) || 0 })}
-          placeholder="e.g., 20"
-        />
-        <ValidatedInput
-          label="Valid Until"
-          fieldName="newOffer.validUntil"
-          errors={validationErrors}
-          type="datetime-local"
-          value={newOffer.validUntil || ''}
-          onChange={(e) => setNewOffer({ ...newOffer, validUntil: e.target.value })}
-        />
+
         <button
           type="button"
           onClick={addOffer}
-          disabled={!newOffer.title?.trim()}
-          className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+          disabled={isAddDisabled}
+          style={isAddDisabled ? disabledButtonStyle : addButtonStyle}
+          onMouseEnter={(e) => {
+            if (!isAddDisabled) {
+              e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isAddDisabled) {
+              e.currentTarget.style.backgroundColor = theme.colors.primary;
+            }
+          }}
         >
+          <FiPlus size={16} />
           Add Offer
         </button>
       </div>

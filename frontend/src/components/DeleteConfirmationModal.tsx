@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiCheck, FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
 import Modal from './Modal';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { closeModal } from '../store/slices/modalSlice';
@@ -14,16 +15,16 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
   onConfirm,
   isLoading = false
 }) => {
+  const { theme } = useTheme();
   const dispatch = useAppDispatch();
-  const { isOpen, modalType, modalProps } = useAppSelector((state) => state.modal);
+  const { isOpen, modalType, product: data } = useAppSelector((state) => state.modal);
   
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Only render if this is the correct modal type
   if (!isOpen || modalType !== 'deleteProduct') return null;
 
-  const product: IProduct | null = modalProps.product || null;
+  const product: IProduct | null = data || null;
 
   if (!product) return null;
 
@@ -46,84 +47,298 @@ const DeleteConfirmationModal: React.FC<DeleteModalProps> = ({
     }
   };
 
-  // unified loading state (internal + external)
+  // Unified loading state (internal + external)
   const deletingState = isDeleting || isLoading;
 
-  return (
-    <Modal>
-      {isSuccess ? (
-        <div className="p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FiCheck className="text-green-600" size={32} />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">Product Deleted!</h3>
-          <p className="text-gray-600">The product has been successfully removed.</p>
-        </div>
-      ) : (
-        <div className="p-6">
-          <div className="flex items-start mb-6">
-            <div className="bg-red-100 p-3 rounded-full mr-4">
-              <FiAlertTriangle className="text-red-600" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Delete Product</h2>
-              <p className="text-gray-600">This action cannot be undone.</p>
-            </div>
-          </div>
+  // Theme-based styles
+  const successContainerStyle: React.CSSProperties = {
+    padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
+    textAlign: 'center'
+  };
 
-          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
-            <div className="flex items-center space-x-4">
-              <img
-                src={product.images[0] || 'https://picsum.photos/80/80?random=default'}
-                alt={product.name}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
-              <div>
-                <h3 className="font-semibold text-gray-800">{product.name}</h3>
-                <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
-                <p className="text-red-600 font-bold mt-1">${product.price}</p>
+  const successIconContainerStyle: React.CSSProperties = {
+    width: '64px',
+    height: '64px',
+    backgroundColor: `${theme.colors.primary}20`,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: `0 auto ${theme.spacing.lg}`
+  };
+
+  const successTitleStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: theme.fonts.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm
+  };
+
+  const successMessageStyle: React.CSSProperties = {
+    color: theme.colors.textSecondary,
+    fontSize: '0.875rem'
+  };
+
+  const contentContainerStyle: React.CSSProperties = {
+    padding: theme.spacing.xl
+  };
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.xl
+  };
+
+  const warningIconContainerStyle: React.CSSProperties = {
+    backgroundColor: `${theme.colors.primary}20`,
+    padding: theme.spacing.md,
+    borderRadius: '50%',
+    marginRight: theme.spacing.lg,
+    flexShrink: 0
+  };
+
+  const headerTextStyle: React.CSSProperties = {
+    flex: 1
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '1.25rem',
+    fontWeight: theme.fonts.bold,
+    color: theme.colors.text,
+    margin: 0,
+    marginBottom: theme.spacing.xs
+  };
+
+  const subtitleStyle: React.CSSProperties = {
+    color: theme.colors.textSecondary,
+    fontSize: '0.875rem',
+    margin: 0
+  };
+
+  const productCardStyle: React.CSSProperties = {
+    backgroundColor: `${theme.colors.primary}10`,
+    border: `1px solid ${theme.colors.primary}30`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.xl
+  };
+
+  const productInfoStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.lg
+  };
+
+  const productImageStyle: React.CSSProperties = {
+    width: '80px',
+    height: '80px',
+    objectFit: 'cover',
+    borderRadius: theme.borderRadius.md,
+    flexShrink: 0
+  };
+
+  const productDetailsStyle: React.CSSProperties = {
+    flex: 1
+  };
+
+  const productNameStyle: React.CSSProperties = {
+    fontWeight: theme.fonts.semiBold,
+    color: theme.colors.text,
+    margin: 0,
+    marginBottom: theme.spacing.xs,
+    fontSize: '1rem'
+  };
+
+  const productDescriptionStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: theme.colors.textSecondary,
+    margin: 0,
+    marginBottom: theme.spacing.xs,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden'
+  };
+
+  const productPriceStyle: React.CSSProperties = {
+    color: theme.colors.primary,
+    fontWeight: theme.fonts.bold,
+    margin: 0,
+    fontSize: '1rem'
+  };
+
+  const impactAssessmentStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.xl
+  };
+
+  const impactTitleStyle: React.CSSProperties = {
+    fontWeight: theme.fonts.medium,
+    color: theme.colors.text,
+    margin: 0,
+    marginBottom: theme.spacing.sm,
+    fontSize: '0.875rem'
+  };
+
+  const impactListStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    color: theme.colors.textSecondary,
+    margin: 0,
+    paddingLeft: theme.spacing.md,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px'
+  };
+
+  const actionsStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.md
+  };
+
+  const cancelButtonStyle: React.CSSProperties = {
+    padding: `${theme.spacing.sm} ${theme.spacing.xl}`,
+    backgroundColor: theme.colors.backgroundSecondary,
+    color: theme.colors.text,
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.borderRadius.md,
+    fontSize: '0.875rem',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease'
+  };
+
+  const deleteButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: `${theme.spacing.sm} ${theme.spacing.xl}`,
+    backgroundColor: disabled ? theme.colors.textMuted : theme.colors.primary,
+    color: theme.colors.secondary,
+    border: 'none',
+    borderRadius: theme.borderRadius.md,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.medium,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    opacity: disabled ? 0.6 : 1
+  });
+
+  const spinnerStyle: React.CSSProperties = {
+    width: '16px',
+    height: '16px',
+    border: `2px solid ${theme.colors.secondary}`,
+    borderTop: '2px solid transparent',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  };
+
+  return (
+    <>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      <Modal>
+        {isSuccess ? (
+          <div style={successContainerStyle}>
+            <div style={successIconContainerStyle}>
+              <FiCheck style={{ color: theme.colors.primary }} size={32} />
+            </div>
+            <h3 style={successTitleStyle}>Product Deleted!</h3>
+            <p style={successMessageStyle}>The product has been successfully removed.</p>
+          </div>
+        ) : (
+          <div style={contentContainerStyle}>
+            <div style={headerStyle}>
+              <div style={warningIconContainerStyle}>
+                <FiAlertTriangle style={{ color: theme.colors.primary }} size={24} />
+              </div>
+              <div style={headerTextStyle}>
+                <h2 style={titleStyle}>Delete Product</h2>
+                <p style={subtitleStyle}>This action cannot be undone.</p>
               </div>
             </div>
-          </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h4 className="font-medium text-gray-800 mb-2">Impact Assessment</h4>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• This product has {product.dynamicFields?.length ?? 0} custom fields</li>
-              <li>• {(product.predefinedFields?.filter(f => f.isActive).length ?? 0)} predefined fields will be removed</li>
-              <li>• {product.offers?.length ?? 0} associated offers will be deleted</li>
-            </ul>
-          </div>
+            <div style={productCardStyle}>
+              <div style={productInfoStyle}>
+                <img
+                  src={product.images[0] || 'https://picsum.photos/80/80?random=default'}
+                  alt={product.name}
+                  style={productImageStyle}
+                />
+                <div style={productDetailsStyle}>
+                  <h3 style={productNameStyle}>{product.name}</h3>
+                  <p style={productDescriptionStyle}>{product.description}</p>
+                  <p style={productPriceStyle}>${product.price}</p>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={handleClose}
-              disabled={deletingState}
-              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={deletingState}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
-            >
-              {deletingState ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <FiTrash2 className="mr-2" />
-                  Delete Product
-                </>
-              )}
-            </button>
+            <div style={impactAssessmentStyle}>
+              <h4 style={impactTitleStyle}>Impact Assessment</h4>
+              <ul style={impactListStyle}>
+                <li>• This product has {product.dynamicFields?.length ?? 0} custom fields</li>
+                <li>• {(product.predefinedFields?.filter(f => f.isActive).length ?? 0)} predefined fields will be removed</li>
+                <li>• {product.offers?.length ?? 0} associated offers will be deleted</li>
+              </ul>
+            </div>
+
+            <div style={actionsStyle}>
+              <button
+                onClick={handleClose}
+                disabled={deletingState}
+                style={cancelButtonStyle}
+                onMouseEnter={(e) => {
+                  if (!deletingState) {
+                    e.currentTarget.style.backgroundColor = theme.colors.border;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!deletingState) {
+                    e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                  }
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={deletingState}
+                style={deleteButtonStyle(deletingState)}
+                onMouseEnter={(e) => {
+                  if (!deletingState) {
+                    e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!deletingState) {
+                    e.currentTarget.style.backgroundColor = theme.colors.primary;
+                  }
+                }}
+              >
+                {deletingState ? (
+                  <>
+                    <div style={spinnerStyle} />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <FiTrash2 />
+                    Delete Product
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </Modal>
+        )}
+      </Modal>
+    </>
   );
 };
 

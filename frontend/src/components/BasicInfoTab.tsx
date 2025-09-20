@@ -1,6 +1,6 @@
-// src/components/ProductForm/BasicInfoTab.tsx
 import React from 'react';
-import { FiDollarSign, FiTag, FiPlus, FiTrash2 } from 'react-icons/fi';
+import {  FiPlus, FiTrash2 } from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
 import { FieldWrapper, ValidatedInput, ValidatedTextarea } from './ValidationErrorDisplay';
 
@@ -10,7 +10,13 @@ interface BasicInfoTabProps {
   validationErrors: Record<string, string[]>;
 }
 
-const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, validationErrors }) => {
+const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ 
+  formData, 
+  setFormData, 
+  validationErrors 
+}) => {
+  const { theme } = useTheme();
+
   const handleInputChange = (field: keyof IProduct, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -33,8 +39,76 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
     setFormData(prev => ({ ...prev, images: newImages }));
   };
 
+  // Styled components using theme
+  const addButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    fontSize: '0.875rem',
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.secondary,
+    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+    borderRadius: theme.borderRadius.lg,
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontWeight: theme.fonts.medium
+  };
+
+  const removeButtonStyle: React.CSSProperties = {
+    color: '#ef4444',
+    padding: theme.spacing.sm,
+    border: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    borderRadius: theme.borderRadius.md,
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const imageInputStyle: React.CSSProperties = {
+    flex: 1,
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: theme.borderRadius.lg,
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontSize: '1rem',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text
+  };
+
+  const sectionHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    fontWeight: theme.fonts.semiBold,
+    color: theme.colors.text,
+    fontSize: '1.125rem',
+    margin: 0
+  };
+
+  const imageRowStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: theme.spacing.sm,
+    alignItems: 'center'
+  };
+
+  const priceGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: theme.spacing.lg
+  };
+
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+      {/* Product Name */}
       <ValidatedInput
         label="Product Name"
         fieldName="name"
@@ -46,7 +120,8 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
         placeholder="Enter product name"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Pricing */}
+      <div style={priceGridStyle}>
         <ValidatedInput
           label="Regular Price"
           fieldName="price"
@@ -58,11 +133,10 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
           value={formData.price || ''}
           onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
           placeholder="0.00"
-          icon={<FiDollarSign className="text-gray-400" size={20} />}
         />
 
         <ValidatedInput
-          label="Sale Price"
+          label="Sale Price (Optional)"
           fieldName="discountPrice"
           errors={validationErrors}
           type="number"
@@ -71,10 +145,10 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
           value={formData.discountPrice || ''}
           onChange={(e) => handleInputChange('discountPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
           placeholder="Optional discount price"
-          icon={<FiTag className="text-gray-400" size={20} />}
         />
       </div>
 
+      {/* Description */}
       <ValidatedTextarea
         label="Description"
         fieldName="description"
@@ -82,33 +156,44 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
         required
         value={formData.description || ''}
         onChange={(e) => handleInputChange('description', e.target.value)}
-        placeholder="Describe your product..."
+        placeholder="Describe your product in detail..."
         rows={4}
       />
 
-      <ValidatedInput
-        label="Reference Source"
-        fieldName="reference"
-        errors={validationErrors}
-        type="text"
-        value={formData.reference || ''}
-        onChange={(e) => handleInputChange('reference', e.target.value)}
-        placeholder="e.g., facebook, tiktok, instagram"
-        helpText="Track where customers come from (auto-detected from URL parameters)"
-      />
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-gray-800">Product Images</h4>
+      {/* Product Images */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+        <div style={sectionHeaderStyle}>
+          <h4 style={sectionTitleStyle}>Product Images</h4>
           <button
             type="button"
             onClick={addImage}
-            className="flex items-center gap-2 text-sm bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors"
+            style={addButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = theme.colors.primary;
+            }}
           >
             <FiPlus size={14} />
             Add Image
           </button>
         </div>
+
+        {(formData.images || []).length === 0 && (
+          <div style={{
+            padding: theme.spacing.lg,
+            border: `2px dashed ${theme.colors.border}`,
+            borderRadius: theme.borderRadius.lg,
+            textAlign: 'center',
+            backgroundColor: theme.colors.backgroundSecondary,
+            color: theme.colors.textSecondary
+          }}>
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              No images added yet. Click "Add Image" to get started.
+            </p>
+          </div>
+        )}
 
         {(formData.images || []).map((image, index) => (
           <FieldWrapper
@@ -118,19 +203,34 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
             errors={validationErrors}
             required={index === 0}
           >
-            <div className="flex gap-2">
+            <div style={imageRowStyle}>
               <input
                 type="url"
                 value={image}
                 onChange={(e) => handleImageChange(index, e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                style={imageInputStyle}
+                onFocus={(e) => {
+                  e.target.style.borderColor = theme.colors.primary;
+                  e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = theme.colors.border;
+                  e.target.style.boxShadow = 'none';
+                }}
               />
               {(formData.images?.length || 0) > 1 && (
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="text-red-500 hover:text-red-700 p-2"
+                  style={removeButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  title="Remove image"
                 >
                   <FiTrash2 size={16} />
                 </button>
@@ -139,7 +239,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ formData, setFormData, vali
           </FieldWrapper>
         ))}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -73,7 +73,12 @@ const AdminProducts: React.FC = () => {
   };
 
   const handleEditClick = (product: IProduct) => {
-     dispatch(openModal(product));
+     dispatch(openModal(
+      
+      {
+        modalType:'editProduct',
+        product
+      }));
     setEditingProduct(product);
     clearErrors();
   };
@@ -81,8 +86,7 @@ const AdminProducts: React.FC = () => {
   const handleDeleteClick = (product: IProduct) => {
     dispatch(openModal({
       modalType: 'deleteProduct',
-      modalProps: { product },
-      size: 'md'
+      product
     }));
   };
 
@@ -458,8 +462,6 @@ const AdminProducts: React.FC = () => {
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                         onClone={handleCloneClick}
-                        isEditing={editingProduct?._id === product._id}
-                        isDeleting={false} // No longer needed since Redux handles this
                         viewMode={viewMode}
                       />
                     </div>
@@ -472,8 +474,6 @@ const AdminProducts: React.FC = () => {
                       currentPage={currentPage}
                       totalPages={pagination.totalPages}
                       onPageChange={setCurrentPage}
-                      hasNextPage={pagination.hasNextPage}
-                      hasPrevPage={pagination.hasPrevPage}
                     />
                   </div>
                 )}
@@ -485,12 +485,6 @@ const AdminProducts: React.FC = () => {
 
       {/* Edit Product Modal */}
       <ProductModal
-        isOpen={!!editingProduct}
-        onClose={() => {
-          setEditingProduct(null);
-          clearErrors();
-        }}
-        product={editingProduct}
         onSave={handleSaveProduct}
         predefinedCategories={PREDEFINED_CATEGORIES}
         isLoading={updateProductMutation.isPending}
