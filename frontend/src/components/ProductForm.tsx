@@ -1,6 +1,5 @@
-// src/components/ProductForm/ProductForm.tsx
 import React, { useState, useEffect } from 'react';
-import { FiSave, FiX } from 'react-icons/fi';
+import { FiSave } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
 import { PREDEFINED_CATEGORIES } from '../data/predefinedFields';

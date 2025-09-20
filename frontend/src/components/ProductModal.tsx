@@ -26,7 +26,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const handleSubmit = async (productData: Partial<IProduct>) => {
     if (product && product._id) {
       await onSave(product._id, productData);
-      dispatch(closeModal());
     }
   };
 

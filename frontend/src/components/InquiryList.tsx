@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import InquiryFilters from './InquiryFilters';
+//import InquiryFilters from './InquiryFilters';
 import InquiryTable from './InquiryTable';
 import Pagination from './Pagination';
 import LoadingSpinner from './LoadingSpinner';
@@ -15,11 +15,12 @@ const InquiryList: React.FC = () => {
   });
 
   const { data, isLoading, error, refetch } = useOrderInquiries(filters);
-
+/*
   const handleFilterChange = (newFilters: OrderInquiryFilters) => {
     setFilters({ ...newFilters, page: 1 }); // Reset to page 1 when filters change
   };
 
+  */
   const handlePageChange = (page: number) => {
     setFilters({ ...filters, page });
   };
@@ -219,9 +220,10 @@ const InquiryList: React.FC = () => {
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
-
-        <InquiryFilters filters={filters} onChange={handleFilterChange} />
-        
+      
+         
+     {//  <InquiryFilters filters={filters} onChange={handleFilterChange} />
+        }
         {isLoading ? (
           <div style={loadingContainerStyle}>
             <LoadingSpinner size="lg" />

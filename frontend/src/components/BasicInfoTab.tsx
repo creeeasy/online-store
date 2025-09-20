@@ -1,8 +1,12 @@
-import React from 'react';
-import {  FiPlus, FiTrash2 } from 'react-icons/fi';
+// BasicInfoTab.tsx
+import React, { useRef } from 'react';
+import { FiPlus, FiTrash2, FiUpload, FiLoader } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
 import { FieldWrapper, ValidatedInput, ValidatedTextarea } from './ValidationErrorDisplay';
+import { validateImageFile } from '../utils/fileUpload';
+import { toast } from 'react-toastify';
+import { useImageUpload } from '../hooks/useUpload';
 
 interface BasicInfoTabProps {
   formData: Partial<IProduct>;
@@ -16,15 +20,48 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   validationErrors 
 }) => {
   const { theme } = useTheme();
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { mutate: uploadImage, isPending: isUploading } = useImageUpload();
 
   const handleInputChange = (field: keyof IProduct, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageChange = (index: number, value: string) => {
+  const handleImageUrlChange = (index: number, value: string) => {
     const newImages = [...(formData.images || [])];
     newImages[index] = value;
     setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const handleImageUpload = (index: number, file: File) => {
+    uploadImage(file, {
+      onSuccess: (imageUrl) => {
+        console.log(imageUrl)
+        const newImages = [...(formData.images || [])];
+        newImages[index] = imageUrl;
+        setFormData(prev => ({ ...prev, images: newImages }));
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to upload image');
+      }
+    });
+  };
+
+  const handleFileSelect = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    handleImageUpload(index, file);
+    // Reset file input
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const addImage = () => {
@@ -37,6 +74,13 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   const removeImage = (index: number) => {
     const newImages = (formData.images || []).filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, images: newImages }));
+    
+    // Clean up file input ref
+    fileInputRefs.current = fileInputRefs.current.filter((_, i) => i !== index);
+  };
+
+  const triggerFileInput = (index: number) => {
+    fileInputRefs.current[index]?.click();
   };
 
   // Styled components using theme
@@ -54,6 +98,22 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     transition: 'all 0.2s ease',
     fontWeight: theme.fonts.medium
   };
+
+  const uploadButtonStyle = (isUploading: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    fontSize: '0.875rem',
+    backgroundColor: isUploading ? theme.colors.border : theme.colors.backgroundSecondary,
+    color: theme.colors.text,
+    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.border}`,
+    cursor: isUploading ? 'not-allowed' : 'pointer',
+    transition: 'all 0.2s ease',
+    fontWeight: theme.fonts.medium,
+    opacity: isUploading ? 0.7 : 1
+  });
 
   const removeButtonStyle: React.CSSProperties = {
     color: '#ef4444',
@@ -100,10 +160,30 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     alignItems: 'center'
   };
 
-  const priceGridStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: theme.spacing.lg
+  const imagePreviewStyle = (url: string): React.CSSProperties => ({
+    width: '60px',
+    height: '60px',
+    borderRadius: theme.borderRadius.md,
+    backgroundImage: `url(${url})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    border: `1px solid ${theme.colors.border}`,
+    flexShrink: 0
+  });
+
+  const uploadContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing.sm
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    padding: theme.spacing.lg,
+    border: `2px dashed ${theme.colors.border}`,
+    borderRadius: theme.borderRadius.lg,
+    textAlign: 'center',
+    backgroundColor: theme.colors.backgroundSecondary,
+    color: theme.colors.textSecondary
   };
 
   return (
@@ -121,7 +201,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       />
 
       {/* Pricing */}
-      <div style={priceGridStyle}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: theme.spacing.lg }}>
         <ValidatedInput
           label="Regular Price"
           fieldName="price"
@@ -181,14 +261,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         </div>
 
         {(formData.images || []).length === 0 && (
-          <div style={{
-            padding: theme.spacing.lg,
-            border: `2px dashed ${theme.colors.border}`,
-            borderRadius: theme.borderRadius.lg,
-            textAlign: 'center',
-            backgroundColor: theme.colors.backgroundSecondary,
-            color: theme.colors.textSecondary
-          }}>
+          <div style={emptyStateStyle}>
             <p style={{ margin: 0, fontSize: '0.875rem' }}>
               No images added yet. Click "Add Image" to get started.
             </p>
@@ -198,42 +271,88 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         {(formData.images || []).map((image, index) => (
           <FieldWrapper
             key={index}
-            label={`Image ${index + 1} URL`}
+            label={`Image ${index + 1}`}
             fieldName={`images.${index}`}
             errors={validationErrors}
             required={index === 0}
           >
-            <div style={imageRowStyle}>
-              <input
-                type="url"
-                value={image}
-                onChange={(e) => handleImageChange(index, e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                style={imageInputStyle}
-                onFocus={(e) => {
-                  e.target.style.borderColor = theme.colors.primary;
-                  e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = theme.colors.border;
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-              {(formData.images?.length || 0) > 1 && (
+            <div style={uploadContainerStyle}>
+              <div style={imageRowStyle}>
+                {image && (
+                  <div style={imagePreviewStyle(image)} />
+                )}
+                
+                <input
+                  type="text"
+                  value={image}
+                  onChange={(e) => handleImageUrlChange(index, e.target.value)}
+                  placeholder="Image URL or upload a file"
+                  style={imageInputStyle}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = theme.colors.primary;
+                    e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = theme.colors.border;
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                
+                <input
+                  type="file"
+                  ref={(el) => fileInputRefs.current[index] = el}
+                  accept="image/*"
+                  onChange={(e) => handleFileSelect(index, e)}
+                  style={{ display: 'none' }}
+                />
+                
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
-                  style={removeButtonStyle}
+                  onClick={() => triggerFileInput(index)}
+                  disabled={isUploading}
+                  style={uploadButtonStyle(isUploading)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                    if (!isUploading) {
+                      e.currentTarget.style.backgroundColor = theme.colors.border;
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    if (!isUploading) {
+                      e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                    }
                   }}
-                  title="Remove image"
                 >
-                  <FiTrash2 size={16} />
+                  {isUploading ? (
+                    <FiLoader className="animate-spin" size={14} />
+                  ) : (
+                    <FiUpload size={14} />
+                  )}
+                  {isUploading ? 'Uploading...' : 'Upload'}
                 </button>
+
+                {(formData.images?.length || 0) > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    style={removeButtonStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fee2e2';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    title="Remove image"
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                )}
+              </div>
+              
+              {image && (
+                <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary }}>
+                  {image.startsWith('http') ? 'URL: ' : 'Uploaded: '}
+                  {image.length > 50 ? `${image.substring(0, 50)}...` : image}
+                </div>
               )}
             </div>
           </FieldWrapper>

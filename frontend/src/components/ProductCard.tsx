@@ -3,6 +3,7 @@ import { FiEdit, FiTrash2, FiCheck, FiGift, FiCopy, FiEye } from 'react-icons/fi
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
+import { DEFAULT_BASE_URL, SERVER_URL } from '../utils/apiClient';
 
 interface ProductCardProps {
   product: IProduct;
@@ -134,7 +135,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
             flexShrink: 0 
           }}>
             <img
-              src={product.images?.[0] || 'https://picsum.photos/300/300?random=default'}
+              src={
+                product.images?.[0]
+                  ? `${SERVER_URL}${product.images[0]}`
+                  : 'https://picsum.photos/300/300?random=default'
+              }
+
+
               alt={product.name}
               style={{
                 width: '100%',
@@ -272,7 +279,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div style={{ position: 'relative', height: '192px', overflow: 'hidden' }}>
         <img
-          src={product.images?.[0] || 'https://picsum.photos/300/300?random=default'}
+       src={
+                product.images?.[0]
+                  ? `${SERVER_URL}${product.images[0]}`
+                  : 'https://picsum.photos/300/300?random=default'
+              }
           alt={product.name}
           style={{
             width: '100%',

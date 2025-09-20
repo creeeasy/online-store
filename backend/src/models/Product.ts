@@ -93,15 +93,21 @@ const ProductSchema = new Schema({
     required: true,
     maxlength: [1000, 'Description cannot exceed 1000 characters']
   },
-  images: [{ 
-    type: String, 
-    validate: {
-      validator: function(url: string) {
-        return /^https?:\/\/.+\..+/.test(url);
-      },
-      message: 'Invalid image URL format'
-    }
-  }],
+images: {
+  type: [String],
+  validate: {
+    validator: function (arr: string[]) {
+      // allow empty or undefined
+      if (!arr || arr.length === 0) return true;
+
+      // validate each element as non-empty string
+      return arr.every((str) => typeof str === 'string' && str.trim().length > 0);
+    },
+    message: 'Each image must be a non-empty string',
+  },
+  required: false, // optional field
+},
+
   dynamicFields: [{
     key: { type: String, required: true, trim: true },
     placeholder: { type: String, required: true, trim: true }

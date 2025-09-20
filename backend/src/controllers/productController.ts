@@ -52,12 +52,10 @@ export const productValidationRules = {
       .withMessage('Description must be between 10 and 1000 characters'),
     
     body('images')
-      .isArray({ min: 1 })
-      .withMessage('At least one product image is required'),
+      .optional()
+      .isArray({ min: 0 })
+      .withMessage('At least one image is required if images are provided'),
     
-    body('images.*')
-      .isURL()
-      .withMessage('Each image must be a valid URL'),
     
     body('dynamicFields')
       .optional()
@@ -158,13 +156,8 @@ export const productValidationRules = {
     
     body('images')
       .optional()
-      .isArray({ min: 1 })
+      .isArray({ min: 0 })
       .withMessage('At least one image is required if images are provided'),
-    
-    body('images.*')
-      .optional()
-      .isURL()
-      .withMessage('Each image must be a valid URL'),
     
     body('offers.*.discount')
       .optional()
