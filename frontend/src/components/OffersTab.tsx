@@ -15,12 +15,11 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
   const [newOffer, setNewOffer] = useState<Partial<IOffer>>({
     title: '',
     description: '',
-    discount: 0,
     isActive: true
   });
 
   const addOffer = () => {
-    if (!newOffer.title?.trim() || !newOffer.discount) return;
+    if (!newOffer.title?.trim()) return;
     
     setFormData(prev => ({
       ...prev,
@@ -29,7 +28,6 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
     setNewOffer({
       title: '',
       description: '',
-      discount: 0,
       isActive: true
     });
   };
@@ -161,7 +159,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
     marginTop: theme.spacing.md
   };
 
-  const isAddDisabled = !newOffer.title?.trim() || !newOffer.discount;
+  const isAddDisabled = !newOffer.title?.trim();
 
   return (
     <div style={containerStyle}>
@@ -214,9 +212,8 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
                   label="Discount (%)"
                   fieldName={`offers.${index}.discount`}
                   errors={validationErrors}
-                  required
                   type="number"
-                  min="1"
+                  min="0"
                   max="99"
                   value={offer.discount}
                   onChange={(e) => updateOffer(index, 'discount', parseInt(e.target.value) || 0)}
@@ -270,7 +267,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
             errors={validationErrors}
             required
             type="number"
-            min="1"
+            min="0"
             max="99"
             value={newOffer.discount || ''}
             onChange={(e) => setNewOffer({ ...newOffer, discount: parseInt(e.target.value) || 0 })}

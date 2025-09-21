@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ProductGallery from '../components/ProductGallery';
 import EnhancedDynamicForm from '../components/EnhancedDynamicForm';
 import { FiGift, FiExternalLink, FiCheck, FiTag, FiClock } from 'react-icons/fi';
 import { useProduct } from '../hooks/useProducts';
 import { useProductInquiry } from '../hooks/useOrderInquiry';
 
+const SERVER_URL = 'http://localhost:5001'; // Add your server URL here
+
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
@@ -29,14 +32,52 @@ const ProductDetails: React.FC = () => {
   // Extract product from the response
   const product = productResponse?.data || productResponse;
 
+  // Validation functions
+  const validateAlgerianPhone = (phone: string): boolean => {
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    const phoneRegex = /^0[567]\d{8}$/;
+    return phoneRegex.test(cleanPhone);
+  };
+
+  const validateFullName = (name: string): boolean => {
+    const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
+    return nameRegex.test(name.trim()) && name.trim().length >= 2;
+  };
+
   const handleFormSubmit = async (formData: Record<string, string>) => {
     if (!id || !product) return;
 
+    // Client-side validation
+    const errors: string[] = [];
+    
+    if (!formData.name || !validateFullName(formData.name)) {
+      errors.push('Full name must be 2-100 characters and contain only letters');
+    }
+    
+    if (!formData.phone || !validateAlgerianPhone(formData.phone)) {
+      errors.push('Phone number must be 10 digits starting with 05, 06, or 07');
+    }
+
+    if (errors.length > 0) {
+      console.error('Validation errors:', errors);
+      return;
+    }
+
     try {
       await submitInquiry(formData, quantity, selectedVariants);
-      setFormSubmitted(true);
+      // Navigate to thank you page instead of showing success message
+      navigate('/thank-you', { 
+        state: { 
+          productName: product.name,
+          customerName: formData.name,
+          inquiryData: {
+            quantity,
+            selectedVariants,
+            totalPrice: calculateTotalPrice()
+          }
+        }
+      });
     } catch (err) {
-      // Error is already handled by the hook
       console.error('Failed to submit inquiry:', err);
     }
   };
@@ -154,7 +195,11 @@ const ProductDetails: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Gallery Section */}
           <div className="lg:sticky lg:top-8 self-start">
-            <ProductGallery images={product.images} />
+            <ProductGallery 
+              images={product.images?.map((img: string) => 
+                img.startsWith('http') ? img : `${SERVER_URL}${img}`
+              ) || []} 
+            />
           </div>
           
           {/* Product Info Section */}
@@ -201,18 +246,80 @@ const ProductDetails: React.FC = () => {
               )}
             </div>
 
-            {/* Description */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Product Description</h3>
-              <div className="prose max-w-none text-gray-600 leading-relaxed">
-                <p>{product.description}</p>
+            {/* Order Form Section - FIRST PRIORITY */}
+            <div className="bg-white rounded-2xl shadow-xl border-2 border-red-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
+                <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
+                  Order Inquiry
+                </h2>
+                <p className="text-red-100 mt-2">
+                  Get a personalized quote or ask any questions about this product
+                </p>
+              </div>
+              
+              <div className="p-8">
+                {submitError && (
+                  <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+                    {submitError.message || 'Failed to submit inquiry. Please try again.'}
+                  </div>
+                )}
+                {validationErrors && validationErrors.filter(error => !error.field).length > 0 && (
+                  <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+                    <h4 className="font-bold mb-2">Please fix the following errors:</h4>
+                    <ul className="list-disc list-inside">
+                      {validationErrors
+                        .filter(error => !error.field)
+                        .map((error, index) => (
+                          <li key={index}>{error.message}</li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Quantity Selector */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Quantity</h3>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-red-300 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
+                    >
+                      −
+                    </button>
+                    <span className="text-2xl font-bold text-gray-800 min-w-[3rem] text-center">
+                      {quantity}
+                    </span>
+                    <button 
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-red-300 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
+                    >
+                      +
+                    </button>
+                    <div className="ml-4 text-gray-600">
+                      Total: <span className="font-bold text-red-500">
+                        ${calculateTotalPrice().toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <EnhancedDynamicForm 
+                  productId={product._id}
+                  dynamicFields={product.dynamicFields || []}
+                  onSubmit={handleFormSubmit}
+                  submitting={submitting}
+                  validationErrors={validationErrors}
+                />
               </div>
             </div>
 
-            {/* Predefined Fields (Sizes, Colors, etc.) */}
+            {/* Available Options (Predefined Fields) - SECOND PRIORITY */}
             {product.predefinedFields && product.predefinedFields.some((field) => field.isActive && field.selectedOptions.length > 0) && (
               <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Available Options</h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Available Options</h3>
                 <div className="space-y-4">
                   {product.predefinedFields
                     .filter((field) => field.isActive && field.selectedOptions.length > 0)
@@ -242,10 +349,10 @@ const ProductDetails: React.FC = () => {
               </div>
             )}
 
-            {/* Offers Section */}
+            {/* Offers Section - THIRD PRIORITY */}
             {product.offers && product.offers.filter((offer) => isOfferActive(offer)).length > 0 && (
               <div className="bg-gradient-to-r from-red-50 to-red-100 p-6 rounded-2xl shadow-lg border-2 border-red-200">
-                <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-red-800 mb-4 flex items-center gap-2">
                   <FiGift className="text-red-600" />
                   Special Offers
                 </h3>
@@ -278,92 +385,11 @@ const ProductDetails: React.FC = () => {
               </div>
             )}
 
-            {/* Quantity Selector */}
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Quantity</h3>
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-12 h-12 rounded-xl bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
-                >
-                  −
-                </button>
-                <span className="text-2xl font-bold text-gray-800 min-w-[3rem] text-center">
-                  {quantity}
-                </span>
-                <button 
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-12 h-12 rounded-xl bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
-                >
-                  +
-                </button>
-                <div className="ml-4 text-gray-600">
-                  Total: <span className="font-bold text-red-500">
-                    ${calculateTotalPrice().toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Order Form Section */}
-            <div className="bg-white rounded-2xl shadow-xl border-2 border-red-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
-                <h2 className="text-2xl font-bold flex items-center gap-3">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
-                  Order Inquiry
-                </h2>
-                <p className="text-red-100 mt-2">
-                  Get a personalized quote or ask any questions about this product
-                </p>
-              </div>
-              
-              <div className="p-8">
-                {formSubmitted ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FiCheck className="w-8 h-8 text-green-500" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-green-600 mb-4">Thank You!</h3>
-                    <p className="text-gray-600 mb-6">
-                      Your inquiry has been submitted successfully. We'll contact you soon with more details.
-                    </p>
-                    <button 
-                      onClick={() => setFormSubmitted(false)}
-                      className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-300"
-                    >
-                      Submit Another Inquiry
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {submitError && (
-                      <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-                        {submitError.message || 'Failed to submit inquiry. Please try again.'}
-                      </div>
-                    )}
-                    {validationErrors && validationErrors.filter(error => !error.field).length > 0 && (
-                      <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-                        <h4 className="font-bold mb-2">Please fix the following errors:</h4>
-                        <ul className="list-disc list-inside">
-                          {validationErrors
-                            .filter(error => !error.field)
-                            .map((error, index) => (
-                              <li key={index}>{error.message}</li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                    <EnhancedDynamicForm 
-                      productId={product._id}
-                      dynamicFields={product.dynamicFields || []}
-                      onSubmit={handleFormSubmit}
-                      submitting={submitting}
-                      validationErrors={validationErrors}
-                    />
-                  </>
-                )}
+            {/* Product Description - FOURTH PRIORITY */}
+            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Product Description</h3>
+              <div className="prose max-w-none text-gray-600 leading-relaxed">
+                <p>{product.description}</p>
               </div>
             </div>
           </div>

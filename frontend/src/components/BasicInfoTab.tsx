@@ -200,6 +200,18 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         placeholder="Enter product name"
       />
 
+      {/* Reference */}
+      <ValidatedInput
+        label="Reference"
+        fieldName="reference"
+        errors={validationErrors}
+        required
+        type="text"
+        value={formData.reference || ''}
+        onChange={(e) => handleInputChange('reference', e.target.value)}
+        placeholder="Enter reference"
+      />
+
       {/* Pricing */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: theme.spacing.lg }}>
         <ValidatedInput

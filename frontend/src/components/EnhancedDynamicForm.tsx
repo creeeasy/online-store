@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import type { DynamicField } from '../types/types';
+import { WilayaSelect } from './WilayaInput';
+
+interface ValidationError {
+  field?: string;
+  message: string;
+}
 
 interface EnhancedDynamicFormProps {
   productId: string;
@@ -47,21 +53,31 @@ const EnhancedDynamicForm: React.FC<EnhancedDynamicFormProps> = ({
     }
   };
 
+  const validateAlgerianPhone = (phone: string): boolean => {
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    const phoneRegex = /^0[567]\d{8}$/;
+    return phoneRegex.test(cleanPhone);
+  };
+
+  const validateFullName = (name: string): boolean => {
+    const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
+    return nameRegex.test(name.trim()) && name.trim().length >= 2;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic client-side validation
+    // Client-side validation
     const errors: Record<string, string> = {};
     
-    if (!formData.name?.trim()) {
-      errors.name = 'Name is required';
-    }
-    
-    if (!formData.phone?.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone)) {
-      errors.phone = 'Please enter a valid phone number';
-    }
+    dynamicFields.forEach(field => {
+      const fieldValue = formData[field.key];
+      if (field.key === 'name' && (!fieldValue?.trim() || !validateFullName(fieldValue))) {
+        errors[field.key] = 'Full name must be 2-100 characters and contain only letters';
+      } else if (field.key === 'phone' && (!fieldValue?.trim() || !validateAlgerianPhone(fieldValue))) {
+        errors[field.key] = 'Phone number must be 10 digits starting with 05, 06, or 07';
+      }
+    });
     
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -75,102 +91,59 @@ const EnhancedDynamicForm: React.FC<EnhancedDynamicFormProps> = ({
     return fieldErrors[fieldName];
   };
 
+  const getInputType = (fieldKey: string): string => {
+    if (fieldKey.toLowerCase().includes('phone')) return 'tel';
+    if (fieldKey.toLowerCase().includes('email')) return 'email';
+    return 'text';
+  };
+
+  const isFieldRequired = (fieldKey: string): boolean => {
+    const requiredFields = ['name', 'phone'];
+    return requiredFields.includes(fieldKey.toLowerCase());
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Hidden product ID */}
       <input type="hidden" name="productId" value={productId} />
       
-      {/* Name Field */}
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Full Name *
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          required
-          placeholder="Enter your full name"
-          value={formData.name || ''}
-          onChange={(e) => handleInputChange('name', e.target.value)}
-          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors ${
-            getFieldError('name') ? 'border-red-500' : 'border-gray-300'
-          }`}
-          disabled={submitting}
-        />
-        {getFieldError('name') && (
-          <p className="mt-1 text-sm text-red-600">{getFieldError('name')}</p>
-        )}
-      </div>
-      
-      {/* Phone Field */}
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-          Phone Number *
-        </label>
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          required
-          placeholder="Enter your phone number"
-          value={formData.phone || ''}
-          onChange={(e) => handleInputChange('phone', e.target.value)}
-          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors ${
-            getFieldError('phone') ? 'border-red-500' : 'border-gray-300'
-          }`}
-          disabled={submitting}
-        />
-        {getFieldError('phone') && (
-          <p className="mt-1 text-sm text-red-600">{getFieldError('phone')}</p>
-        )}
-      </div>
-      
-      {/* Reference Field */}
-      <div>
-        <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-2">
-          Reference (Optional)
-        </label>
-        <input
-          type="text"
-          id="reference"
-          name="reference"
-          placeholder="How did you hear about us?"
-          value={formData.reference || ''}
-          onChange={(e) => handleInputChange('reference', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
-          disabled={submitting}
-        />
-        {getFieldError('reference') && (
-          <p className="mt-1 text-sm text-red-600">{getFieldError('reference')}</p>
-        )}
-      </div>
-      
-      {/* Dynamic fields */}
       {dynamicFields.map((field) => (
         <div key={field.key}>
-          <label htmlFor={field.key} className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+         {field.key.toLowerCase() !== 'wilaya' && (   <label htmlFor={field.key} className="block text-sm font-medium text-gray-700 mb-2 capitalize">
             {field.key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+            {isFieldRequired(field.key) && <span className="text-red-500 ml-1">*</span>}
           </label>
-          <input
-            type="text"
-            id={field.key}
-            name={field.key}
-            placeholder={field.placeholder}
-            value={formData[field.key] || ''}
-            onChange={(e) => handleInputChange(field.key, e.target.value)}
-            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors ${
-              getFieldError(field.key) ? 'border-red-500' : 'border-gray-300'
-            }`}
-            disabled={submitting}
-          />
+     ) }
+          {/* ✅ Special case for wilaya */}
+          {field.key.toLowerCase() === 'wilaya' ? (
+            <WilayaSelect
+              fieldName={field.key}
+              errors={{ [field.key]: getFieldError(field.key) ? [getFieldError(field.key)!] : [] }}
+              required={isFieldRequired(field.key)}
+              value={formData[field.key] || ''}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+            />
+          ) : (
+            <input
+              type={getInputType(field.key)}
+              id={field.key}
+              name={field.key}
+              required={isFieldRequired(field.key)}
+              placeholder={field.placeholder || `Enter your ${field.key.toLowerCase()}`}
+              value={formData[field.key] || ''}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors ${
+                getFieldError(field.key) ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={submitting}
+            />
+          )}
+
           {getFieldError(field.key) && (
             <p className="mt-1 text-sm text-red-600">{getFieldError(field.key)}</p>
           )}
         </div>
       ))}
-      
-      {/* General form errors (for non-field specific errors) */}
+
       {validationErrors.filter(error => !error.field).length > 0 && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
           <h4 className="font-medium text-red-800 mb-2">Please fix the following errors:</h4>

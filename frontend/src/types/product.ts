@@ -4,7 +4,7 @@ export interface IOffer {
   _id?: string;
   title: string;
   description?: string;
-  discount: number;
+  discount?: number;
   validUntil?: Date;
   isActive: boolean;
 }
@@ -16,12 +16,7 @@ export interface IProduct {
   discountPrice?: number;
   description: string;
   images: string[];
-  dynamicFields?: Array<{
-    key: string;
-    placeholder: string;
-    isRequired: boolean;
-    _id?: string;
-  }>;
+  dynamicFields?:IDynamicField[];
   predefinedFields?: Array<{
     category: string;
     options: string[];
@@ -45,6 +40,8 @@ export interface IProduct {
 export interface IDynamicField {
   key: string;
   placeholder: string;
+  isRequired?: boolean;
+  isDefault?: boolean;
   _id?: string;
 }
 

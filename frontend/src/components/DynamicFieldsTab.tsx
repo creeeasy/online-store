@@ -1,5 +1,5 @@
- import React, { useState } from 'react';
-import { FiTrash2 } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiTrash2, FiLock } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IDynamicField } from '../types/product';
 import { ValidatedInput } from './ValidationErrorDisplay';
@@ -10,27 +10,128 @@ interface DynamicFieldsTabProps {
   validationErrors: Record<string, string[]>;
 }
 
+// Default dynamic fields that should always be present
+const DEFAULT_DYNAMIC_FIELDS: Omit<IDynamicField, '_id'>[] = [
+  {
+    key: 'fullName',
+    placeholder: 'Enter your full name',
+    isRequired: true,
+    isDefault: true
+  },
+  {
+    key: 'phoneNumber',
+    placeholder: 'Enter your phone number (e.g., 0555123456)',
+    isRequired: true,
+    isDefault: true
+  },
+  {
+    key: 'wilaya',
+    placeholder: 'Select your wilaya',
+    isRequired: true,
+    isDefault: true
+  }
+];
+
 const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormData, validationErrors }) => {
   const { theme } = useTheme();
-  const [newField, setNewField] = useState<Omit<IDynamicField, '_id'>>({ key: '', placeholder: '' });
+  const [newField, setNewField] = useState<Omit<IDynamicField, '_id'>>({ 
+    key: '', 
+    placeholder: '',
+    isRequired: false,
+    isDefault: false
+  });
+
+  // Initialize default fields if they don't exist
+  useEffect(() => {
+    if (!formData.dynamicFields || formData.dynamicFields.length === 0) {
+      setFormData(prev => ({
+        ...prev,
+        dynamicFields: DEFAULT_DYNAMIC_FIELDS.map(field => ({ ...field } as IDynamicField))
+      }));
+    } else {
+      // Check if default fields are missing and add them
+      const existingKeys = formData.dynamicFields.map(field => field.key);
+      const missingDefaultFields = DEFAULT_DYNAMIC_FIELDS.filter(
+        defaultField => !existingKeys.includes(defaultField.key)
+      );
+      
+      if (missingDefaultFields.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          dynamicFields: [
+            ...missingDefaultFields.map(field => ({ ...field } as IDynamicField)),
+            ...(prev.dynamicFields || [])
+          ]
+        }));
+      }
+    }
+  }, [formData.dynamicFields, setFormData]);
 
   const addDynamicField = () => {
+    if (!newField.key?.trim() || !newField.placeholder?.trim()) return;
+    
+    // Check if field key already exists
+    const existingKeys = formData.dynamicFields?.map(field => field.key) || [];
+    if (existingKeys.includes(newField.key.trim())) {
+      alert('A field with this key already exists. Please use a different key.');
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      dynamicFields: [...(prev.dynamicFields || []), { ...newField } as IDynamicField]
+      dynamicFields: [...(prev.dynamicFields || []), { 
+        ...newField,
+        key: newField.key.trim(),
+        placeholder: newField.placeholder.trim(),
+        isDefault: false
+      } as IDynamicField]
     }));
-    setNewField({ key: '', placeholder: '' });
+    setNewField({ key: '', placeholder: '', isRequired: false, isDefault: false });
   };
 
-  const updateDynamicField = (index: number, field: 'key' | 'placeholder', value: string) => {
+  const updateDynamicField = (index: number, field: keyof IDynamicField, value: string | boolean) => {
     const newFields = [...(formData.dynamicFields || [])];
     newFields[index] = { ...newFields[index], [field]: value };
     setFormData(prev => ({ ...prev, dynamicFields: newFields }));
   };
 
   const removeDynamicField = (index: number) => {
+    const fieldToRemove = formData.dynamicFields?.[index];
+    
+    // Prevent removal of default fields
+    if (fieldToRemove?.isDefault) {
+      alert('Default fields cannot be removed.');
+      return;
+    }
+
     const newFields = (formData.dynamicFields || []).filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, dynamicFields: newFields }));
+  };
+
+  const resetToDefaults = () => {
+    if (window.confirm('This will remove all custom fields and reset to default fields. Are you sure?')) {
+      setFormData(prev => ({
+        ...prev,
+        dynamicFields: DEFAULT_DYNAMIC_FIELDS.map(field => ({ ...field } as IDynamicField))
+      }));
+    }
+  };
+
+  // Helper function to get field label
+  const getFieldLabel = (field: IDynamicField, index: number) => {
+    if (field.isDefault) {
+      switch (field.key) {
+        case 'fullName':
+          return '👤 Full Name (Default)';
+        case 'phoneNumber':
+          return '📱 Phone Number (Default)';
+        case 'wilaya':
+          return '📍 Wilaya (Default)';
+        default:
+          return `Default Field ${index + 1}`;
+      }
+    }
+    return `Custom Field ${index + 1}`;
   };
 
   // Theme-based styles
@@ -45,19 +146,35 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     fontWeight: theme.fonts.semiBold,
     color: theme.colors.text,
     margin: 0,
-    marginBottom: theme.spacing.md
+    marginBottom: theme.spacing.md,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   };
 
-  const fieldCardStyle: React.CSSProperties = {
+  const resetButtonStyle: React.CSSProperties = {
+    background: 'none',
     border: `1px solid ${theme.colors.border}`,
+    color: theme.colors.textSecondary,
+    cursor: 'pointer',
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.borderRadius.md,
+    fontSize: '0.75rem',
+    fontWeight: theme.fonts.medium,
+    transition: 'all 0.2s ease'
+  };
+
+  const fieldCardStyle = (isDefault: boolean): React.CSSProperties => ({
+    border: `1px solid ${isDefault ? theme.colors.primary + '40' : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: isDefault ? theme.colors.primary + '08' : theme.colors.surface,
     boxShadow: theme.shadows.sm,
     gap: theme.spacing.md,
     display: 'flex',
-    flexDirection: 'column'
-  };
+    flexDirection: 'column',
+    position: 'relative'
+  });
 
   const fieldHeaderStyle: React.CSSProperties = {
     display: 'flex',
@@ -65,30 +182,54 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     justifyContent: 'space-between'
   };
 
-  const fieldLabelStyle: React.CSSProperties = {
+  const fieldLabelStyle = (isDefault: boolean): React.CSSProperties => ({
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
-    color: theme.colors.textSecondary,
-    margin: 0
-  };
+    fontWeight: isDefault ? theme.fonts.semiBold : theme.fonts.medium,
+    color: isDefault ? theme.colors.primary : theme.colors.textSecondary,
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs
+  });
 
-  const deleteButtonStyle: React.CSSProperties = {
+  const deleteButtonStyle = (isDefault: boolean): React.CSSProperties => ({
     background: 'none',
     border: 'none',
-    color: theme.colors.primary,
-    cursor: 'pointer',
+    color: isDefault ? theme.colors.textMuted : theme.colors.primary,
+    cursor: isDefault ? 'not-allowed' : 'pointer',
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s ease'
-  };
+    transition: 'all 0.2s ease',
+    opacity: isDefault ? 0.5 : 1
+  });
 
   const fieldsGridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: theme.spacing.md
+  };
+
+  const checkboxContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.sm
+  };
+
+  const checkboxStyle: React.CSSProperties = {
+    width: '16px',
+    height: '16px',
+    cursor: 'pointer'
+  };
+
+  const checkboxLabelStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    color: theme.colors.textSecondary,
+    cursor: 'pointer',
+    margin: 0
   };
 
   const addFieldSectionStyle: React.CSSProperties = {
@@ -122,45 +263,85 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     boxShadow: disabled ? 'none' : theme.shadows.sm
   });
 
-  const emptyStateStyle: React.CSSProperties = {
-    textAlign: 'center',
-    padding: theme.spacing.xl,
-    color: theme.colors.textSecondary,
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
-    border: `2px dashed ${theme.colors.border}`
+  const infoBoxStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.primary + '10',
+    border: `1px solid ${theme.colors.primary + '30'}`,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg
   };
 
-  const emptyStateTextStyle: React.CSSProperties = {
+  const infoTextStyle: React.CSSProperties = {
     fontSize: '0.875rem',
+    color: theme.colors.text,
     margin: 0,
-    fontStyle: 'italic'
+    lineHeight: '1.4'
   };
+
+  // Sort fields to show defaults first
+  const sortedFields = [...(formData.dynamicFields || [])].sort((a, b) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return 0;
+  });
 
   return (
     <div style={containerStyle}>
-      <h3 style={headerStyle}>Custom Form Fields</h3>
+      <div style={headerStyle}>
+        <span>Custom Form Fields</span>
+        <button
+          type="button"
+          onClick={resetToDefaults}
+          style={resetButtonStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+            e.currentTarget.style.borderColor = theme.colors.primary;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = theme.colors.border;
+          }}
+        >
+          Reset to Defaults
+        </button>
+      </div>
+
+      <div style={infoBoxStyle}>
+        <p style={infoTextStyle}>
+          <strong>Default Fields:</strong> Full Name, Phone Number, and Wilaya are provided by default and cannot be removed. 
+          You can modify their placeholders, toggle required status, or add additional custom fields below.
+        </p>
+      </div>
 
       {/* Existing Dynamic Fields */}
-      {formData.dynamicFields && formData.dynamicFields.length > 0 ? (
+      {sortedFields && sortedFields.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
-          {formData.dynamicFields.map((field, index) => (
-            <div key={index} style={fieldCardStyle}>
+          {sortedFields.map((field, index) => (
+            <div key={`${field.key}-${index}`} style={fieldCardStyle(field.isDefault || false)}>
               <div style={fieldHeaderStyle}>
-                <span style={fieldLabelStyle}>Dynamic Field {index + 1}</span>
+                <span style={fieldLabelStyle(field.isDefault || false)}>
+                  {field.isDefault && <FiLock size={12} />}
+                  {getFieldLabel(field, index)}
+                </span>
                 <button
                   type="button"
                   onClick={() => removeDynamicField(index)}
-                  style={deleteButtonStyle}
+                  style={deleteButtonStyle(field.isDefault || false)}
+                  disabled={field.isDefault}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
-                    e.currentTarget.style.color = theme.colors.primaryDark;
+                    if (!field.isDefault) {
+                      e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                      e.currentTarget.style.color = theme.colors.primaryDark;
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = theme.colors.primary;
+                    if (!field.isDefault) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
                   }}
-                  aria-label={`Remove dynamic field ${index + 1}`}
+                  aria-label={field.isDefault ? 'Cannot remove default field' : `Remove field ${field.key}`}
+                  title={field.isDefault ? 'Default fields cannot be removed' : 'Remove field'}
                 >
                   <FiTrash2 size={16} />
                 </button>
@@ -176,6 +357,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
                   value={field.key}
                   onChange={(e) => updateDynamicField(index, 'key', e.target.value)}
                   placeholder="e.g., size, color"
+                  disabled={field.isDefault}
                 />
 
                 <ValidatedInput
@@ -189,16 +371,23 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
                   placeholder="e.g., Enter size"
                 />
               </div>
+
+              <div style={checkboxContainerStyle}>
+                <input
+                  type="checkbox"
+                  id={`required-${index}`}
+                  checked={field.isRequired || false}
+                  onChange={(e) => updateDynamicField(index, 'isRequired', e.target.checked)}
+                  style={checkboxStyle}
+                />
+                <label htmlFor={`required-${index}`} style={checkboxLabelStyle}>
+                  Required field {field.isDefault && '(Default field - admin can modify)'}
+                </label>
+              </div>
             </div>
           ))}
         </div>
-      ) : (
-        <div style={emptyStateStyle}>
-          <p style={emptyStateTextStyle}>
-            No custom fields added yet. Add fields below to create dynamic form inputs.
-          </p>
-        </div>
-      )}
+      ) : null}
 
       {/* Add New Field Section */}
       <div style={addFieldSectionStyle}>
@@ -212,7 +401,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             type="text"
             value={newField.key}
             onChange={(e) => setNewField({ ...newField, key: e.target.value })}
-            placeholder="e.g., size, color"
+            placeholder="e.g., size, color, brand"
           />
 
           <ValidatedInput
@@ -226,6 +415,20 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             placeholder="e.g., Enter size"
           />
         </div>
+        
+        <div style={checkboxContainerStyle}>
+          <input
+            type="checkbox"
+            id="newField-required"
+            checked={newField.isRequired || false}
+            onChange={(e) => setNewField({ ...newField, isRequired: e.target.checked })}
+            style={checkboxStyle}
+          />
+          <label htmlFor="newField-required" style={checkboxLabelStyle}>
+            Required field
+          </label>
+        </div>
+
         <button
           type="button"
           onClick={addDynamicField}
@@ -246,7 +449,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             }
           }}
         >
-          Add Field
+          Add Custom Field
         </button>
       </div>
     </div>
