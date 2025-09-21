@@ -31,9 +31,10 @@ const OfferSchema = new Schema({
 export interface IDynamicField {
   key: string;
   placeholder: string;
+  isRequired?: boolean;
+  isDefault?: boolean;
   _id?: mongoose.Types.ObjectId;
 }
-
 export interface IPredefinedField {
   category: string;
   options: string[];
@@ -108,10 +109,12 @@ images: {
   required: false, // optional field
 },
 
-  dynamicFields: [{
-    key: { type: String, required: true, trim: true },
-    placeholder: { type: String, required: true, trim: true }
-  }],
+dynamicFields: [{
+  key: { type: String, required: true, trim: true },
+  placeholder: { type: String, required: true, trim: true },
+  isRequired: { type: Boolean, default: false },
+  isDefault: { type: Boolean, default: false }
+}],
   predefinedFields: [{
     category: { type: String, required: true, trim: true },
     options: [{ type: String, trim: true }],

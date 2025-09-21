@@ -78,6 +78,18 @@ export const productValidationRules = {
       .isLength({ max: 100 })
       .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
     
+    body('dynamicFields.*.isRequired')
+      .if(body('dynamicFields').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isRequired must be a boolean value'),
+    
+    body('dynamicFields.*.isDefault')
+      .if(body('dynamicFields').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isDefault must be a boolean value'),
+    
     body('offers')
       .optional()
       .isArray()
@@ -85,7 +97,8 @@ export const productValidationRules = {
     
       body('offers.*.discount')
       .if(body('offers').exists())
-      .isInt({ min: 1, max: 99 })
+      .optional()
+      .isInt({ min: 0, max: 99 })
       .withMessage('Discount must be between 1 and 99 percent'),
     
     body('offers.*.validUntil')
@@ -159,12 +172,44 @@ export const productValidationRules = {
       .isArray({ min: 0 })
       .withMessage('At least one image is required if images are provided'),
     
-    body('offers.*.discount')
+    body('dynamicFields.*.key')
+      .if(body('dynamicFields').exists())
       .optional()
-      .isInt({ min: 1, max: 99 })
+      .trim()
+      .notEmpty()
+      .withMessage('Dynamic field key cannot be empty')
+      .isLength({ max: 50 })
+      .withMessage('Dynamic field key cannot exceed 50 characters'),
+    
+    body('dynamicFields.*.placeholder')
+      .if(body('dynamicFields').exists())
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage('Dynamic field placeholder cannot be empty')
+      .isLength({ max: 100 })
+      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
+    
+    body('dynamicFields.*.isRequired')
+      .if(body('dynamicFields').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isRequired must be a boolean value'),
+    
+    body('dynamicFields.*.isDefault')
+      .if(body('dynamicFields').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isDefault must be a boolean value'),
+    
+    body('offers.*.discount')
+      .if(body('offers').exists())
+      .optional()
+      .isInt({ min: 0, max: 99 })
       .withMessage('Discount must be between 1 and 99 percent'),
     
     body('offers.*.discountPercentage')
+      .if(body('offers').exists())
       .optional()
       .isInt({ min: 0, max: 100 })
       .withMessage('Discount percentage must be between 0 and 100'),
@@ -174,10 +219,6 @@ export const productValidationRules = {
       .isIn(WILAYAS)
       .withMessage('Wilaya must be one of the valid Algerian regions'),
     
-    body('offers.*.phone')
-      .optional()
-      .matches(/^0/)
-      .withMessage('Phone number must start with 0')
   ]
 };
 

@@ -4,6 +4,13 @@ import Product from '../models/Product';
 import OrderInquiry from '../models/OrderInquiry';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
 
+// Phone validation utility
+const validateAlgerianPhone = (phone: string): boolean => {
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  const phoneRegex = /^0[567]\d{8}$/;
+  return phoneRegex.test(cleanPhone);
+};
+
 export class OrderInquiryController {
   // Create new order inquiry
   static createInquiry = asyncHandler(async (req: Request, res: Response) => {
@@ -18,6 +25,22 @@ export class OrderInquiryController {
       selectedVariants = {},
       notes 
     } = req.body;
+
+    // Validate phone number format
+    if (customerData.phone && !validateAlgerianPhone(customerData.phone)) {
+      return ResponseHandler.error(
+        res,
+        'Phone number must be 10 digits starting with 05, 06, or 07',
+        400,
+        [{
+          field: 'customerData.phone',
+          message: 'Invalid phone format. Must be 10 digits: 0[567]XXXXXXXX',
+          value: customerData.phone,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
 
     // Verify product exists
     const product = await Product.findById(productId);
@@ -136,6 +159,22 @@ export class OrderInquiryController {
   static updateInquiry = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
+
+    // Validate phone number if it's being updated
+    if (updates.customerData?.phone && !validateAlgerianPhone(updates.customerData.phone)) {
+      return ResponseHandler.error(
+        res,
+        'Phone number must be 10 digits starting with 05, 06, or 07',
+        400,
+        [{
+          field: 'customerData.phone',
+          message: 'Invalid phone format. Must be 10 digits: 0[567]XXXXXXXX',
+          value: updates.customerData.phone,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
 
     // Remove fields that shouldn't be updated directly
     delete updates._id;

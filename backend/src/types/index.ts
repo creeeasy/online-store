@@ -11,29 +11,7 @@ export interface IUser {
   updatedAt: Date;
 }
 
-export interface IProduct {
-  _id: Types.ObjectId;
-  name: string;
-  price: number;
-  discountPrice?: number;
-  description: string;
-  images: string[];
-  dynamicFields: Array<{ key: string; placeholder: string }>;
-  predefinedFields: Array<{
-    category: string;
-    options: string[];
-    selectedOptions: string[];
-    isActive: boolean;
-  }>;
-  hiddenFields: Array<{
-    key: string;
-    value: string;
-    description: string;
-  }>;
-  createdBy: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 export interface UserPayload {
   id: string;
