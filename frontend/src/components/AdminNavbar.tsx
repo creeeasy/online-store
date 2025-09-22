@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { validateToken, resetAuth } from '../store/slices/authSlice';
 import { useTheme } from '../contexts/ThemeContext';
-import { FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiUser, FiLogOut, FiMenu, FiX, FiHome, FiPackage, FiMail, FiShield } from 'react-icons/fi';
 import { authAPI } from '../utils/authAPI';
 import { clearAuthToken, type ApiError } from '../utils/apiClient';
 
@@ -103,115 +103,287 @@ const AdminNavbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
+  const navbarStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    transition: 'all 0.3s ease',
+    backgroundColor: isScrolled ? `${theme.colors.surface}E6` : theme.colors.surface,
+    backdropFilter: isScrolled ? 'blur(12px)' : 'none',
+    boxShadow: isScrolled ? `0 8px 32px ${theme.colors.shadow}` : `0 4px 12px ${theme.colors.shadow}`,
+    borderBottom: `1px solid ${theme.colors.border}`,
+  };
+
+  const logoStyle: React.CSSProperties = {
+    background: theme.colors.gradientPrimary || `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+    borderRadius: '12px',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: `0 4px 12px ${theme.colors.primary}30`,
+    transition: 'all 0.3s ease',
+  };
+
+  const getNavLinkStyle = (isActive: boolean): React.CSSProperties => ({
+    position: 'relative',
+    padding: '0.75rem 1rem',
+    borderRadius: '12px',
+    fontWeight: '500',
+    fontSize: '0.9rem',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    textDecoration: 'none',
+    backgroundColor: isActive ? `${theme.colors.primary}10` : 'transparent',
+    color: isActive ? theme.colors.primary : theme.colors.textSecondary,
+    border: isActive ? `1px solid ${theme.colors.primary}30` : '1px solid transparent',
+  });
+
+  const userProfileStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.5rem 1rem',
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: '12px',
+    border: `1px solid ${theme.colors.border}`,
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+  };
+
+  const userAvatarStyle: React.CSSProperties = {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    background: theme.colors.gradientSecondary || `linear-gradient(135deg, ${theme.colors.secondary}, ${theme.colors.secondaryDark})`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: theme.colors.white,
+    fontWeight: '600',
+    fontSize: '0.9rem',
+    boxShadow: `0 2px 8px ${theme.colors.secondary}30`,
+  };
+
+  const logoutButtonStyle: React.CSSProperties = {
+    padding: '0.75rem 1.25rem',
+    borderRadius: '12px',
+    fontWeight: '600',
+    fontSize: '0.9rem',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    background: theme.colors.gradientPrimary || `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+    color: theme.colors.textOnPrimary,
+    border: 'none',
+    cursor: 'pointer',
+    boxShadow: `0 4px 12px ${theme.colors.primary}40`,
+  };
+
+  const mobileMenuStyle: React.CSSProperties = {
+    background: `linear-gradient(to bottom, ${theme.colors.surface}, ${theme.colors.backgroundSecondary})`,
+    borderTop: `1px solid ${theme.colors.border}`,
+    padding: '1.5rem 1rem',
+  };
+
+  const modalOverlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 60,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backdropFilter: 'blur(4px)',
+  };
+
+  const modalStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    borderRadius: '20px',
+    boxShadow: `0 20px 60px ${theme.colors.shadow}`,
+    border: `1px solid ${theme.colors.border}`,
+    padding: '2rem',
+    maxWidth: '400px',
+    width: '90%',
+    textAlign: 'center',
+  };
+
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
-          isScrolled
-            ? `bg-[${theme.colors.surface}]/95 backdrop-blur-md shadow-lg border-b border-[${theme.colors.primaryLight}]/25`
-            : `bg-[${theme.colors.surface}] shadow-[${theme.shadows.lg}]`
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-4 md:py-3">
-          <div className="flex justify-between items-center">
+      <nav style={navbarStyle}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {/* Logo & Brand Section */}
-            <div className="flex items-center space-x-4 md:space-x-8">
-              <Link to="/admin" className="flex items-center space-x-2 no-underline">
-                <div className="relative">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 ease-in-out transform hover:scale-110 hover:shadow-lg"
-                    style={{ background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})` }}
-                  >
-                    <FiUser className="w-5 h-5" style={{ color: theme.colors.secondary }} />
-                  </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ backgroundColor: theme.colors.accent, borderColor: theme.colors.surface }}>
-                    <svg className="w-2 h-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{
-                      background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none' }}>
+                <div style={{ position: 'relative' }}>
+                  <div 
+                    style={logoStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = `0 6px 20px ${theme.colors.primary}50`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.primary}30`;
                     }}
                   >
+                    <FiShield size={20} color={theme.colors.textOnPrimary} />
+                  </div>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: theme.colors.success,
+                    border: `2px solid ${theme.colors.surface}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <div style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: theme.colors.white,
+                    }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    background: theme.colors.gradientPrimary || `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    lineHeight: 1,
+                  }}>
                     Admin Panel
                   </span>
-                  <span className="text-xs -mt-1" style={{ color: theme.colors.textMuted }}>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: theme.colors.textMuted,
+                    marginTop: '2px',
+                    fontWeight: '400',
+                  }}>
                     Management Dashboard
                   </span>
                 </div>
               </Link>
+
               {/* Desktop Navigation Links */}
-              <div className="hidden md:flex space-x-1">
+              <div style={{ display: 'flex', gap: '0.5rem' }} className="hidden md:flex">
                 <Link
                   to="/admin"
-                  className={`relative px-3 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out flex items-center gap-2 no-underline ${
-                    isActivePath('/admin')
-                      ? `bg-[${theme.colors.backgroundSecondary}] text-[${theme.colors.primary}] shadow-[${theme.shadows.sm}]`
-                      : `bg-transparent text-[${theme.colors.textSecondary}] hover:bg-[${theme.colors.backgroundSecondary}] hover:text-[${theme.colors.primary}]`
-                  }`}
+                  style={getNavLinkStyle(isActivePath('/admin'))}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+                  <FiHome size={16} />
                   Dashboard
                 </Link>
                 <Link
                   to="/admin/products"
-                  className={`relative px-3 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out flex items-center gap-2 no-underline ${
-                    isActivePath('/admin/products')
-                      ? `bg-[${theme.colors.backgroundSecondary}] text-[${theme.colors.primary}] shadow-[${theme.shadows.sm}]`
-                      : `bg-transparent text-[${theme.colors.textSecondary}] hover:bg-[${theme.colors.backgroundSecondary}] hover:text-[${theme.colors.primary}]`
-                  }`}
+                  style={getNavLinkStyle(isActivePath('/admin/products'))}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin/products')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin/products')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
+                  <FiPackage size={16} />
                   Products
                 </Link>
                 <Link
                   to="/admin/inquiries"
-                  className={`relative px-3 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out flex items-center gap-2 no-underline ${
-                    isActivePath('/admin/inquiries')
-                      ? `bg-[${theme.colors.backgroundSecondary}] text-[${theme.colors.primary}] shadow-[${theme.shadows.sm}]`
-                      : `bg-transparent text-[${theme.colors.textSecondary}] hover:bg-[${theme.colors.backgroundSecondary}] hover:text-[${theme.colors.primary}]`
-                  }`}
+                  style={{
+                    ...getNavLinkStyle(isActivePath('/admin/inquiries')),
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin/inquiries')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin/inquiries')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
+                  <FiMail size={16} />
                   Inquiries
-                  <div className="w-2 h-2 rounded-full bg-[theme.colors.primary] animate-pulse" />
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: theme.colors.error,
+                    animation: 'pulse 2s infinite',
+                  }} />
                 </Link>
               </div>
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center space-x-2">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               {/* User Profile */}
-              <div
-                className="hidden md:flex items-center space-x-2 px-3 py-2 bg-[${theme.colors.backgroundSecondary}] rounded-lg transition-colors duration-300 ease-in-out cursor-pointer hover:bg-[${theme.colors.primaryLight}]/20"
+              <div 
+                style={userProfileStyle} 
+                className="hidden md:flex"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.hover;
+                  e.currentTarget.style.borderColor = theme.colors.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                  e.currentTarget.style.borderColor = theme.colors.border;
+                }}
               >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-transform duration-300 ease-in-out transform hover:scale-110"
-                  style={{
-                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                    color: theme.colors.secondary
-                  }}
-                >
+                <div style={userAvatarStyle}>
                   {userInitial}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{ 
+                    fontSize: '0.9rem', 
+                    fontWeight: '600', 
+                    color: theme.colors.text,
+                    lineHeight: 1,
+                  }}>
                     {username}
                   </span>
-                  <span className="text-xs" style={{ color: theme.colors.textMuted }}>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: theme.colors.textMuted,
+                    marginTop: '2px',
+                  }}>
                     Administrator
                   </span>
                 </div>
@@ -220,15 +392,18 @@ const AdminNavbar: React.FC = () => {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="px-3 py-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:translate-y-[-2px] hover:shadow-lg"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                  color: theme.colors.secondary,
-                  boxShadow: theme.shadows.md,
-                }}
+                style={logoutButtonStyle}
                 disabled={logoutMutation.isPending}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = `0 6px 20px ${theme.colors.primary}50`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.primary}40`;
+                }}
               >
-                <FiLogOut className="w-4 h-4" />
+                <FiLogOut size={16} />
                 <span className="hidden md:inline">
                   {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
                 </span>
@@ -237,50 +412,70 @@ const AdminNavbar: React.FC = () => {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-[${theme.colors.textSecondary}] rounded-lg transition-all duration-300 ease-in-out md:hidden hover:bg-[${theme.colors.backgroundSecondary}] hover:text-[${theme.colors.primary}]"
+                style={{
+                  padding: '0.75rem',
+                  color: theme.colors.textSecondary,
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                className="md:hidden"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                  e.currentTarget.style.color = theme.colors.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = theme.colors.textSecondary;
+                }}
               >
-                {isMobileMenuOpen ? (
-                  <FiX className="w-6 h-6" />
-                ) : (
-                  <FiMenu className="w-6 h-6" />
-                )}
+                {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
               </button>
             </div>
           </div>
         </div>
 
         {/* Mobile Menu */}
-        <div
-          className={`overflow-hidden transition-all duration-500 ease-in-out md:hidden ${
-            isMobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
-          }`}
-        >
-          <div
-            className="border-t py-4 px-4 flex flex-col space-y-4"
-            style={{
-              background: `linear-gradient(to bottom, ${theme.colors.surface}, ${theme.colors.backgroundSecondary})`,
-              borderColor: theme.colors.border,
-            }}
-          >
+        <div style={{
+          overflow: 'hidden',
+          transition: 'all 0.5s ease',
+          maxHeight: isMobileMenuOpen ? '400px' : '0',
+          opacity: isMobileMenuOpen ? 1 : 0,
+        }} className="md:hidden">
+          <div style={mobileMenuStyle}>
             {/* User Info in Mobile Menu */}
-            <div
-              className="flex items-center space-x-2 p-2 bg-[${theme.colors.surface}] rounded-lg border"
-              style={{ borderColor: theme.colors.border }}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center font-bold"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                  color: theme.colors.secondary,
-                }}
-              >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '1rem',
+              backgroundColor: theme.colors.surface,
+              borderRadius: '12px',
+              border: `1px solid ${theme.colors.border}`,
+              marginBottom: '1.5rem',
+            }}>
+              <div style={{
+                ...userAvatarStyle,
+                width: '48px',
+                height: '48px',
+                fontSize: '1.1rem',
+              }}>
                 {userInitial}
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold" style={{ color: theme.colors.text }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ 
+                  fontSize: '1rem', 
+                  fontWeight: '600', 
+                  color: theme.colors.text,
+                }}>
                   {username}
                 </span>
-                <span className="text-xs" style={{ color: theme.colors.textMuted }}>
+                <span style={{ 
+                  fontSize: '0.8rem', 
+                  color: theme.colors.textMuted,
+                }}>
                   Administrator
                 </span>
               </div>
@@ -288,26 +483,42 @@ const AdminNavbar: React.FC = () => {
 
             {/* Mobile Navigation Links */}
             {[
-              { path: '/admin', label: 'Dashboard', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-              { path: '/admin/products', label: 'Products', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-              { path: '/admin/inquiries', label: 'Inquiries', icon: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4' },
-            ].map(({ path, label, icon }) => (
+              { path: '/admin', label: 'Dashboard', icon: FiHome },
+              { path: '/admin/products', label: 'Products', icon: FiPackage },
+              { path: '/admin/inquiries', label: 'Inquiries', icon: FiMail, hasNotification: true },
+            ].map(({ path, label, icon: Icon, hasNotification }) => (
               <Link
                 key={path}
                 to={path}
-                className={`relative px-4 py-3 rounded-lg font-medium transition-all duration-300 ease-in-out flex items-center gap-2 no-underline ${
-                  isActivePath(path)
-                    ? `bg-[${theme.colors.backgroundSecondary}] text-[${theme.colors.primary}] shadow-[${theme.shadows.sm}]`
-                    : `bg-transparent text-[${theme.colors.textSecondary}] hover:bg-[${theme.colors.backgroundSecondary}] hover:text-[${theme.colors.primary}]`
-                }`}
+                style={{
+                  ...getNavLinkStyle(isActivePath(path)),
+                  marginBottom: '0.5rem',
+                  padding: '1rem 1.25rem',
+                }}
                 onClick={() => setIsMobileMenuOpen(false)}
+                onMouseEnter={(e) => {
+                  if (!isActivePath(path)) {
+                    e.currentTarget.style.backgroundColor = theme.colors.hover;
+                    e.currentTarget.style.color = theme.colors.primary;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActivePath(path)) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = theme.colors.textSecondary;
+                  }
+                }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-                </svg>
+                <Icon size={20} />
                 {label}
-                {path === '/admin/inquiries' && (
-                  <div className="w-2 h-2 rounded-full bg-[${theme.colors.primary}]" />
+                {hasNotification && (
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: theme.colors.error,
+                    marginLeft: 'auto',
+                  }} />
                 )}
               </Link>
             ))}
@@ -317,57 +528,96 @@ const AdminNavbar: React.FC = () => {
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div
-            className="rounded-3xl shadow-2xl border p-6 max-w-sm mx-4"
-            style={{ backgroundColor: theme.colors.surface, borderColor: theme.colors.border }}
-          >
-            <div className="text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: theme.colors.backgroundSecondary }}
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: `${theme.colors.error}15`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.5rem',
+            }}>
+              <FiLogOut size={32} color={theme.colors.error} />
+            </div>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              color: theme.colors.text,
+              margin: '0 0 1rem 0',
+            }}>
+              Confirm Logout
+            </h3>
+            <p style={{
+              fontSize: '1rem',
+              color: theme.colors.textSecondary,
+              margin: '0 0 2rem 0',
+              lineHeight: 1.5,
+            }}>
+              Are you sure you want to log out of the admin panel? You will need to sign in again to access the dashboard.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1,
+                  padding: '0.875rem 1.5rem',
+                  fontWeight: '600',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: theme.colors.backgroundSecondary,
+                  color: theme.colors.text,
+                  border: `1px solid ${theme.colors.border}`,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                }}
               >
-                <FiLogOut className="w-8 h-8" style={{ color: theme.colors.primary }} />
-              </div>
-              <h3
-                className="text-2xl font-bold mb-4"
-                style={{ color: theme.colors.text }}
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                style={{
+                  flex: 1,
+                  padding: '0.875rem 1.5rem',
+                  fontWeight: '600',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                  background: theme.colors.gradientPrimary || `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+                  color: theme.colors.textOnPrimary,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: `0 4px 12px ${theme.colors.primary}40`,
+                }}
+                disabled={logoutMutation.isPending}
+                onMouseEnter={(e) => {
+                  if (!logoutMutation.isPending) {
+                    e.currentTarget.style.boxShadow = `0 6px 20px ${theme.colors.primary}50`;
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!logoutMutation.isPending) {
+                    e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.primary}40`;
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
+                }}
               >
-                Confirm Logout
-              </h3>
-              <p
-                className="text-sm mb-6 leading-relaxed"
-                style={{ color: theme.colors.textSecondary }}
-              >
-                Are you sure you want to log out of the admin panel?
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 px-4 py-2 font-semibold rounded-lg transition-colors duration-300 ease-in-out hover:bg-[${theme.colors.border}]"
-                  style={{ backgroundColor: theme.colors.backgroundSecondary, color: theme.colors.text }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmLogout}
-                  className="flex-1 px-4 py-2 font-semibold rounded-lg transition-all duration-300 ease-in-out shadow-md hover:shadow-lg"
-                  style={{
-                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                    color: theme.colors.secondary,
-                  }}
-                  disabled={logoutMutation.isPending}
-                >
-                  {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-                </button>
-              </div>
+                {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Spacer to prevent content overlap */}
-      <div className="h-20" />
+      <div style={{ height: '88px' }} />
     </>
   );
 };

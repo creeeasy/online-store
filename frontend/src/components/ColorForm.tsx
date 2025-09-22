@@ -1,5 +1,4 @@
-// components/ColorForm.tsx
-import React, { useState, useRef } from 'react';
+import React, {  useRef } from 'react';
 import { FiPlus, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProductColor, ColorFormProps } from '../types/product';
@@ -75,28 +74,28 @@ const ColorForm: React.FC<ColorFormProps> = ({
 
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
-    padding: theme.spacing.lg,
+    padding: '1.5rem',
   };
 
   const colorItemStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    padding: theme.spacing.md,
+    gap: '1rem',
+    padding: '1rem',
     backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: '8px',
     border: `1px solid ${theme.colors.border}`,
-    marginBottom: theme.spacing.sm,
+    marginBottom: '0.75rem',
     transition: 'all 0.2s ease',
   };
 
   const inputStyle: React.CSSProperties = {
     flex: 1,
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    padding: '0.75rem 1rem',
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: '8px',
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
     fontSize: '0.9rem',
@@ -105,7 +104,7 @@ const ColorForm: React.FC<ColorFormProps> = ({
   const colorPreviewStyle = (hexCode: string): React.CSSProperties => ({
     width: '40px',
     height: '40px',
-    borderRadius: theme.borderRadius.md,
+    borderRadius: '8px',
     border: `2px solid ${theme.colors.border}`,
     backgroundColor: hexCode,
     cursor: 'pointer',
@@ -115,23 +114,23 @@ const ColorForm: React.FC<ColorFormProps> = ({
   const addButtonStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    gap: '0.75rem',
+    padding: '1rem 1.5rem',
     backgroundColor: theme.colors.primary,
-    color: theme.colors.secondary,
+    color: theme.colors.textOnPrimary,
     border: 'none',
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     cursor: colors.length >= maxColors ? 'not-allowed' : 'pointer',
     opacity: colors.length >= maxColors ? 0.6 : 1,
     fontSize: '0.9rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     transition: 'all 0.2s ease',
   };
 
   const actionButtonStyle: React.CSSProperties = {
-    padding: theme.spacing.sm,
+    padding: '0.75rem',
     border: 'none',
-    borderRadius: theme.borderRadius.md,
+    borderRadius: '8px',
     cursor: 'pointer',
     backgroundColor: 'transparent',
     color: theme.colors.textSecondary,
@@ -149,7 +148,7 @@ const ColorForm: React.FC<ColorFormProps> = ({
 
   return (
     <div style={containerStyle} className={className}>
-      <div style={{ marginBottom: theme.spacing.lg }}>
+      <div style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ margin: 0, color: theme.colors.text, fontSize: '1.1rem' }}>
           Product Colors
         </h3>
@@ -187,7 +186,7 @@ const ColorForm: React.FC<ColorFormProps> = ({
                 style={{
                   ...inputStyle,
                   borderColor: nameError ? theme.colors.error : theme.colors.border,
-                  marginBottom: theme.spacing.xs,
+                  marginBottom: '0.5rem',
                 }}
                 maxLength={30}
               />
@@ -213,6 +212,14 @@ const ColorForm: React.FC<ColorFormProps> = ({
                 onClick={() => toggleAvailability(index)}
                 style={actionButtonStyle}
                 title={color.isAvailable ? 'Mark as unavailable' : 'Mark as available'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                  e.currentTarget.style.color = color.isAvailable ? theme.colors.warning : theme.colors.success;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = theme.colors.textSecondary;
+                }}
               >
                 {color.isAvailable ? <FiEye size={16} /> : <FiEyeOff size={16} />}
               </button>
@@ -223,6 +230,14 @@ const ColorForm: React.FC<ColorFormProps> = ({
               onClick={() => removeColor(index)}
               style={actionButtonStyle}
               title="Remove color"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                e.currentTarget.style.color = theme.colors.error;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = theme.colors.textSecondary;
+              }}
             >
               <FiTrash2 size={16} />
             </button>
@@ -237,13 +252,13 @@ const ColorForm: React.FC<ColorFormProps> = ({
           style={addButtonStyle}
           onMouseEnter={(e) => {
             if (colors.length < maxColors) {
-              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
               e.currentTarget.style.transform = 'translateY(-1px)';
             }
           }}
           onMouseLeave={(e) => {
             if (colors.length < maxColors) {
-              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.backgroundColor = theme.colors.primary;
               e.currentTarget.style.transform = 'translateY(0)';
             }
           }}
@@ -254,11 +269,11 @@ const ColorForm: React.FC<ColorFormProps> = ({
       )}
 
       {colors.length > 0 && (
-        <div style={{ marginTop: theme.spacing.lg }}>
+        <div style={{ marginTop: '1.5rem' }}>
           <h4 style={{ margin: 0, color: theme.colors.text, fontSize: '1rem' }}>
             Quick Color Palettes
           </h4>
-          <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap', marginTop: theme.spacing.sm }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
             {DEFAULT_COLOR_PALETTES.map((palette) => (
               <div key={palette.name} style={{ display: 'flex', gap: '2px' }}>
                 {palette.colors.map((defaultColor) => (

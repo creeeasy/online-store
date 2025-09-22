@@ -134,19 +134,19 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     return `Custom Field ${index + 1}`;
   };
 
-  // Theme-based styles
+  // Theme-based styles using your theme structure
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.lg
+    gap: '1.5rem'
   };
 
   const headerStyle: React.CSSProperties = {
     fontSize: '1.125rem',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
     color: theme.colors.text,
     margin: 0,
-    marginBottom: theme.spacing.md,
+    marginBottom: '1rem',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -157,20 +157,20 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     border: `1px solid ${theme.colors.border}`,
     color: theme.colors.textSecondary,
     cursor: 'pointer',
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.5rem 0.75rem',
+    borderRadius: '8px',
     fontSize: '0.75rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     transition: 'all 0.2s ease'
   };
 
   const fieldCardStyle = (isDefault: boolean): React.CSSProperties => ({
-    border: `1px solid ${isDefault ? theme.colors.primary + '40' : theme.colors.border}`,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    backgroundColor: isDefault ? theme.colors.primary + '08' : theme.colors.surface,
-    boxShadow: theme.shadows.sm,
-    gap: theme.spacing.md,
+    border: `1px solid ${isDefault ? `${theme.colors.primary}40` : theme.colors.border}`,
+    borderRadius: '12px',
+    padding: '1.5rem',
+    backgroundColor: isDefault ? `${theme.colors.primary}08` : theme.colors.surface,
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`,
+    gap: '1rem',
     display: 'flex',
     flexDirection: 'column',
     position: 'relative'
@@ -184,21 +184,21 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
 
   const fieldLabelStyle = (isDefault: boolean): React.CSSProperties => ({
     fontSize: '0.875rem',
-    fontWeight: isDefault ? theme.fonts.semiBold : theme.fonts.medium,
+    fontWeight: isDefault ? '600' : '500',
     color: isDefault ? theme.colors.primary : theme.colors.textSecondary,
     margin: 0,
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.xs
+    gap: '0.5rem'
   });
 
   const deleteButtonStyle = (isDefault: boolean): React.CSSProperties => ({
     background: 'none',
     border: 'none',
-    color: isDefault ? theme.colors.textMuted : theme.colors.primary,
+    color: isDefault ? theme.colors.textMuted : theme.colors.error,
     cursor: isDefault ? 'not-allowed' : 'pointer',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.75rem',
+    borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -209,20 +209,21 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
   const fieldsGridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: theme.spacing.md
+    gap: '1rem'
   };
 
   const checkboxContainerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginTop: theme.spacing.sm
+    gap: '0.5rem',
+    marginTop: '0.75rem'
   };
 
   const checkboxStyle: React.CSSProperties = {
     width: '16px',
     height: '16px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    accentColor: theme.colors.primary
   };
 
   const checkboxLabelStyle: React.CSSProperties = {
@@ -233,17 +234,17 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
   };
 
   const addFieldSectionStyle: React.CSSProperties = {
-    padding: theme.spacing.lg,
+    padding: '1.5rem',
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
-    gap: theme.spacing.md,
+    gap: '1rem',
     display: 'flex',
     flexDirection: 'column'
   };
 
   const addFieldHeaderStyle: React.CSSProperties = {
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.text,
     margin: 0,
     fontSize: '1rem'
@@ -251,24 +252,24 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
 
   const addButtonStyle = (disabled: boolean): React.CSSProperties => ({
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    backgroundColor: disabled ? theme.colors.textMuted : theme.colors.primary,
-    color: theme.colors.secondary,
-    borderRadius: theme.borderRadius.lg,
+    padding: '0.75rem 1rem',
+    backgroundColor: disabled ? theme.colors.disabled : theme.colors.primary,
+    color: disabled ? theme.colors.textMuted : theme.colors.textOnPrimary,
+    borderRadius: '12px',
     border: 'none',
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'all 0.2s ease',
-    boxShadow: disabled ? 'none' : theme.shadows.sm
+    boxShadow: disabled ? 'none' : `0 2px 4px ${theme.colors.shadow}`
   });
 
   const infoBoxStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.primary + '10',
-    border: `1px solid ${theme.colors.primary + '30'}`,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.lg
+    backgroundColor: `${theme.colors.primary}10`,
+    border: `1px solid ${theme.colors.primary}30`,
+    borderRadius: '8px',
+    padding: '1rem',
+    marginBottom: '1.5rem'
   };
 
   const infoTextStyle: React.CSSProperties = {
@@ -315,7 +316,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
 
       {/* Existing Dynamic Fields */}
       {sortedFields && sortedFields.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {sortedFields.map((field, index) => (
             <div key={`${field.key}-${index}`} style={fieldCardStyle(field.isDefault || false)}>
               <div style={fieldHeaderStyle}>
@@ -330,14 +331,12 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
                   disabled={field.isDefault}
                   onMouseEnter={(e) => {
                     if (!field.isDefault) {
-                      e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
-                      e.currentTarget.style.color = theme.colors.primaryDark;
+                      e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!field.isDefault) {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = theme.colors.primary;
                     }
                   }}
                   aria-label={field.isDefault ? 'Cannot remove default field' : `Remove field ${field.key}`}
@@ -438,14 +437,14 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             if (!(!newField.key?.trim() || !newField.placeholder?.trim())) {
               e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
               e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = theme.shadows.md;
+              e.currentTarget.style.boxShadow = `0 4px 8px ${theme.colors.shadow}`;
             }
           }}
           onMouseLeave={(e) => {
             if (!(!newField.key?.trim() || !newField.placeholder?.trim())) {
               e.currentTarget.style.backgroundColor = theme.colors.primary;
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = theme.shadows.sm;
+              e.currentTarget.style.boxShadow = `0 2px 4px ${theme.colors.shadow}`;
             }
           }}
         >

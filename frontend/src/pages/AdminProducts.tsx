@@ -26,7 +26,6 @@ const AdminProducts: React.FC = () => {
   const { theme } = useTheme();
   const dispatch = useAppDispatch();
   
-  const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [cloningProduct, setCloningProduct] = useState<IProduct | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,7 +78,6 @@ const AdminProducts: React.FC = () => {
         modalType:'editProduct',
         product
       }));
-    setEditingProduct(product);
     clearErrors();
   };
 
@@ -126,7 +124,6 @@ const AdminProducts: React.FC = () => {
             console.log(productData)
 
       await updateProductMutation.mutateAsync({ id, data: productData });
-      setEditingProduct(null);
     } catch (error: any) {
       console.error('Error updating product:', error);
       const errors = extractValidationErrors(error);
@@ -153,7 +150,6 @@ const AdminProducts: React.FC = () => {
   };
 
   const handleCancel = () => {
-    setEditingProduct(null);
     setCloningProduct(null);
     setShowForm(false);
     clearErrors();
@@ -170,116 +166,249 @@ const AdminProducts: React.FC = () => {
     }
   }, [createProductMutation.isSuccess, updateProductMutation.isSuccess, cloneProductMutation.isSuccess]);
 
+  // Enhanced styles using the theme system
   const containerStyle: React.CSSProperties = {
     minHeight: '100vh',
     backgroundColor: theme.colors.backgroundSecondary,
-    padding: `${theme.spacing.lg} 0`,
+    fontFamily: theme.fonts.family.body,
   };
 
   const headerContainerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
     borderBottom: `1px solid ${theme.colors.border}`,
-    boxShadow: theme.shadows.sm,
+    boxShadow: theme.shadows.md,
   };
 
   const headerContentStyle: React.CSSProperties = {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: `${theme.spacing.lg} ${theme.spacing.md}`,
+    padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: '1.875rem',
-    fontWeight: theme.fonts.bold,
-    background: `linear-gradient(to right, ${theme.colors.primaryDark}, ${theme.colors.primary})`,
+    fontSize: theme.fonts.size['4xl'],
+    fontWeight: theme.fonts.weight.bold,
+    fontFamily: theme.fonts.family.heading,
+    background: theme.colors.gradientPrimary,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
+    marginBottom: theme.spacing.xs,
+    letterSpacing: theme.fonts.letterSpacing.tight,
+    lineHeight: theme.fonts.lineHeight.tight,
   };
 
-  const addButtonContainerStyle: React.CSSProperties = {
+  const subtitleStyle: React.CSSProperties = {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fonts.size.lg,
+    fontWeight: theme.fonts.weight.regular,
+    lineHeight: theme.fonts.lineHeight.normal,
+    marginBottom: theme.spacing.xl,
+  };
+
+  const headerActionsStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap' as const,
+    gap: theme.spacing.lg,
+  };
+
+  const addButtonStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
     gap: theme.spacing.sm,
-    backgroundColor: `linear-gradient(to right, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-    color: theme.colors.secondary,
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    background: theme.colors.gradientPrimary,
+    color: theme.colors.textOnPrimary,
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
     borderRadius: theme.borderRadius.lg,
-    fontWeight: theme.fonts.semiBold,
-    transition: 'all 0.2s ease',
+    fontWeight: theme.fonts.weight.semiBold,
+    fontSize: theme.fonts.size.md,
+    fontFamily: theme.fonts.family.body,
+    transition: theme.transitions.normal,
     boxShadow: theme.shadows.md,
     cursor: 'pointer',
     border: 'none',
-    ':hover': {
-      transform: 'scale(1.05)',
-      boxShadow: theme.shadows.lg,
-    },
-    ':disabled': {
-      opacity: 0.5,
-      cursor: 'not-allowed',
-    }
+    textDecoration: 'none',
+    letterSpacing: theme.fonts.letterSpacing.wide,
+  };
+
+  const viewControlsStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  };
+
+  const viewModeContainerStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xs,
+    display: 'flex',
+    border: `1px solid ${theme.colors.border}`,
+    boxShadow: theme.shadows.xs,
   };
 
   const viewModeButtonStyle = (isActive: boolean): React.CSSProperties => ({
-    padding: theme.spacing.sm,
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
     borderRadius: theme.borderRadius.md,
-    transition: 'all 0.2s ease',
+    transition: theme.transitions.fast,
     backgroundColor: isActive ? theme.colors.surface : 'transparent',
     boxShadow: isActive ? theme.shadows.sm : 'none',
     color: isActive ? theme.colors.primary : theme.colors.textSecondary,
     border: 'none',
     cursor: 'pointer',
-    ':hover': {
-      color: theme.colors.primary,
-    },
+    fontWeight: isActive ? theme.fonts.weight.medium : theme.fonts.weight.regular,
+    fontSize: theme.fonts.size.sm,
   });
 
   const errorAlertStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.backgroundSecondary,
-    border: `1px solid ${theme.colors.primary}`,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: `rgba(229, 115, 115, 0.05)`,
+    border: `1px solid ${theme.colors.error}`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    margin: `${theme.spacing.lg} auto`,
+    maxWidth: '1200px',
+    animation: 'slideInDown 0.3s ease-out',
+    boxShadow: theme.shadows.sm,
+  };
+
+  const contentStyle: React.CSSProperties = {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
+  };
+
+  const gridLayoutStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: showForm ? '1fr 2fr' : '1fr',
+    gap: theme.spacing['2xl'],
+    alignItems: 'start',
+  };
+
+  const formSidebarStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    boxShadow: theme.shadows.lg,
+    border: `1px solid ${theme.colors.border}`,
+    overflow: 'hidden',
+    maxWidth: '100%',
+  };
+
+  const productSectionStyle: React.CSSProperties = {
+    minHeight: '500px',
+  };
+
+  const statusBarStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xl,
     padding: theme.spacing.md,
-    animation: 'shake 0.5s ease-in-out',
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.border}`,
+  };
+
+  const statusInfoStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    flexWrap: 'wrap' as const,
+  };
+
+  const badgeStyle: React.CSSProperties = {
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
+    color: theme.colors.textSecondary,
+    backgroundColor: theme.colors.surface,
+    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+    borderRadius: theme.borderRadius.full,
+    border: `1px solid ${theme.colors.border}`,
+    boxShadow: theme.shadows.xs,
+  };
+
+  const loadingIndicatorStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    color: theme.colors.primary,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
   };
 
   const productGridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
     gap: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   };
 
   const productListStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.md,
+    gap: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   };
 
   const emptyStateStyle: React.CSSProperties = {
-    textAlign: 'center',
-    padding: theme.spacing.xl,
+    textAlign: 'center' as const,
+    padding: theme.spacing['3xl'],
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.xl,
-    boxShadow: theme.shadows.sm,
+    boxShadow: theme.shadows.lg,
     border: `1px solid ${theme.colors.border}`,
+    maxWidth: '500px',
+    margin: '0 auto',
   };
 
-  const loadingOverlayStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  const emptyIconStyle: React.CSSProperties = {
+    width: '80px',
+    height: '80px',
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.borderRadius.full,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 50,
+    margin: `0 auto ${theme.spacing.xl}`,
+    boxShadow: theme.shadows.md,
+  };
+
+  const emptyTitleStyle: React.CSSProperties = {
+    fontSize: theme.fonts.size['2xl'],
+    fontWeight: theme.fonts.weight.bold,
+    fontFamily: theme.fonts.family.heading,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+    lineHeight: theme.fonts.lineHeight.tight,
+  };
+
+  const emptyDescriptionStyle: React.CSSProperties = {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fonts.size.lg,
+    lineHeight: theme.fonts.lineHeight.relaxed,
+    marginBottom: theme.spacing.xl,
+  };
+
+  const loadingOverlayStyle: React.CSSProperties = {
+    position: 'fixed' as const,
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: theme.zIndex.modal,
   };
 
   const loadingCardStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
+    padding: theme.spacing.xl,
     boxShadow: theme.shadows.xl,
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
+    border: `1px solid ${theme.colors.border}`,
+    minWidth: '300px',
   };
 
   const products = productsResponse?.data || [];
@@ -309,39 +438,75 @@ const AdminProducts: React.FC = () => {
 
   return (
     <div style={containerStyle}>
-      <div style={headerContainerStyle}>
+      {/* Enhanced Header */}
+      <header style={headerContainerStyle}>
         <div style={headerContentStyle}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between', gap: theme.spacing.md }}>
-            <div>
-              <h1 style={titleStyle}>Product Management</h1>
-              <p style={{ color: theme.colors.textSecondary, marginTop: theme.spacing.xs }}>Create and manage your product catalog</p>
-            </div>
+          <div>
+            <h1 style={titleStyle}>Product Management</h1>
+            <p style={subtitleStyle}>Create and manage your product catalog with ease</p>
+          </div>
+          
+          <div style={headerActionsStyle}>
             <button
               onClick={() => setShowForm(true)}
               disabled={createProductMutation.isPending}
               style={{
-                ...addButtonContainerStyle,
-                background: `linear-gradient(to right, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                color: theme.colors.secondary
+                ...addButtonStyle,
+                opacity: createProductMutation.isPending ? 0.7 : 1,
+                transform: createProductMutation.isPending ? 'scale(0.98)' : 'scale(1)',
+                cursor: createProductMutation.isPending ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                if (!createProductMutation.isPending) {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = theme.shadows.lg;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!createProductMutation.isPending) {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = theme.shadows.md;
+                }
               }}
             >
               <FiPlus size={20} />
               Add Product
             </button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between', gap: theme.spacing.md, marginTop: theme.spacing.lg }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs, alignSelf: 'flex-end' }}>
-              <span style={{ fontSize: '0.875rem', color: theme.colors.textSecondary }}>View:</span>
-              <div style={{ backgroundColor: theme.colors.backgroundSecondary, borderRadius: theme.borderRadius.md, padding: theme.spacing.xs, display: 'flex' }}>
+
+            <div style={viewControlsStyle}>
+              <span style={{ fontSize: theme.fonts.size.sm, color: theme.colors.textSecondary, fontWeight: theme.fonts.weight.medium }}>
+                View:
+              </span>
+              <div style={viewModeContainerStyle}>
                 <button
                   onClick={() => setViewMode('grid')}
                   style={viewModeButtonStyle(viewMode === 'grid')}
+                  onMouseEnter={(e) => {
+                    if (viewMode !== 'grid') {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (viewMode !== 'grid') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   <FiGrid size={18} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
                   style={viewModeButtonStyle(viewMode === 'list')}
+                  onMouseEnter={(e) => {
+                    if (viewMode !== 'list') {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (viewMode !== 'list') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   <FiList size={18} />
                 </button>
@@ -349,52 +514,101 @@ const AdminProducts: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
+      {/* Enhanced Error Display */}
       {validationErrors.length > 0 && (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: `${theme.spacing.md} ${theme.spacing.md}` }}>
-          <div style={errorAlertStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
-                <FiAlertCircle style={{ color: theme.colors.primary, marginRight: theme.spacing.sm, marginTop: '2px', flexShrink: 0 }} size={20} />
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ color: theme.colors.primaryDark, fontWeight: theme.fonts.semiBold, marginBottom: theme.spacing.sm }}>Please fix the following errors:</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-                    {Object.entries(groupedErrors).map(([field, messages]) => (
-                      <div key={field}>
-                        {field !== 'general' && (
-                          <h4 style={{ color: theme.colors.primaryDark, fontWeight: theme.fonts.medium, textTransform: 'capitalize', marginBottom: theme.spacing.xs }}>
-                            {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                          </h4>
-                        )}
-                        <ul style={{ color: theme.colors.primaryDark, fontSize: '0.875rem', listStyle: 'none', paddingLeft: theme.spacing.md }}>
-                          {messages.map((message, index) => (
-                            <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.xs }}>
-                              <span>&bull;</span>
-                              <span>{message}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
+        <div style={errorAlertStyle}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+              <FiAlertCircle 
+                style={{ 
+                  color: theme.colors.error, 
+                  marginRight: theme.spacing.md, 
+                  marginTop: '2px', 
+                  flexShrink: 0 
+                }} 
+                size={24} 
+              />
+              <div style={{ flex: 1 }}>
+                <h3 style={{ 
+                  color: theme.colors.error, 
+                  fontWeight: theme.fonts.weight.semiBold, 
+                  fontSize: theme.fonts.size.lg,
+                  fontFamily: theme.fonts.family.heading,
+                  marginBottom: theme.spacing.md 
+                }}>
+                  Please fix the following errors:
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+                  {Object.entries(groupedErrors).map(([field, messages]) => (
+                    <div key={field}>
+                      {field !== 'general' && (
+                        <h4 style={{ 
+                          color: theme.colors.error, 
+                          fontWeight: theme.fonts.weight.medium,
+                          fontSize: theme.fonts.size.md,
+                          textTransform: 'capitalize' as const, 
+                          marginBottom: theme.spacing.sm 
+                        }}>
+                          {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                        </h4>
+                      )}
+                      <ul style={{ 
+                        color: theme.colors.error, 
+                        fontSize: theme.fonts.size.sm, 
+                        listStyle: 'none', 
+                        paddingLeft: theme.spacing.lg,
+                        lineHeight: theme.fonts.lineHeight.relaxed
+                      }}>
+                        {messages.map((message, index) => (
+                          <li key={index} style={{ 
+                            display: 'flex', 
+                            alignItems: 'flex-start', 
+                            gap: theme.spacing.sm,
+                            marginBottom: theme.spacing.xs
+                          }}>
+                            <span style={{ color: theme.colors.error, fontWeight: theme.fonts.weight.bold }}>&bull;</span>
+                            <span>{message}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <button
-                onClick={clearErrors}
-                style={{ color: theme.colors.primary, transition: 'all 0.2s ease', background: 'none', border: 'none', cursor: 'pointer', marginLeft: theme.spacing.sm }}
-              >
-                <FiX size={18} />
-              </button>
             </div>
+            <button
+              onClick={clearErrors}
+              style={{ 
+                color: theme.colors.error, 
+                transition: theme.transitions.fast, 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer', 
+                marginLeft: theme.spacing.md,
+                padding: theme.spacing.sm,
+                borderRadius: theme.borderRadius.md
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(229, 115, 115, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <FiX size={20} />
+            </button>
           </div>
         </div>
       )}
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: `${theme.spacing.lg} ${theme.spacing.md}` }}>
-        <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 2fr' : '1fr', gap: theme.spacing.lg }}>
+      {/* Enhanced Main Content */}
+      <main style={contentStyle}>
+        <div style={gridLayoutStyle}>
+          {/* Enhanced Form Sidebar */}
           {showForm && (
-            <div style={{ position: 'sticky', top: '1.5rem' }}>
+            <aside style={formSidebarStyle}>
               <ProductForm
                 product={INITIAL_PRODUCT_STATE}
                 onSubmit={handleCreateProduct}
@@ -402,52 +616,61 @@ const AdminProducts: React.FC = () => {
                 isLoading={createProductMutation.isPending}
                 validationErrors={groupedErrors}
               />
-            </div>
+            </aside>
           )}
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between', gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+
+          {/* Enhanced Product Section */}
+          <section style={productSectionStyle}>
+            {/* Enhanced Status Bar */}
+            <div style={statusBarStyle}>
+              <div style={statusInfoStyle}>
                 {isFetching && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs, color: theme.colors.primaryDark }}>
-                    <div style={{ animation: 'spin 1s linear infinite', borderRadius: '50%', height: '1rem', width: '1rem', border: `2px solid ${theme.colors.primary}`, borderBottomColor: 'transparent' }} />
-                    <span style={{ fontSize: '0.875rem' }}>Loading...</span>
+                  <div style={loadingIndicatorStyle}>
+                    <div style={{ 
+                      animation: 'spin 1s linear infinite', 
+                      borderRadius: '50%', 
+                      height: '16px', 
+                      width: '16px', 
+                      border: `2px solid ${theme.colors.primary}`, 
+                      borderBottomColor: 'transparent' 
+                    }} />
+                    <span>Refreshing...</span>
                   </div>
                 )}
-                <span style={{ fontSize: '0.875rem', color: theme.colors.textSecondary, backgroundColor: theme.colors.backgroundSecondary, padding: `${theme.spacing.xs} ${theme.spacing.sm}`, borderRadius: '9999px' }}>
+                <div style={badgeStyle}>
                   {products.length} {products.length === 1 ? 'product' : 'products'}
-                </span>
+                </div>
                 {pagination && (
-                  <span style={{ fontSize: '0.875rem', color: theme.colors.textSecondary, backgroundColor: theme.colors.backgroundSecondary, padding: `${theme.spacing.xs} ${theme.spacing.sm}`, borderRadius: '9999px' }}>
+                  <div style={badgeStyle}>
                     Page {pagination.currentPage} of {pagination.totalPages}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
 
+            {/* Products Display */}
             {products.length === 0 ? (
               <div style={emptyStateStyle}>
-                <div style={{ width: '6rem', height: '6rem', backgroundColor: theme.colors.primaryLight, borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', marginBottom: theme.spacing.lg }}>
-                  <FiPlus style={{ color: theme.colors.primary }} size={32} />
+                <div style={emptyIconStyle}>
+                  <FiPlus style={{ color: theme.colors.primary }} size={40} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: theme.fonts.semiBold, color: theme.colors.text, marginBottom: theme.spacing.sm }}>No products yet</h3>
-                <p style={{ color: theme.colors.textSecondary, marginBottom: theme.spacing.md, maxWidth: '24rem', margin: '0 auto' }}>
-                  Get started by adding your first product to the catalog.
+                <h3 style={emptyTitleStyle}>No products yet</h3>
+                <p style={emptyDescriptionStyle}>
+                  Get started by adding your first product to build your catalog and start managing your inventory.
                 </p>
                 <button
                   onClick={() => setShowForm(true)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: theme.spacing.xs,
-                    background: `linear-gradient(to right, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-                    color: theme.colors.secondary,
-                    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                    borderRadius: theme.borderRadius.lg,
-                    fontWeight: theme.fonts.semiBold,
-                    transition: 'all 0.2s ease',
+                    ...addButtonStyle,
                     margin: '0 auto',
-                    border: 'none',
-                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                    e.currentTarget.style.boxShadow = theme.shadows.lg;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = theme.shadows.md;
                   }}
                 >
                   <FiPlus size={18} />
@@ -457,8 +680,15 @@ const AdminProducts: React.FC = () => {
             ) : (
               <>
                 <div style={viewMode === 'grid' ? productGridStyle : productListStyle}>
-                  {products.map((product: IProduct) => (
-                    <div key={product._id} style={{ animation: 'slide-in 0.3s ease-out forwards' }}>
+                  {products.map((product: IProduct, index: number) => (
+                    <div 
+                      key={product._id} 
+                      style={{ 
+                        animation: `slideInUp 0.3s ease-out ${index * 0.05}s forwards`,
+                        opacity: 0,
+                        transform: 'translateY(20px)'
+                      }}
+                    >
                       <ProductCard
                         product={product}
                         onEdit={handleEditClick}
@@ -470,8 +700,15 @@ const AdminProducts: React.FC = () => {
                   ))}
                 </div>
 
+                {/* Enhanced Pagination */}
                 {pagination && pagination.totalPages > 1 && (
-                  <div style={{ marginTop: theme.spacing.lg }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center',
+                    padding: theme.spacing.xl,
+                    borderTop: `1px solid ${theme.colors.border}`,
+                    marginTop: theme.spacing.xl
+                  }}>
                     <Pagination
                       currentPage={currentPage}
                       totalPages={pagination.totalPages}
@@ -481,11 +718,11 @@ const AdminProducts: React.FC = () => {
                 )}
               </>
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
 
-      {/* Edit Product Modal */}
+      {/* Modals */}
       <ProductModal
         onSave={handleSaveProduct}
         predefinedCategories={PREDEFINED_CATEGORIES}
@@ -493,13 +730,11 @@ const AdminProducts: React.FC = () => {
         validationErrors={groupedErrors}
       />
 
-      {/* Delete Confirmation Modal - Now using Redux */}
       <DeleteConfirmationModal
         onConfirm={handleDeleteConfirm}
         isLoading={deleteProductMutation.isPending}
       />
 
-      {/* Clone Product Modal */}
       <CloneProductModal
         isOpen={!!cloningProduct}
         onClose={() => setCloningProduct(null)}
@@ -508,20 +743,75 @@ const AdminProducts: React.FC = () => {
         isLoading={cloneProductMutation.isPending}
       />
 
-      {/* Global Loading Overlay */}
+      {/* Enhanced Global Loading Overlay */}
       {(createProductMutation.isPending || updateProductMutation.isPending || deleteProductMutation.isPending || cloneProductMutation.isPending) && (
         <div style={loadingOverlayStyle}>
           <div style={loadingCardStyle}>
-            <div style={{ animation: 'spin 1s linear infinite', borderRadius: '50%', height: '1.5rem', width: '1.5rem', border: `2px solid ${theme.colors.primary}`, borderBottomColor: 'transparent' }} />
-            <span style={{ color: theme.colors.text, fontWeight: theme.fonts.medium }}>
-              {createProductMutation.isPending && 'Creating product...'}
-              {updateProductMutation.isPending && 'Updating product...'}
-              {deleteProductMutation.isPending && 'Deleting product...'}
-              {cloneProductMutation.isPending && 'Cloning product...'}
-            </span>
+            <div style={{ 
+              animation: 'spin 1s linear infinite', 
+              borderRadius: '50%', 
+              height: '24px', 
+              width: '24px', 
+              border: `3px solid ${theme.colors.primary}`, 
+              borderBottomColor: 'transparent' 
+            }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
+              <span style={{ 
+                color: theme.colors.text, 
+                fontWeight: theme.fonts.weight.semiBold,
+                fontSize: theme.fonts.size.md
+              }}>
+                {createProductMutation.isPending && 'Creating product...'}
+                {updateProductMutation.isPending && 'Updating product...'}
+                {deleteProductMutation.isPending && 'Deleting product...'}
+                {cloneProductMutation.isPending && 'Cloning product...'}
+              </span>
+              <span style={{ 
+                color: theme.colors.textSecondary, 
+                fontSize: theme.fonts.size.sm 
+              }}>
+                Please wait a moment
+              </span>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Add animations via CSS-in-JS styles */}
+      <style>
+        {`
+          @keyframes slideInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes slideInDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

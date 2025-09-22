@@ -34,38 +34,38 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
     }));
   };
 
-  // Theme-based styles
+  // Theme-based styles using your theme structure
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.lg
+    gap: '1.5rem'
   };
 
   const headerStyle: React.CSSProperties = {
     fontSize: '1.125rem',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
     color: theme.colors.text,
     margin: 0,
-    marginBottom: theme.spacing.md
+    marginBottom: '1rem'
   };
 
   const categoryCardStyle: React.CSSProperties = {
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    borderRadius: '12px',
+    padding: '1.5rem',
     backgroundColor: theme.colors.surface,
-    boxShadow: theme.shadows.sm
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`
   };
 
   const categoryHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md
+    marginBottom: '1rem'
   };
 
   const categoryLabelStyle: React.CSSProperties = {
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.text,
     textTransform: 'capitalize',
     fontSize: '1rem'
@@ -74,13 +74,13 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
   const toggleContainerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.sm
+    gap: '0.75rem'
   };
 
   const statusTextStyle = (isActive: boolean): React.CSSProperties => ({
     fontSize: '0.875rem',
     color: isActive ? theme.colors.primary : theme.colors.textSecondary,
-    fontWeight: theme.fonts.medium
+    fontWeight: '500'
   });
 
   const toggleButtonStyle = (isActive: boolean): React.CSSProperties => ({
@@ -102,36 +102,36 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
     height: '16px',
     width: '16px',
     borderRadius: '50%',
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: theme.colors.white,
     transition: 'transform 0.3s ease',
     transform: isActive ? 'translateX(24px)' : 'translateX(4px)',
-    boxShadow: theme.shadows.sm
+    boxShadow: `0 1px 2px ${theme.colors.shadow}`
   });
 
   const optionsContainerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.sm
+    gap: '0.75rem'
   };
 
   const optionsLabelStyle: React.CSSProperties = {
     fontSize: '0.875rem',
     color: theme.colors.textSecondary,
-    fontWeight: theme.fonts.medium,
-    marginBottom: theme.spacing.sm
+    fontWeight: '500',
+    marginBottom: '0.75rem'
   };
 
   const optionsGridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: theme.spacing.sm
+    gap: '0.75rem'
   };
 
   const optionLabelStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.75rem',
+    borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     backgroundColor: 'transparent'
@@ -145,7 +145,7 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
   };
 
   const optionTextStyle: React.CSSProperties = {
-    marginLeft: theme.spacing.sm,
+    marginLeft: '0.75rem',
     fontSize: '0.875rem',
     color: theme.colors.text,
     textTransform: 'capitalize',
@@ -154,10 +154,10 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
 
   const emptyStateStyle: React.CSSProperties = {
     textAlign: 'center',
-    padding: theme.spacing.xl,
+    padding: '2rem',
     color: theme.colors.textSecondary,
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `2px dashed ${theme.colors.border}`
   };
 
@@ -184,7 +184,7 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
   return (
     <div style={containerStyle}>
       <h3 style={headerStyle}>Product Categories</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {formData.predefinedFields.map((field) => (
           <div key={field.category} style={categoryCardStyle}>
             <div style={categoryHeaderStyle}>
@@ -203,7 +203,7 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
                     if (field.isActive) {
                       e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
                     } else {
-                      e.currentTarget.style.backgroundColor = theme.colors.textMuted;
+                      e.currentTarget.style.backgroundColor = theme.colors.gray400;
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -244,18 +244,18 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
                 
                 {field.selectedOptions.length > 0 && (
                   <div style={{
-                    marginTop: theme.spacing.sm,
-                    padding: theme.spacing.sm,
+                    marginTop: '0.75rem',
+                    padding: '0.75rem',
                     backgroundColor: theme.colors.backgroundSecondary,
-                    borderRadius: theme.borderRadius.md,
+                    borderRadius: '8px',
                     border: `1px solid ${theme.colors.primary}20`
                   }}>
                     <p style={{
                       fontSize: '0.75rem',
                       color: theme.colors.textSecondary,
                       margin: 0,
-                      marginBottom: theme.spacing.xs,
-                      fontWeight: theme.fonts.medium
+                      marginBottom: '0.5rem',
+                      fontWeight: '500'
                     }}>
                       Selected ({field.selectedOptions.length}):
                     </p>
@@ -263,7 +263,7 @@ const PredefinedTab: React.FC<PredefinedTabProps> = ({ formData, setFormData }) 
                       fontSize: '0.875rem',
                       color: theme.colors.text,
                       margin: 0,
-                      fontWeight: theme.fonts.regular
+                      fontWeight: '400'
                     }}>
                       {field.selectedOptions.join(', ')}
                     </p>

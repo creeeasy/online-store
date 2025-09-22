@@ -13,7 +13,6 @@ interface ColorsTabProps {
 
 const ColorsTab: React.FC<ColorsTabProps> = ({
   formData,
-  setFormData,
   validationErrors,
   handleInputChange,
 }) => {
@@ -26,14 +25,14 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.xl,
+    gap: '2rem',
   };
 
   const headerStyle: React.CSSProperties = {
     color: theme.colors.text,
-    margin: `0 0 ${theme.spacing.md} 0`,
+    margin: '0 0 1rem 0',
     fontSize: '1.4rem',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
   };
 
   const descriptionStyle: React.CSSProperties = {
@@ -46,23 +45,24 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
   const statsContainerStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
+    gap: '1rem',
+    marginBottom: '1.5rem',
   };
 
   const statCardStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.surface,
+    padding: '1.5rem',
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
     textAlign: 'center',
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`
   };
 
   const statValueStyle: React.CSSProperties = {
     fontSize: '1.8rem',
-    fontWeight: theme.fonts.bold,
+    fontWeight: '700',
     color: theme.colors.primary,
-    margin: `0 0 ${theme.spacing.xs} 0`,
+    margin: '0 0 0.5rem 0',
   };
 
   const statLabelStyle: React.CSSProperties = {
@@ -112,9 +112,9 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
       {validationErrors.colors && (
         <div style={{
           color: theme.colors.error,
-          backgroundColor: theme.colors.errorLight,
-          padding: theme.spacing.md,
-          borderRadius: theme.borderRadius.md,
+          backgroundColor: `${theme.colors.error}15`,
+          padding: '1rem',
+          borderRadius: '8px',
           border: `1px solid ${theme.colors.error}`,
           fontSize: '0.9rem',
         }}>

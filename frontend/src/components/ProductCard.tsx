@@ -3,7 +3,7 @@ import { FiEdit, FiTrash2, FiCheck, FiGift, FiCopy, FiEye } from 'react-icons/fi
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
-import { DEFAULT_BASE_URL, SERVER_URL } from '../utils/apiClient';
+import { SERVER_URL } from '../utils/apiClient';
 
 interface ProductCardProps {
   product: IProduct;
@@ -42,11 +42,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     onEdit(product);
   };
 
-  // Theme-based styles
+  // Theme-based styles using your theme structure
   const cardStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    boxShadow: theme.shadows.md,
+    borderRadius: '12px',
+    boxShadow: `0 4px 12px ${theme.colors.shadow}`,
     border: `1px solid ${theme.colors.border}`,
     transition: 'all 0.3s ease',
     cursor: 'pointer',
@@ -54,8 +54,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const buttonStyle: React.CSSProperties = {
-    padding: `${theme.spacing.sm}`,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.75rem',
+    borderRadius: '8px',
     border: 'none',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
@@ -67,35 +67,35 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const primaryButtonStyle: React.CSSProperties = {
     ...buttonStyle,
     backgroundColor: theme.colors.primary,
-    color: theme.colors.secondary,
-    fontWeight: theme.fonts.medium,
+    color: theme.colors.textOnPrimary,
+    fontWeight: '500',
   };
 
   const secondaryButtonStyle: React.CSSProperties = {
     ...buttonStyle,
     backgroundColor: theme.colors.backgroundSecondary,
     color: theme.colors.text,
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
   };
 
   const iconButtonStyle: React.CSSProperties = {
     ...buttonStyle,
-    backgroundColor: theme.colors.secondary,
-    boxShadow: theme.shadows.sm,
+    backgroundColor: theme.colors.white,
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`,
     width: '32px',
     height: '32px',
   };
 
   const deleteButtonStyle: React.CSSProperties = {
     ...iconButtonStyle,
-    backgroundColor: '#fef2f2',
-    color: '#ef4444',
+    backgroundColor: `${theme.colors.error}15`,
+    color: theme.colors.error,
   };
 
   const cloneButtonStyle: React.CSSProperties = {
     ...iconButtonStyle,
-    backgroundColor: '#f0f9ff',
-    color: theme.colors.accent,
+    backgroundColor: `${theme.colors.secondary}15`,
+    color: theme.colors.secondary,
   };
 
   if (viewMode === 'list') {
@@ -103,11 +103,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div 
         style={{
           ...cardStyle,
-          padding: theme.spacing.md,
+          padding: '1rem',
         }}
         onClick={handleViewDetails}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = theme.shadows.lg;
+          e.currentTarget.style.boxShadow = `0 8px 24px ${theme.colors.shadow}`;
           e.currentTarget.style.transform = 'translateY(-2px)';
           
           // Show action buttons on hover
@@ -117,7 +117,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           }
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = theme.shadows.md;
+          e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.shadow}`;
           e.currentTarget.style.transform = 'translateY(0)';
           
           // Hide action buttons on leave
@@ -127,7 +127,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           }
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ 
             position: 'relative', 
             width: '64px', 
@@ -140,14 +140,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   ? `${SERVER_URL}${product.images[0]}`
                   : 'https://picsum.photos/300/300?random=default'
               }
-
-
               alt={product.name}
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                borderRadius: theme.borderRadius.md,
+                borderRadius: '8px',
               }}
             />
             {product.discountPrice && (
@@ -156,11 +154,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 top: '-8px',
                 left: '-8px',
                 backgroundColor: theme.colors.primary,
-                color: theme.colors.secondary,
-                padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-                borderRadius: theme.borderRadius.lg,
+                color: theme.colors.textOnPrimary,
+                padding: '0.5rem 0.75rem',
+                borderRadius: '12px',
                 fontSize: '0.75rem',
-                fontWeight: theme.fonts.bold,
+                fontWeight: '700',
               }}>
                 SALE
               </span>
@@ -169,10 +167,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 style={{
-              fontWeight: theme.fonts.semiBold,
+              fontWeight: '600',
               color: theme.colors.text,
               margin: 0,
-              marginBottom: theme.spacing.xs,
+              marginBottom: '0.5rem',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -183,16 +181,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
               color: theme.colors.textSecondary,
               fontSize: '0.875rem',
               margin: 0,
-              marginBottom: theme.spacing.xs,
+              marginBottom: '0.5rem',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}>
               {product.description}
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <span style={{
-                fontWeight: theme.fonts.bold,
+                fontWeight: '700',
                 color: product.discountPrice ? theme.colors.primary : theme.colors.text,
               }}>
                 ${product.discountPrice || product.price}
@@ -214,7 +212,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: theme.spacing.sm,
+              gap: '0.75rem',
               opacity: 0,
               transition: 'opacity 0.3s ease',
             }}
@@ -257,7 +255,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       style={cardStyle}
       onClick={handleViewDetails}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = theme.shadows.lg;
+        e.currentTarget.style.boxShadow = `0 8px 24px ${theme.colors.shadow}`;
         e.currentTarget.style.transform = 'scale(1.02)';
         
         // Show overlay and action buttons on hover
@@ -267,7 +265,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         if (actions) actions.style.opacity = '1';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = theme.shadows.md;
+        e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.shadow}`;
         e.currentTarget.style.transform = 'scale(1)';
         
         // Hide overlay and action buttons on leave
@@ -279,11 +277,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div style={{ position: 'relative', height: '192px', overflow: 'hidden' }}>
         <img
-       src={
-                product.images?.[0]
-                  ? `${SERVER_URL}${product.images[0]}`
-                  : 'https://picsum.photos/300/300?random=default'
-              }
+          src={
+            product.images?.[0]
+              ? `${SERVER_URL}${product.images[0]}`
+              : 'https://picsum.photos/300/300?random=default'
+          }
           alt={product.name}
           style={{
             width: '100%',
@@ -316,10 +314,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           data-hover-actions
           style={{
             position: 'absolute',
-            top: theme.spacing.sm,
-            right: theme.spacing.sm,
+            top: '0.75rem',
+            right: '0.75rem',
             display: 'flex',
-            gap: theme.spacing.sm,
+            gap: '0.75rem',
             opacity: 0,
             transition: 'opacity 0.3s ease',
           }}
@@ -328,7 +326,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             onClick={handleEdit}
             style={{
               ...iconButtonStyle,
-              backgroundColor: `${theme.colors.secondary}E6`,
+              backgroundColor: `${theme.colors.white}E6`,
               color: theme.colors.primary,
             }}
             title="Edit product"
@@ -340,8 +338,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
               onClick={handleClone}
               style={{
                 ...iconButtonStyle,
-                backgroundColor: `${theme.colors.secondary}E6`,
-                color: theme.colors.accent,
+                backgroundColor: `${theme.colors.white}E6`,
+                color: theme.colors.secondary,
               }}
               title="Clone product"
             >
@@ -352,8 +350,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
             onClick={handleDelete}
             style={{
               ...iconButtonStyle,
-              backgroundColor: `${theme.colors.secondary}E6`,
-              color: '#ef4444',
+              backgroundColor: `${theme.colors.white}E6`,
+              color: theme.colors.error,
             }}
             title="Delete product"
           >
@@ -363,14 +361,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
         
         {/* Sale badge */}
         {product.discountPrice && (
-          <div style={{ position: 'absolute', top: theme.spacing.sm, left: theme.spacing.sm }}>
+          <div style={{ position: 'absolute', top: '0.75rem', left: '0.75rem' }}>
             <span style={{
               backgroundColor: theme.colors.primary,
-              color: theme.colors.secondary,
-              padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-              borderRadius: theme.borderRadius.lg,
+              color: theme.colors.textOnPrimary,
+              padding: '0.5rem 0.75rem',
+              borderRadius: '12px',
               fontSize: '0.875rem',
-              fontWeight: theme.fonts.bold,
+              fontWeight: '700',
             }}>
               SALE
             </span>
@@ -378,13 +376,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
       </div>
       
-      <div style={{ padding: theme.spacing.lg }}>
+      <div style={{ padding: '1.5rem' }}>
         <h3 style={{
-          fontWeight: theme.fonts.bold,
+          fontWeight: '700',
           color: theme.colors.text,
           fontSize: '1.125rem',
           margin: 0,
-          marginBottom: theme.spacing.sm,
+          marginBottom: '0.75rem',
         }}>
           {product.name}
         </h3>
@@ -392,7 +390,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           color: theme.colors.textSecondary,
           fontSize: '0.875rem',
           margin: 0,
-          marginBottom: theme.spacing.md,
+          marginBottom: '1rem',
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
@@ -405,11 +403,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: theme.spacing.sm, 
-          marginBottom: theme.spacing.md 
+          gap: '0.75rem', 
+          marginBottom: '1rem' 
         }}>
           <span style={{
-            fontWeight: theme.fonts.bold,
+            fontWeight: '700',
             fontSize: '1.25rem',
             color: product.discountPrice ? theme.colors.primary : theme.colors.text,
           }}>
@@ -428,7 +426,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         
         {/* Product features */}
         <div style={{ 
-          marginBottom: theme.spacing.md,
+          marginBottom: '1rem',
           fontSize: '0.875rem',
           color: theme.colors.textSecondary,
         }}>
@@ -436,10 +434,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: theme.spacing.sm,
-              marginBottom: theme.spacing.xs,
+              gap: '0.75rem',
+              marginBottom: '0.5rem',
             }}>
-              <FiCheck size={16} style={{ color: theme.colors.accent }} />
+              <FiCheck size={16} style={{ color: theme.colors.success }} />
               <span>{product.dynamicFields.length} custom field{product.dynamicFields.length !== 1 ? 's' : ''}</span>
             </div>
           )}
@@ -447,10 +445,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: theme.spacing.sm,
-              marginBottom: theme.spacing.xs,
+              gap: '0.75rem',
+              marginBottom: '0.5rem',
             }}>
-              <FiCheck size={16} style={{ color: theme.colors.accent }} />
+              <FiCheck size={16} style={{ color: theme.colors.success }} />
               <span>{product.predefinedFields.filter(f => f.isActive).length} predefined field{product.predefinedFields.filter(f => f.isActive).length !== 1 ? 's' : ''}</span>
             </div>
           )}
@@ -458,17 +456,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: theme.spacing.sm,
-              marginBottom: theme.spacing.xs,
+              gap: '0.75rem',
+              marginBottom: '0.5rem',
             }}>
-              <FiGift size={16} style={{ color: theme.colors.accent }} />
+              <FiGift size={16} style={{ color: theme.colors.success }} />
               <span>{product.offers.length} active offer{product.offers.length !== 1 ? 's' : ''}</span>
             </div>
           )}
         </div>
         
         {/* Bottom action buttons */}
-        <div style={{ display: 'flex', gap: theme.spacing.sm }}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -477,20 +475,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
             style={{
               ...secondaryButtonStyle,
               flex: 1,
-              gap: theme.spacing.sm,
-              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
             }}
           >
             <FiEye size={16} />
-            View Details
+            View
           </button>
           <button
             onClick={handleEdit}
             style={{
               ...primaryButtonStyle,
               flex: 1,
-              gap: theme.spacing.sm,
-              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
             }}
           >
             <FiEdit size={16} />
@@ -501,8 +499,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* Additional action buttons row for clone and delete */}
         <div style={{ 
           display: 'flex', 
-          gap: theme.spacing.sm, 
-          marginTop: theme.spacing.sm 
+          gap: '0.75rem', 
+          marginTop: '0.75rem' 
         }}>
           {onClone && (
             <button
@@ -510,11 +508,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
               style={{
                 ...buttonStyle,
                 flex: 1,
-                gap: theme.spacing.sm,
-                padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                backgroundColor: '#f0f9ff',
-                color: theme.colors.accent,
-                fontWeight: theme.fonts.medium,
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                backgroundColor: `${theme.colors.secondary}15`,
+                color: theme.colors.secondary,
+                fontWeight: '500',
               }}
             >
               <FiCopy size={16} />
@@ -526,11 +524,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             style={{
               ...buttonStyle,
               flex: 1,
-              gap: theme.spacing.sm,
-              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-              backgroundColor: '#fef2f2',
-              color: '#ef4444',
-              fontWeight: theme.fonts.medium,
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              backgroundColor: `${theme.colors.error}15`,
+              color: theme.colors.error,
+              fontWeight: '500',
             }}
           >
             <FiTrash2 size={16} />

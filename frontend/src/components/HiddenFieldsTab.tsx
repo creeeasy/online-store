@@ -42,16 +42,16 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
     setFormData(prev => ({ ...prev, hiddenFields: newHiddenFields }));
   };
 
-  // Theme-based styles
+  // Theme-based styles using your theme structure
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.lg
+    gap: '1.5rem'
   };
 
   const headerStyle: React.CSSProperties = {
     fontSize: '1.125rem',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
     color: theme.colors.text,
     margin: 0
   };
@@ -65,34 +65,34 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
 
   const fieldCardStyle: React.CSSProperties = {
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    borderRadius: '12px',
+    padding: '1.5rem',
     backgroundColor: theme.colors.surface,
-    boxShadow: theme.shadows.sm
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`
   };
 
   const fieldHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md
+    marginBottom: '1rem'
   };
 
   const fieldNumberStyle: React.CSSProperties = {
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.textSecondary,
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.xs
+    gap: '0.5rem'
   };
 
   const removeButtonStyle: React.CSSProperties = {
-    color: '#ef4444',
+    color: theme.colors.error,
     backgroundColor: 'transparent',
     border: 'none',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.75rem',
+    borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
@@ -103,56 +103,57 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
   const gridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: theme.spacing.md
+    gap: '1rem'
   };
 
   const addSectionStyle: React.CSSProperties = {
-    padding: theme.spacing.lg,
+    padding: '1.5rem',
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.md
+    gap: '1rem'
   };
 
   const addHeaderStyle: React.CSSProperties = {
     fontSize: '1rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.text,
     margin: 0
   };
 
   const addButtonStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    padding: '0.75rem 1rem',
     backgroundColor: theme.colors.primary,
-    color: theme.colors.secondary,
+    color: theme.colors.textOnPrimary,
     border: 'none',
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm
+    gap: '0.75rem'
   };
 
   const disabledButtonStyle: React.CSSProperties = {
     ...addButtonStyle,
-    backgroundColor: theme.colors.textMuted,
+    backgroundColor: theme.colors.disabled,
+    color: theme.colors.textMuted,
     cursor: 'not-allowed',
     opacity: 0.6
   };
 
   const emptyStateStyle: React.CSSProperties = {
     textAlign: 'center',
-    padding: theme.spacing.xl,
+    padding: '2rem',
     color: theme.colors.textSecondary,
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `2px dashed ${theme.colors.border}`
   };
 
@@ -160,7 +161,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
 
   return (
     <div style={containerStyle}>
-      <div style={{ marginBottom: theme.spacing.md }}>
+      <div style={{ marginBottom: '1rem' }}>
         <h3 style={headerStyle}>Hidden Tracking Fields</h3>
         <p style={descriptionStyle}>
           These fields will be stored with submissions but not shown to customers.
@@ -169,7 +170,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
       </div>
 
       {/* Existing Hidden Fields */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {(formData.hiddenFields || []).length === 0 ? (
           <div style={emptyStateStyle}>
             <p style={{ margin: 0, fontSize: '0.875rem', fontStyle: 'italic' }}>
@@ -189,7 +190,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
                   onClick={() => removeHiddenField(index)}
                   style={removeButtonStyle}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                    e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'transparent';
@@ -277,18 +278,18 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
 
       {/* Common Use Cases Help */}
       <div style={{
-        padding: theme.spacing.md,
+        padding: '1rem',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.lg,
+        borderRadius: '12px',
         border: `1px solid ${theme.colors.border}`,
         borderLeft: `4px solid ${theme.colors.primary}`
       }}>
         <h5 style={{
           fontSize: '0.875rem',
-          fontWeight: theme.fonts.semiBold,
+          fontWeight: '600',
           color: theme.colors.text,
           margin: 0,
-          marginBottom: theme.spacing.xs
+          marginBottom: '0.5rem'
         }}>
           Common Hidden Fields:
         </h5>

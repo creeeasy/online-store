@@ -1,4 +1,3 @@
-// pages/Register.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useRegister } from '../hooks/useAuth';
@@ -6,10 +5,12 @@ import { useAppDispatch } from '../hooks/redux';
 import { clearError } from '../store/slices/authSlice';
 import { useTheme } from '../contexts/ThemeContext';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiAlertCircle, FiUserPlus } from 'react-icons/fi';
+
 const Register: React.FC = () => {
   const dispatch = useAppDispatch();
   const registerMutation = useRegister();
   const { theme } = useTheme();
+  
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -19,9 +20,12 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
+
   const validateForm = () => {
     const errors: string[] = [];
     if (formData.username.length < 3) {
@@ -39,6 +43,7 @@ const Register: React.FC = () => {
     setValidationErrors(errors);
     return errors.length === 0;
   };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -52,6 +57,7 @@ const Register: React.FC = () => {
       setValidationErrors([]);
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -64,6 +70,7 @@ const Register: React.FC = () => {
       role: 'admin'
     });
   };
+
   const displayErrors = [...validationErrors];
   if (registerMutation.error && !registerMutation.error.validationErrors) {
     displayErrors.push(registerMutation.error.message);
@@ -71,220 +78,356 @@ const Register: React.FC = () => {
   if (registerMutation.error?.validationErrors) {
     displayErrors.push(...registerMutation.error.validationErrors.map(err => err.message || err.toString()));
   }
+
+  // Enhanced styles using the theme system
   const containerStyle: React.CSSProperties = {
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing.xl,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.backgroundSecondary,
+    fontFamily: theme.fonts.family.body,
+    position: 'relative',
+    overflow: 'hidden',
   };
+
+  const backgroundPatternStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.1,
+    backgroundImage: `radial-gradient(circle at 20% 80%, ${theme.colors.secondary} 0%, transparent 50%), 
+                      radial-gradient(circle at 80% 20%, ${theme.colors.primary} 0%, transparent 50%), 
+                      radial-gradient(circle at 40% 40%, ${theme.colors.secondaryLight} 0%, transparent 50%)`,
+    backgroundSize: '600px 600px',
+    animation: 'float 20s ease-in-out infinite',
+  };
+
   const cardStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    boxShadow: theme.shadows.lg,
+    borderRadius: theme.borderRadius.xl,
+    boxShadow: theme.shadows.xl,
     border: `1px solid ${theme.colors.border}`,
     overflow: 'hidden',
-    maxWidth: '448px',
+    maxWidth: '500px',
     width: '100%',
+    position: 'relative',
+    zIndex: 1,
+    animation: 'slideInUp 0.6s ease-out',
   };
+
   const headerStyle: React.CSSProperties = {
-    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-    padding: theme.spacing.xl,
-    color: theme.colors.secondary,
+    background: theme.colors.gradientSecondary,
+    padding: `${theme.spacing['2xl']} ${theme.spacing.xl}`,
+    color: theme.colors.textOnSecondary,
     textAlign: 'center',
+    position: 'relative',
+    overflow: 'hidden',
   };
+
+  const headerPatternStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3Ccircle cx='50' cy='10' r='2'/%3E%3Ccircle cx='10' cy='50' r='2'/%3E%3Ccircle cx='50' cy='50' r='2'/%3E%3C/g%3E%3C/svg%3E")`,
+  };
+
   const iconWrapperStyle: React.CSSProperties = {
-    width: '4rem',
-    height: '4rem',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '9999px',
+    width: '80px',
+    height: '80px',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: theme.borderRadius.full,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: `0 auto ${theme.spacing.sm}`,
+    margin: `0 auto ${theme.spacing.lg}`,
+    position: 'relative',
+    zIndex: 1,
+    backdropFilter: 'blur(10px)',
+    border: '2px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
   };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: theme.fonts.size['3xl'],
+    fontWeight: theme.fonts.weight.bold,
+    fontFamily: theme.fonts.family.heading,
+    marginBottom: theme.spacing.sm,
+    position: 'relative',
+    zIndex: 1,
+    letterSpacing: theme.fonts.letterSpacing.tight,
+    lineHeight: theme.fonts.lineHeight.tight,
+  };
+
+  const subtitleStyle: React.CSSProperties = {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: theme.fonts.size.lg,
+    fontWeight: theme.fonts.weight.regular,
+    position: 'relative',
+    zIndex: 1,
+    lineHeight: theme.fonts.lineHeight.relaxed,
+  };
+
   const formSectionStyle: React.CSSProperties = {
-    padding: theme.spacing.xl,
+    padding: `${theme.spacing['2xl']} ${theme.spacing.xl}`,
   };
+
   const errorStyle: React.CSSProperties = {
-    backgroundColor: '#fff5f5',
-    border: '1px solid #fecaca',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
+    backgroundColor: `rgba(229, 115, 115, 0.08)`,
+    border: `1px solid ${theme.colors.error}`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    animation: 'shake 0.5s ease-in-out',
+  };
+
+  const fieldGroupStyle: React.CSSProperties = {
     marginBottom: theme.spacing.lg,
   };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.semiBold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.fonts.family.body,
+    letterSpacing: theme.fonts.letterSpacing.wide,
+    textTransform: 'uppercase' as const,
+  };
+
   const inputWrapperStyle: React.CSSProperties = {
     position: 'relative',
+    transition: theme.transitions.normal,
   };
-  const inputIconStyle: React.CSSProperties = {
+
+  const inputIconStyle = (fieldName: string): React.CSSProperties => ({
     position: 'absolute',
-    left: '12px',
+    left: theme.spacing.md,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: focusedField === fieldName ? theme.colors.secondary : theme.colors.textMuted,
+    transition: theme.transitions.fast,
+    zIndex: 1,
+  });
+
+  const inputStyle = (fieldName: string): React.CSSProperties => ({
+    width: '100%',
+    padding: `${theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.md} 48px`,
+    border: `2px solid ${focusedField === fieldName ? theme.colors.secondary : theme.colors.border}`,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: focusedField === fieldName ? theme.colors.surface : theme.colors.backgroundSecondary,
+    color: theme.colors.text,
+    fontSize: theme.fonts.size.md,
+    fontFamily: theme.fonts.family.body,
+    transition: theme.transitions.normal,
+    boxShadow: focusedField === fieldName ? `0 0 0 3px ${theme.colors.secondary}20` : 'none',
+    outline: 'none',
+  });
+
+  const passwordToggleStyle: React.CSSProperties = {
+    position: 'absolute',
+    right: theme.spacing.md,
     top: '50%',
     transform: 'translateY(-50%)',
     color: theme.colors.textMuted,
-  };
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px 16px 12px 40px',
-    border: `2px solid ${theme.colors.border}`,
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.background,
-    color: theme.colors.text,
-    transition: 'all 0.3s ease',
+    transition: theme.transitions.fast,
+    zIndex: 1,
   };
+
   const buttonStyle: React.CSSProperties = {
     width: '100%',
-    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-    color: theme.colors.secondary,
-    padding: '12px',
-    borderRadius: theme.borderRadius.md,
-    fontWeight: theme.fonts.semiBold,
-    transition: 'all 0.3s ease',
+    background: theme.colors.gradientSecondary,
+    color: theme.colors.textOnSecondary,
+    padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+    borderRadius: theme.borderRadius.lg,
+    fontSize: theme.fonts.size.md,
+    fontWeight: theme.fonts.weight.semiBold,
+    fontFamily: theme.fonts.family.body,
+    transition: theme.transitions.normal,
     border: 'none',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
+    letterSpacing: theme.fonts.letterSpacing.wide,
+    textTransform: 'uppercase' as const,
+    boxShadow: theme.shadows.lg,
+    position: 'relative',
+    overflow: 'hidden',
   };
+
+  const buttonDisabledStyle: React.CSSProperties = {
+    ...buttonStyle,
+    background: theme.colors.disabled,
+    cursor: 'not-allowed',
+    color: theme.colors.textMuted,
+    boxShadow: 'none',
+  };
+
+  const footerStyle: React.CSSProperties = {
+    textAlign: 'center',
+    marginTop: theme.spacing.xl,
+    padding: `${theme.spacing.lg} 0`,
+    borderTop: `1px solid ${theme.colors.border}`,
+  };
+
   const linkStyle: React.CSSProperties = {
-    color: theme.colors.primary,
-    fontWeight: theme.fonts.semiBold,
-    transition: 'color 0.3s ease',
+    color: theme.colors.secondary,
+    fontWeight: theme.fonts.weight.semiBold,
+    textDecoration: 'none',
+    transition: theme.transitions.fast,
+    borderRadius: theme.borderRadius.sm,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    margin: `0 -${theme.spacing.sm}`,
   };
+
+  const isFormValid = formData.username && formData.email && formData.password && formData.confirmPassword;
+  const isSubmitting = registerMutation.isPending;
+
   return (
     <div style={containerStyle}>
+      <div style={backgroundPatternStyle} />
+      
       <div style={cardStyle}>
         <div style={headerStyle}>
+          <div style={headerPatternStyle} />
           <div style={iconWrapperStyle}>
-            <FiUserPlus size={32} />
+            <FiUserPlus size={36} />
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: theme.fonts.bold, marginBottom: theme.spacing.sm }}>Create Account</h1>
-          <p style={{ color: theme.colors.secondaryLight }}>Sign up for admin access</p>
+          <h1 style={titleStyle}>Create Account</h1>
+          <p style={subtitleStyle}>Sign up for admin access</p>
         </div>
+
         <div style={formSectionStyle}>
           {displayErrors.length > 0 && (
             <div style={errorStyle}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.sm }}>
-                <FiAlertCircle style={{ color: theme.colors.primary, flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: theme.spacing.md }}>
+                <FiAlertCircle 
+                  style={{ 
+                    color: theme.colors.error, 
+                    flexShrink: 0, 
+                    marginTop: '2px' 
+                  }} 
+                  size={20} 
+                />
                 <div style={{ flex: 1 }}>
-                  <p style={{ color: theme.colors.text, fontWeight: theme.fonts.medium }}>
+                  <p style={{ 
+                    color: theme.colors.error, 
+                    fontWeight: theme.fonts.weight.semiBold,
+                    fontSize: theme.fonts.size.md,
+                    marginBottom: theme.spacing.sm
+                  }}>
                     {registerMutation.error ? 'Registration Failed' : 'Validation Error'}
                   </p>
-                  <ul style={{ color: theme.colors.textSecondary, fontSize: '0.875rem', marginTop: theme.spacing.xs, listStyleType: 'none', paddingLeft: 0 }}>
+                  <ul style={{ 
+                    color: theme.colors.textSecondary, 
+                    fontSize: theme.fonts.size.sm, 
+                    listStyleType: 'none', 
+                    paddingLeft: 0,
+                    lineHeight: theme.fonts.lineHeight.relaxed
+                  }}>
                     {displayErrors.map((err, index) => (
-                      <li key={index} style={{ marginBottom: '4px' }}>• {err}</li>
+                      <li key={index} style={{ 
+                        marginBottom: theme.spacing.xs,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: theme.spacing.sm
+                      }}>
+                        <span style={{ color: theme.colors.error, fontWeight: theme.fonts.weight.bold }}>&bull;</span>
+                        <span>{err}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               </div>
             </div>
           )}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: theme.fonts.semiBold, color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-                Username
-              </label>
+
+          <form onSubmit={handleSubmit}>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Username</label>
               <div style={inputWrapperStyle}>
-                <FiUser style={inputIconStyle} size={20} />
+                <FiUser style={inputIconStyle('username')} size={20} />
                 <input
                   type="text"
                   name="username"
                   value={formData.username}
                   onChange={handleInputChange}
+                  onFocus={() => setFocusedField('username')}
+                  onBlur={() => setFocusedField(null)}
                   required
-                  disabled={registerMutation.isPending}
+                  disabled={isSubmitting}
                   placeholder="Enter your username"
-                  style={{
-                    ...inputStyle,
-                    '::placeholder': { color: theme.colors.textMuted },
-                    ':focus': {
-                      borderColor: theme.colors.primary
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
-                    }
-                  }}
+                  style={inputStyle('username')}
                 />
               </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: theme.fonts.semiBold, color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-                Email Address
-              </label>
+
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Email Address</label>
               <div style={inputWrapperStyle}>
-                <FiMail style={inputIconStyle} size={20} />
+                <FiMail style={inputIconStyle('email')} size={20} />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
                   required
-                  disabled={registerMutation.isPending}
-                  placeholder="Enter your email"
-                  style={{
-                    ...inputStyle,
-                    '::placeholder': { color: theme.colors.textMuted },
-                    ':focus': {
-                      borderColor: theme.colors.primary
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
-                    }
-                  }}
+                  disabled={isSubmitting}
+                  placeholder="Enter your email address"
+                  style={inputStyle('email')}
                 />
               </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: theme.fonts.semiBold, color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-                Password
-              </label>
+
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Password</label>
               <div style={inputWrapperStyle}>
-                <FiLock style={inputIconStyle} size={20} />
+                <FiLock style={inputIconStyle('password')} size={20} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
                   required
-                  disabled={registerMutation.isPending}
+                  disabled={isSubmitting}
                   placeholder="Enter your password"
                   style={{
-                    ...inputStyle,
-                    paddingRight: '48px',
-                    '::placeholder': { color: theme.colors.textMuted },
-                    ':focus': {
-                      borderColor: theme.colors.primary
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
-                    }
+                    ...inputStyle('password'),
+                    paddingRight: '56px',
                   }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={registerMutation.isPending}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: theme.colors.textMuted,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'color 0.3s ease',
-                    ':hover': {
-                      color: theme.colors.textSecondary,
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
+                  disabled={isSubmitting}
+                  style={passwordToggleStyle}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = theme.colors.secondary;
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = theme.colors.textMuted;
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }
                   }}
                 >
@@ -292,53 +435,41 @@ const Register: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: theme.fonts.semiBold, color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-                Confirm Password
-              </label>
+
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Confirm Password</label>
               <div style={inputWrapperStyle}>
-                <FiLock style={inputIconStyle} size={20} />
+                <FiLock style={inputIconStyle('confirmPassword')} size={20} />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
+                  onFocus={() => setFocusedField('confirmPassword')}
+                  onBlur={() => setFocusedField(null)}
                   required
-                  disabled={registerMutation.isPending}
+                  disabled={isSubmitting}
                   placeholder="Confirm your password"
                   style={{
-                    ...inputStyle,
-                    paddingRight: '48px',
-                    '::placeholder': { color: theme.colors.textMuted },
-                    ':focus': {
-                      borderColor: theme.colors.primary
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
-                    }
+                    ...inputStyle('confirmPassword'),
+                    paddingRight: '56px',
                   }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={registerMutation.isPending}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: theme.colors.textMuted,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'color 0.3s ease',
-                    ':hover': {
-                      color: theme.colors.textSecondary,
-                    },
-                    ':disabled': {
-                      opacity: 0.5,
-                      cursor: 'not-allowed'
+                  disabled={isSubmitting}
+                  style={passwordToggleStyle}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = theme.colors.secondary;
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) {
+                      e.currentTarget.style.color = theme.colors.textMuted;
+                      e.currentTarget.style.backgroundColor = 'transparent';
                     }
                   }}
                 >
@@ -346,32 +477,34 @@ const Register: React.FC = () => {
                 </button>
               </div>
             </div>
+
             <button
               type="submit"
-              disabled={
-                registerMutation.isPending ||
-                !formData.username ||
-                !formData.email ||
-                !formData.password ||
-                !formData.confirmPassword
-              }
-              style={{
-                ...buttonStyle,
-                ':hover': {
-                  background: `linear-gradient(135deg, ${theme.colors.primaryLight}, ${theme.colors.primary})`,
-                },
-                ':disabled': {
-                  backgroundColor: theme.colors.border,
-                  cursor: 'not-allowed',
-                  color: theme.colors.textMuted,
-                  backgroundImage: 'none',
-                  boxShadow: 'none',
+              disabled={!isFormValid || isSubmitting}
+              style={!isFormValid || isSubmitting ? buttonDisabledStyle : buttonStyle}
+              onMouseEnter={(e) => {
+                if (isFormValid && !isSubmitting) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = theme.shadows.xl;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isFormValid && !isSubmitting) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = theme.shadows.lg;
                 }
               }}
             >
-              {registerMutation.isPending ? (
+              {isSubmitting ? (
                 <>
-                  <div style={{ animation: 'spin 1s linear infinite', borderRadius: '50%', height: '20px', width: '20px', borderBottom: `2px solid ${theme.colors.secondary}` }}></div>
+                  <div style={{ 
+                    animation: 'spin 1s linear infinite', 
+                    borderRadius: '50%', 
+                    height: '20px', 
+                    width: '20px', 
+                    border: `2px solid ${theme.colors.textOnSecondary}`,
+                    borderTopColor: 'transparent'
+                  }} />
                   Creating Account...
                 </>
               ) : (
@@ -382,16 +515,24 @@ const Register: React.FC = () => {
               )}
             </button>
           </form>
-          <div style={{ textAlign: 'center', marginTop: theme.spacing.lg }}>
-            <p style={{ color: theme.colors.textSecondary }}>
+
+          <div style={footerStyle}>
+            <p style={{ 
+              color: theme.colors.textSecondary, 
+              fontSize: theme.fonts.size.md,
+              marginBottom: theme.spacing.sm
+            }}>
               Already have an account?{' '}
               <Link
                 to="/admin/login"
-                style={{
-                  ...linkStyle,
-                  ':hover': {
-                    color: theme.colors.primaryDark
-                  }
+                style={linkStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = theme.colors.secondaryDark;
+                  e.currentTarget.style.backgroundColor = theme.colors.hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = theme.colors.secondary;
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 Sign in here
@@ -400,7 +541,67 @@ const Register: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Enhanced animations via CSS-in-JS */}
+      <style>
+        {`
+          @keyframes slideInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px) rotate(0deg);
+            }
+            33% {
+              transform: translateY(-15px) rotate(2deg);
+            }
+            66% {
+              transform: translateY(10px) rotate(-2deg);
+            }
+          }
+
+          @keyframes shake {
+            0%, 100% {
+              transform: translateX(0);
+            }
+            25% {
+              transform: translateX(-5px);
+            }
+            75% {
+              transform: translateX(5px);
+            }
+          }
+
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          input::placeholder {
+            color: ${theme.colors.textMuted};
+            opacity: 0.8;
+          }
+
+          input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        `}
+      </style>
     </div>
   );
 };
+
 export default Register;

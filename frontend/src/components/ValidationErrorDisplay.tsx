@@ -1,4 +1,3 @@
-// components/ValidationErrorDisplay.tsx
 import React from 'react';
 import { FiAlertCircle } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -33,23 +32,60 @@ const ValidationErrorDisplay: React.FC<ValidationErrorDisplayProps> = ({
     display: 'flex',
     alignItems: 'flex-start',
     gap: theme.spacing.sm,
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    backgroundColor: `${theme.colors.error}08`,
+    border: `1px solid ${theme.colors.error}30`,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.xs,
+    animation: 'slideIn 0.3s ease-out',
     ...style
   };
 
   const errorTextStyle: React.CSSProperties = {
-    color: '#ef4444', // red-600
-    fontSize: '0.875rem',
+    color: theme.colors.error,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
     margin: 0,
-    lineHeight: '1.25rem'
+    lineHeight: theme.fonts.lineHeight.snug,
+    fontFamily: theme.fonts.family.body,
   };
+
+  const iconStyle: React.CSSProperties = {
+    marginTop: '2px',
+    flexShrink: 0,
+    color: theme.colors.error,
+  };
+
+  // Inject animation keyframes
+  React.useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      @keyframes slideIn {
+        from { 
+          opacity: 0;
+          transform: translateY(-10px);
+          max-height: 0;
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0);
+          max-height: 100px;
+        }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
 
   return (
     <div style={containerStyle} className={className}>
       {showIcon && (
         <FiAlertCircle 
-          color="#ef4444" 
           size={16} 
-          style={{ marginTop: '2px', flexShrink: 0 }} 
+          style={iconStyle}
         />
       )}
       <div style={{ flex: 1 }}>
@@ -90,28 +126,42 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
     ...style
   };
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
-    fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.semiBold,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xs
+    marginBottom: theme.spacing.xs,
+    fontFamily: theme.fonts.family.heading,
+    letterSpacing: theme.fonts.letterSpacing.wide,
   };
 
   const requiredStyle: React.CSSProperties = {
-    color: '#ef4444',
-    marginLeft: theme.spacing.xs
+    color: theme.colors.error,
+    marginLeft: theme.spacing.xs,
+    fontWeight: theme.fonts.weight.bold,
   };
 
   const inputWrapperStyle: React.CSSProperties = {
+    position: 'relative',
     ...(hasErrors && {
-      outline: '2px solid #ef4444',
-      outlineOffset: '2px',
-      borderRadius: theme.borderRadius.lg,
-      outlineStyle: 'solid'
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        inset: '-2px',
+        borderRadius: theme.borderRadius.lg,
+        padding: '2px',
+        background: `linear-gradient(135deg, ${theme.colors.error}, ${theme.colors.error}80)`,
+        mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        maskComposite: 'xor',
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        pointerEvents: 'none',
+      }
     })
   };
 
@@ -129,7 +179,6 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
       <ValidationErrorDisplay 
         errors={errors} 
         fieldName={fieldName}
-        style={{ marginTop: theme.spacing.xs }}
       />
     </div>
   );
@@ -158,25 +207,22 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    border: `1px solid ${hasErrors ? '#fca5a5' : theme.colors.border}`,
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    border: `2px solid ${hasErrors ? theme.colors.error : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     outline: 'none',
-    transition: 'all 0.2s ease',
-    fontSize: '1rem',
-    lineHeight: '1.5',
+    transition: theme.transitions.fast,
+    fontSize: theme.fonts.size.md,
+    lineHeight: theme.fonts.lineHeight.normal,
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
+    fontFamily: theme.fonts.family.body,
     ...customStyle,
     ...(hasErrors ? {
-      borderColor: '#ef4444',
-      boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.1)'
-    } : {
-      '&:focus': {
-        borderColor: theme.colors.primary,
-        boxShadow: `0 0 0 3px ${theme.colors.primary}20`
-      }
-    })
+      borderColor: theme.colors.error,
+      boxShadow: `0 0 0 3px ${theme.colors.error}20`,
+      backgroundColor: `${theme.colors.error}05`,
+    } : {})
   };
 
   return (
@@ -232,21 +278,23 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
 
   const textareaStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    border: `1px solid ${hasErrors ? '#fca5a5' : theme.colors.border}`,
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    border: `2px solid ${hasErrors ? theme.colors.error : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     outline: 'none',
-    transition: 'all 0.2s ease',
-    fontSize: '1rem',
-    lineHeight: '1.5',
+    transition: theme.transitions.fast,
+    fontSize: theme.fonts.size.md,
+    lineHeight: theme.fonts.lineHeight.normal,
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
+    fontFamily: theme.fonts.family.body,
     resize: 'vertical',
-    minHeight: '100px',
+    minHeight: '120px',
     ...customStyle,
     ...(hasErrors ? {
-      borderColor: '#ef4444',
-      boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.1)'
+      borderColor: theme.colors.error,
+      boxShadow: `0 0 0 3px ${theme.colors.error}20`,
+      backgroundColor: `${theme.colors.error}05`,
     } : {})
   };
 
@@ -307,20 +355,26 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
 
   const selectStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    border: `1px solid ${hasErrors ? '#fca5a5' : theme.colors.border}`,
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    border: `2px solid ${hasErrors ? theme.colors.error : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     outline: 'none',
-    transition: 'all 0.2s ease',
-    fontSize: '1rem',
-    lineHeight: '1.5',
+    transition: theme.transitions.fast,
+    fontSize: theme.fonts.size.md,
+    lineHeight: theme.fonts.lineHeight.normal,
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
+    fontFamily: theme.fonts.family.body,
     cursor: 'pointer',
+    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,${encodeURIComponent(`<svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L7 7L13 1" stroke="${theme.colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`)}")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    paddingRight: theme.spacing['3xl'],
     ...customStyle,
     ...(hasErrors ? {
-      borderColor: '#ef4444',
-      boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.1)'
+      borderColor: theme.colors.error,
+      boxShadow: `0 0 0 3px ${theme.colors.error}20`,
+      backgroundColor: `${theme.colors.error}05`,
     } : {})
   };
 
@@ -398,26 +452,30 @@ export const ValidatedFileInput: React.FC<ValidatedFileInputProps> = ({
 
   const fileInputStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    border: `1px solid ${hasErrors ? '#fca5a5' : theme.colors.border}`,
+    padding: `${theme.spacing.lg} ${theme.spacing.lg}`,
+    border: `2px dashed ${hasErrors ? theme.colors.error : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     outline: 'none',
-    transition: 'all 0.2s ease',
-    fontSize: '1rem',
-    backgroundColor: theme.colors.surface,
+    transition: theme.transitions.fast,
+    fontSize: theme.fonts.size.md,
+    backgroundColor: hasErrors ? `${theme.colors.error}05` : theme.colors.backgroundSecondary,
     color: theme.colors.text,
+    fontFamily: theme.fonts.family.body,
     cursor: 'pointer',
+    textAlign: 'center',
     ...customStyle,
     ...(hasErrors ? {
-      borderColor: '#ef4444',
-      boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.1)'
+      borderColor: theme.colors.error,
+      boxShadow: `0 0 0 3px ${theme.colors.error}20`,
     } : {})
   };
 
   const helperTextStyle: React.CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: theme.fonts.size.xs,
     color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs
+    marginTop: theme.spacing.sm,
+    textAlign: 'center',
+    fontStyle: 'italic',
   };
 
   return (
@@ -427,30 +485,41 @@ export const ValidatedFileInput: React.FC<ValidatedFileInputProps> = ({
       errors={errors}
       required={required}
     >
-      <input
-        {...props}
-        type="file"
-        accept={acceptedFileTypes}
-        style={fileInputStyle}
-        className={className}
-        onFocus={(e) => {
-          if (!hasErrors) {
-            e.target.style.borderColor = theme.colors.primary;
-            e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
-          }
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          if (!hasErrors) {
-            e.target.style.borderColor = theme.colors.border;
-            e.target.style.boxShadow = 'none';
-          }
-          props.onBlur?.(e);
-        }}
-      />
-      <p style={helperTextStyle}>
-        Accepted formats: {acceptedFileTypes}. Max size: {maxSizeInMB}MB
-      </p>
+      <div>
+        <input
+          {...props}
+          type="file"
+          accept={acceptedFileTypes}
+          style={fileInputStyle}
+          className={className}
+          onFocus={(e) => {
+            if (!hasErrors) {
+              e.target.style.borderColor = theme.colors.primary;
+              e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
+            }
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            if (!hasErrors) {
+              e.target.style.borderColor = theme.colors.border;
+              e.target.style.boxShadow = 'none';
+            }
+            props.onBlur?.(e);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
+            e.currentTarget.style.borderColor = theme.colors.primary;
+          }}
+          onDragLeave={(e) => {
+            e.currentTarget.style.backgroundColor = hasErrors ? `${theme.colors.error}05` : theme.colors.backgroundSecondary;
+            e.currentTarget.style.borderColor = hasErrors ? theme.colors.error : theme.colors.border;
+          }}
+        />
+        <p style={helperTextStyle}>
+          Accepted formats: {acceptedFileTypes} • Max size: {maxSizeInMB}MB
+        </p>
+      </div>
     </FieldWrapper>
   );
 };
@@ -482,21 +551,28 @@ export const ValidatedCheckbox: React.FC<ValidatedCheckboxProps> = ({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
     ...customStyle
   };
 
   const checkboxContainerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: theme.spacing.sm
+    gap: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    border: `1px solid ${hasErrors ? theme.colors.error : 'transparent'}`,
+    backgroundColor: hasErrors ? `${theme.colors.error}05` : 'transparent',
+    transition: theme.transitions.fast,
   };
 
   const checkboxStyle: React.CSSProperties = {
-    width: '18px',
-    height: '18px',
+    width: '20px',
+    height: '20px',
     marginTop: '2px',
     accentColor: theme.colors.primary,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    borderRadius: theme.borderRadius.sm,
   };
 
   const labelContentStyle: React.CSSProperties = {
@@ -508,21 +584,24 @@ export const ValidatedCheckbox: React.FC<ValidatedCheckboxProps> = ({
   };
 
   const labelTextStyle: React.CSSProperties = {
-    fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.semiBold,
     color: theme.colors.text,
-    lineHeight: '1.25'
+    lineHeight: theme.fonts.lineHeight.snug,
+    fontFamily: theme.fonts.family.heading,
   };
 
   const descriptionStyle: React.CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: theme.fonts.size.xs,
     color: theme.colors.textSecondary,
-    lineHeight: '1.4'
+    lineHeight: theme.fonts.lineHeight.relaxed,
+    fontFamily: theme.fonts.family.body,
   };
 
   const requiredStyle: React.CSSProperties = {
-    color: '#ef4444',
-    marginLeft: theme.spacing.xs
+    color: theme.colors.error,
+    marginLeft: theme.spacing.xs,
+    fontWeight: theme.fonts.weight.bold,
   };
 
   return (
@@ -554,4 +633,3 @@ export const ValidatedCheckbox: React.FC<ValidatedCheckboxProps> = ({
 };
 
 export default ValidationErrorDisplay;
-

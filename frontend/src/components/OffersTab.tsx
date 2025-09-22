@@ -43,51 +43,51 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
     setFormData(prev => ({ ...prev, offers: newOffers }));
   };
 
-  // Theme-based styles
+  // Theme-based styles using your theme structure
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.lg
+    gap: '1.5rem'
   };
 
   const headerStyle: React.CSSProperties = {
     fontSize: '1.125rem',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
     color: theme.colors.text,
     margin: 0,
-    marginBottom: theme.spacing.md
+    marginBottom: '1rem'
   };
 
   const offerCardStyle: React.CSSProperties = {
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    borderRadius: '12px',
+    padding: '1.5rem',
     backgroundColor: theme.colors.surface,
-    boxShadow: theme.shadows.sm
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`
   };
 
   const offerHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md
+    marginBottom: '1rem'
   };
 
   const offerNumberStyle: React.CSSProperties = {
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.textSecondary,
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.xs
+    gap: '0.5rem'
   };
 
   const removeButtonStyle: React.CSSProperties = {
-    color: '#ef4444',
+    color: theme.colors.error,
     backgroundColor: 'transparent',
     border: 'none',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
+    padding: '0.75rem',
+    borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
@@ -98,65 +98,66 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
   const gridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md
+    gap: '1rem',
+    marginBottom: '1rem'
   };
 
   const addOfferSectionStyle: React.CSSProperties = {
-    padding: theme.spacing.lg,
+    padding: '1.5rem',
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.md
+    gap: '1rem'
   };
 
   const addOfferHeaderStyle: React.CSSProperties = {
     fontSize: '1rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     color: theme.colors.text,
     margin: 0
   };
 
   const addButtonStyle: React.CSSProperties = {
     width: '100%',
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    padding: '0.75rem 1rem',
     backgroundColor: theme.colors.primary,
-    color: theme.colors.secondary,
+    color: theme.colors.textOnPrimary,
     border: 'none',
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm
+    gap: '0.75rem'
   };
 
   const disabledButtonStyle: React.CSSProperties = {
     ...addButtonStyle,
-    backgroundColor: theme.colors.textMuted,
+    backgroundColor: theme.colors.disabled,
+    color: theme.colors.textMuted,
     cursor: 'not-allowed',
     opacity: 0.6
   };
 
   const emptyStateStyle: React.CSSProperties = {
     textAlign: 'center',
-    padding: theme.spacing.xl,
+    padding: '2rem',
     color: theme.colors.textSecondary,
     backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `2px dashed ${theme.colors.border}`
   };
 
   const checkboxRowStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    marginTop: theme.spacing.md
+    gap: '1rem',
+    marginTop: '1rem'
   };
 
   const isAddDisabled = !newOffer.title?.trim();
@@ -166,7 +167,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
       <h3 style={headerStyle}>Special Offers</h3>
       
       {/* Existing Offers */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {(formData.offers || []).length === 0 ? (
           <div style={emptyStateStyle}>
             <p style={{ margin: 0, fontSize: '0.875rem', fontStyle: 'italic' }}>
@@ -186,7 +187,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
                   onClick={() => removeOffer(index)}
                   style={removeButtonStyle}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                    e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'transparent';

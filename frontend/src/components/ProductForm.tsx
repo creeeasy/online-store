@@ -1,4 +1,4 @@
-// components/ProductForm.tsx - Updated version
+// components/ProductForm.tsx - Enhanced UI
 import React, { useState, useEffect } from 'react';
 import { FiSave } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,7 +10,7 @@ import OffersTab from './OffersTab';
 import PredefinedTab from './PredefinedTab';
 import DynamicFieldsTab from './DynamicFieldsTab';
 import HiddenFieldsTab from './HiddenFieldsTab';
-import ColorsTab from './ColorsTab'; // Add this import
+import ColorsTab from './ColorsTab';
 
 interface ProductFormProps {
   product: Partial<IProduct>;
@@ -27,7 +27,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   onCancel,
   isLoading,
   validationErrors = {},
-  isEditing = false
+  isEditing = false,
 }) => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('basic');
@@ -37,20 +37,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
     discountPrice: undefined,
     description: '',
     images: [''],
-    colors: [], // Add colors field
+    colors: [],
     dynamicFields: [],
-    predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map(category => ({
+    predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map((category) => ({
       category,
       options: PREDEFINED_CATEGORIES[category as keyof typeof PREDEFINED_CATEGORIES].options,
       selectedOptions: [],
-      isActive: false
+      isActive: false,
     })),
     offers: [],
     hiddenFields: [],
     reference: '',
-    ...product
+    ...product,
   });
-  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   // Reset form when product changes
   useEffect(() => {
@@ -60,24 +59,23 @@ const ProductForm: React.FC<ProductFormProps> = ({
       discountPrice: undefined,
       description: '',
       images: [''],
-      colors: [], // Add colors field
+      colors: [],
       dynamicFields: [],
-      predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map(category => ({
+      predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map((category) => ({
         category,
         options: PREDEFINED_CATEGORIES[category as keyof typeof PREDEFINED_CATEGORIES].options,
         selectedOptions: [],
-        isActive: false
+        isActive: false,
       })),
       offers: [],
       hiddenFields: [],
       reference: '',
-      ...product
+      ...product,
     });
   }, [product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitAttempted(true);
     try {
       await onSubmit(formData);
     } catch {
@@ -86,7 +84,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleInputChange = (field: keyof IProduct, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const commonProps = {
@@ -96,79 +94,81 @@ const ProductForm: React.FC<ProductFormProps> = ({
     handleInputChange,
   };
 
-  // --- Theme-based styles ---
+  // --- Theme-based styles using your theme structure ---
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    boxShadow: theme.shadows.lg,
+    borderRadius: '16px',
+    boxShadow: `0 8px 24px ${theme.colors.shadow}`,
     border: `1px solid ${theme.colors.border}`,
-    overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    animation: 'fadeSlideIn 0.25s ease'
+    overflow: 'hidden',
+    animation: 'fadeSlideIn 0.25s ease',
+    maxWidth: '100%',
   };
 
   const formStyle: React.CSSProperties = {
-    padding: theme.spacing.xl,
+    padding: '2rem',
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.xl,
+    gap: '2rem',
     maxHeight: 'calc(100vh - 220px)',
-    overflowY: 'auto'
+    overflowY: 'auto',
+    backgroundColor: theme.colors.backgroundSecondary,
   };
 
   const actionsContainerStyle: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'flex-end',
-    gap: theme.spacing.md,
-    paddingTop: theme.spacing.lg,
+    gap: '1rem',
+    paddingTop: '1.5rem',
     borderTop: `1px solid ${theme.colors.border}`,
-    backgroundColor: theme.colors.secondaryLight,
+    backgroundColor: theme.colors.surfaceAlt || theme.colors.backgroundSecondary,
     position: 'sticky',
     bottom: 0,
-    padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+    padding: '1.5rem 2rem',
     zIndex: 5,
   };
 
   const submitButtonStyle = (disabled: boolean): React.CSSProperties => ({
-    minWidth: '160px',
+    minWidth: '180px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
-    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    gap: '0.75rem',
+    padding: '1rem 1.5rem',
     background: disabled
-      ? theme.colors.textMuted
-      : `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
-    color: theme.colors.secondary,
-    borderRadius: theme.borderRadius.lg,
+      ? theme.colors.disabled
+      : theme.colors.gradientPrimary || `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
+    color: theme.colors.textOnPrimary,
+    borderRadius: '12px',
     border: 'none',
-    fontWeight: theme.fonts.semiBold,
+    fontWeight: '600',
     fontSize: '0.95rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'all 0.25s ease',
     opacity: disabled ? 0.6 : 1,
-    boxShadow: disabled ? 'none' : theme.shadows.md
+    boxShadow: disabled ? 'none' : `0 4px 12px ${theme.colors.shadow}`,
   });
 
   const cancelButtonStyle: React.CSSProperties = {
-    minWidth: '120px',
-    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    minWidth: '140px',
+    padding: '1rem 1.5rem',
     backgroundColor: theme.colors.background,
     color: theme.colors.textSecondary,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: '12px',
     border: `1px solid ${theme.colors.border}`,
-    fontWeight: theme.fonts.medium,
+    fontWeight: '500',
     fontSize: '0.9rem',
     cursor: 'pointer',
     transition: 'all 0.25s ease',
-    boxShadow: theme.shadows.sm
+    boxShadow: `0 2px 4px ${theme.colors.shadow}`,
   };
 
   const loadingSpinnerStyle: React.CSSProperties = {
-    width: '18px',
-    height: '18px',
-    border: `2px solid ${theme.colors.secondary}`,
+    width: '20px',
+    height: '20px',
+    border: `2px solid ${theme.colors.white}`,
     borderTop: '2px solid transparent',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
@@ -197,7 +197,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           {activeTab === 'offers' && <OffersTab {...commonProps} />}
           {activeTab === 'hidden' && <HiddenFieldsTab {...commonProps} />}
           {activeTab === 'dynamic' && <DynamicFieldsTab {...commonProps} />}
-          {activeTab === 'colors' && <ColorsTab {...commonProps} />} {/* Add ColorsTab */}
+          {activeTab === 'colors' && <ColorsTab {...commonProps} />}
 
           <div style={actionsContainerStyle}>
             <button
@@ -207,13 +207,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
               onMouseEnter={(e) => {
                 if (!isLoading) {
                   e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = theme.shadows.lg;
+                  e.currentTarget.style.boxShadow = `0 8px 24px ${theme.colors.shadow}`;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isLoading) {
                   e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = theme.shadows.md;
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${theme.colors.shadow}`;
                 }
               }}
             >
@@ -234,14 +234,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
               onClick={onCancel}
               style={cancelButtonStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme.colors.secondaryDark;
+                e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
                 e.currentTarget.style.color = theme.colors.text;
                 e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = theme.colors.primary;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = theme.colors.background;
                 e.currentTarget.style.color = theme.colors.textSecondary;
                 e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = theme.colors.border;
               }}
             >
               Cancel
