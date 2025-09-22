@@ -56,6 +56,31 @@ export const productValidationRules = {
       .isArray({ min: 0 })
       .withMessage('At least one image is required if images are provided'),
     
+    // Colors validation
+    body('colors')
+      .optional()
+      .isArray({ max: 3 })
+      .withMessage('Maximum 3 colors allowed'),
+    
+    body('colors.*.name')
+      .if(body('colors').exists())
+      .trim()
+      .notEmpty()
+      .withMessage('Color name is required')
+      .isLength({ min: 1, max: 30 })
+      .withMessage('Color name must be between 1 and 30 characters'),
+    
+    body('colors.*.hexCode')
+      .if(body('colors').exists())
+      .trim()
+      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
+    
+    body('colors.*.isAvailable')
+      .if(body('colors').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isAvailable must be a boolean value'),
     
     body('dynamicFields')
       .optional()
@@ -95,7 +120,7 @@ export const productValidationRules = {
       .isArray()
       .withMessage('Offers must be an array'),
     
-      body('offers.*.discount')
+    body('offers.*.discount')
       .if(body('offers').exists())
       .optional()
       .isInt({ min: 0, max: 99 })
@@ -172,6 +197,34 @@ export const productValidationRules = {
       .isArray({ min: 0 })
       .withMessage('At least one image is required if images are provided'),
     
+    // Colors validation for updates
+    body('colors')
+      .optional()
+      .isArray({ max: 3 })
+      .withMessage('Maximum 3 colors allowed'),
+    
+    body('colors.*.name')
+      .if(body('colors').exists())
+      .optional()
+      .trim()
+      .notEmpty()
+      .withMessage('Color name cannot be empty if provided')
+      .isLength({ min: 1, max: 30 })
+      .withMessage('Color name must be between 1 and 30 characters'),
+    
+    body('colors.*.hexCode')
+      .if(body('colors').exists())
+      .optional()
+      .trim()
+      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
+    
+    body('colors.*.isAvailable')
+      .if(body('colors').exists())
+      .optional()
+      .isBoolean()
+      .withMessage('isAvailable must be a boolean value'),
+    
     body('dynamicFields.*.key')
       .if(body('dynamicFields').exists())
       .optional()
@@ -218,7 +271,6 @@ export const productValidationRules = {
       .optional()
       .isIn(WILAYAS)
       .withMessage('Wilaya must be one of the valid Algerian regions'),
-    
   ]
 };
 
@@ -230,6 +282,19 @@ const initializePredefinedFields = () => {
     selectedOptions: [],
     isActive: false
   }));
+};
+
+// Helper function to validate unique colors
+const validateUniqueColors = (colors: any[]) => {
+  if (!colors || colors.length === 0) return true;
+  
+  const names = colors.map(color => color.name?.toLowerCase()).filter(Boolean);
+  const hexCodes = colors.map(color => color.hexCode?.toLowerCase()).filter(Boolean);
+  
+  const uniqueNames = new Set(names);
+  const uniqueHexCodes = new Set(hexCodes);
+  
+  return names.length === uniqueNames.size && hexCodes.length === uniqueHexCodes.size;
 };
 
 // @desc    Get all products with advanced filtering
@@ -247,6 +312,20 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   if (req.query.category) {
     filter['predefinedFields.category'] = req.query.category;
     filter['predefinedFields.isActive'] = true;
+  }
+  
+  // Color filter (search by color name or hex code)
+  if (req.query.color) {
+    const colorQuery = req.query.color as string;
+    filter.$or = [
+      { 'colors.name': { $regex: colorQuery, $options: 'i' } },
+      { 'colors.hexCode': { $regex: colorQuery, $options: 'i' } }
+    ];
+  }
+  
+  // Available colors only filter
+  if (req.query.availableColorsOnly === 'true') {
+    filter['colors.isAvailable'] = true;
   }
   
   // Price range filter
@@ -312,6 +391,22 @@ export const createProduct = [
   ...productValidationRules.create,
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
+    // Validate unique colors
+    if (req.body.colors && !validateUniqueColors(req.body.colors)) {
+      return ResponseHandler.error(
+        res,
+        'Colors must have unique names and hex codes',
+        400,
+        [{
+          field: 'colors',
+          message: 'Duplicate color names or hex codes are not allowed',
+          value: req.body.colors,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+
     // Initialize predefined fields if not provided
     const predefinedFields = req.body.predefinedFields || initializePredefinedFields();
 
@@ -349,6 +444,22 @@ export const updateProduct = [
   ...productValidationRules.update,
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
+    // Validate unique colors if colors are being updated
+    if (req.body.colors && !validateUniqueColors(req.body.colors)) {
+      return ResponseHandler.error(
+        res,
+        'Colors must have unique names and hex codes',
+        400,
+        [{
+          field: 'colors',
+          message: 'Duplicate color names or hex codes are not allowed',
+          value: req.body.colors,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+
     let product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -388,24 +499,24 @@ export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response
   }
 
   // Check if user owns the product or is admin
-    if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
-      return ResponseHandler.forbidden(res, 'Not authorized to delete this product');
-    }
+  if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+    return ResponseHandler.forbidden(res, 'Not authorized to delete this product');
+  }
 
-    await Product.findByIdAndDelete(req.params.id);
+  await Product.findByIdAndDelete(req.params.id);
 
-    ResponseHandler.success(
-      res,
-      {},
-      'Product deleted successfully'
-    );
-  });
+  ResponseHandler.success(
+    res,
+    {},
+    'Product deleted successfully'
+  );
+});
 
 // @desc    Search products
 // @route   GET /api/products/search
 // @access  Public
 export const searchProducts = asyncHandler(async (req: Request, res: Response) => {
-  const { q, category, minPrice, maxPrice, onSale, hasOffers } = req.query;
+  const { q, category, color, availableColorsOnly, minPrice, maxPrice, onSale, hasOffers } = req.query;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
@@ -421,6 +532,20 @@ export const searchProducts = asyncHandler(async (req: Request, res: Response) =
   if (category) {
     query['predefinedFields.category'] = category;
     query['predefinedFields.isActive'] = true;
+  }
+
+  // Color filter
+  if (color) {
+    const colorQuery = color as string;
+    query.$or = [
+      { 'colors.name': { $regex: colorQuery, $options: 'i' } },
+      { 'colors.hexCode': { $regex: colorQuery, $options: 'i' } }
+    ];
+  }
+
+  // Available colors only filter
+  if (availableColorsOnly === 'true') {
+    query['colors.isAvailable'] = true;
   }
 
   // Price range filter
@@ -495,6 +620,22 @@ export const bulkUpdateProducts = asyncHandler(async (req: AuthRequest, res: Res
     );
   }
 
+  // Validate colors in bulk update if provided
+  if (updateData.colors && !validateUniqueColors(updateData.colors)) {
+    return ResponseHandler.error(
+      res,
+      'Colors must have unique names and hex codes',
+      400,
+      [{
+        field: 'updateData.colors',
+        message: 'Duplicate color names or hex codes are not allowed',
+        value: updateData.colors,
+        location: 'body'
+      }],
+      'VALIDATION_ERROR'
+    );
+  }
+
   const result = await Product.updateMany(
     { _id: { $in: productIds }, createdBy: req.user?.id },
     updateData,
@@ -534,6 +675,39 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     }
   });
 
+  // Products with colors
+  const withColorsCount = await Product.countDocuments({
+    colors: { $exists: true, $ne: [], $size: { $gte: 1 } }
+  });
+
+  // Most popular colors
+  const popularColors = await Product.aggregate([
+    { $unwind: "$colors" },
+    { 
+      $group: {
+        _id: {
+          name: "$colors.name",
+          hexCode: "$colors.hexCode"
+        },
+        count: { $sum: 1 },
+        availableCount: {
+          $sum: { $cond: ["$colors.isAvailable", 1, 0] }
+        }
+      }
+    },
+    { $sort: { count: -1 } },
+    { $limit: 10 },
+    {
+      $project: {
+        _id: 0,
+        name: "$_id.name",
+        hexCode: "$_id.hexCode",
+        totalProducts: "$count",
+        availableProducts: "$availableCount"
+      }
+    }
+  ]);
+
   // Stats by predefined category
   const categoryStats = await Product.aggregate([
     { $unwind: "$predefinedFields" },
@@ -551,7 +725,7 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
   const recentProducts = await Product.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .select("name price discountPrice images createdAt");
+    .select("name price discountPrice images colors createdAt");
 
   ResponseHandler.success(
     res,
@@ -559,6 +733,8 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
       totalProducts,
       onSaleCount,
       withActiveOffers,
+      withColorsCount,
+      popularColors,
       categoryStats,
       recentProducts
     },
@@ -609,3 +785,39 @@ export const cloneProduct = [
     );
   })
 ];
+
+// @desc    Get products by color
+// @route   GET /api/products/colors/:colorName
+// @access  Public
+export const getProductsByColor = asyncHandler(async (req: Request, res: Response) => {
+  const { colorName } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+  const availableOnly = req.query.availableOnly === 'true';
+
+  let filter: any = {
+    'colors.name': { $regex: colorName, $options: 'i' }
+  };
+
+  if (availableOnly) {
+    filter['colors.isAvailable'] = true;
+  }
+
+  const products = await Product.find(filter)
+    .populate('createdBy', 'username email')
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+
+  const total = await Product.countDocuments(filter);
+
+  ResponseHandler.paginated(
+    res,
+    products,
+    total,
+    page,
+    limit,
+    `Products with color "${colorName}" retrieved successfully`
+  );
+});

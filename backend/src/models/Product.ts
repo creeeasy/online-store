@@ -35,6 +35,7 @@ export interface IDynamicField {
   isDefault?: boolean;
   _id?: mongoose.Types.ObjectId;
 }
+
 export interface IPredefinedField {
   category: string;
   options: string[];
@@ -56,22 +57,49 @@ export interface IHiddenField {
   _id?: mongoose.Types.ObjectId;
 }
 
+// New Color interface
+export interface IProductColor {
+  name: string;
+  hexCode: string;
+  isAvailable?: boolean;
+  _id?: mongoose.Types.ObjectId;
+}
+
 export interface IProduct extends Document {
   name: string;
   price: number;
   discountPrice?: number;
   description: string;
   images: string[];
+  colors?: IProductColor[]; // Optional array of up to 3 colors
   dynamicFields: IDynamicField[];
   predefinedFields: IPredefinedField[];
   offers: IOffer[];
   hiddenFields: IHiddenField[];
   createdBy: mongoose.Types.ObjectId;
-  reference?: string; // Added reference field
+  reference?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
+const ProductColorSchema = new Schema({
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true,
+    maxlength: [30, 'Color name cannot exceed 30 characters']
+  },
+  hexCode: { 
+    type: String, 
+    required: true, 
+    trim: true,
+    match: [/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Please provide a valid hex color code']
+  },
+  isAvailable: { 
+    type: Boolean, 
+    default: true 
+  }
+});
 
 const ProductSchema = new Schema({
   name: { 
@@ -94,27 +122,47 @@ const ProductSchema = new Schema({
     required: true,
     maxlength: [1000, 'Description cannot exceed 1000 characters']
   },
-images: {
-  type: [String],
-  validate: {
-    validator: function (arr: string[]) {
-      // allow empty or undefined
-      if (!arr || arr.length === 0) return true;
+  images: {
+    type: [String],
+    validate: {
+      validator: function (arr: string[]) {
+        // allow empty or undefined
+        if (!arr || arr.length === 0) return true;
 
-      // validate each element as non-empty string
-      return arr.every((str) => typeof str === 'string' && str.trim().length > 0);
+        // validate each element as non-empty string
+        return arr.every((str) => typeof str === 'string' && str.trim().length > 0);
+      },
+      message: 'Each image must be a non-empty string',
     },
-    message: 'Each image must be a non-empty string',
+    required: false, // optional field
   },
-  required: false, // optional field
-},
-
-dynamicFields: [{
-  key: { type: String, required: true, trim: true },
-  placeholder: { type: String, required: true, trim: true },
-  isRequired: { type: Boolean, default: false },
-  isDefault: { type: Boolean, default: false }
-}],
+  colors: {
+    type: [ProductColorSchema],
+    validate: {
+      validator: function (arr: IProductColor[]) {
+        // Allow empty or undefined
+        if (!arr || arr.length === 0) return true;
+        
+        // Maximum 3 colors allowed
+        if (arr.length > 3) return false;
+        
+        // Check for unique color names and hex codes
+        const names = arr.map(color => color.name.toLowerCase());
+        const hexCodes = arr.map(color => color.hexCode.toLowerCase());
+        
+        return names.length === new Set(names).size && 
+               hexCodes.length === new Set(hexCodes).size;
+      },
+      message: 'Maximum 3 colors allowed with unique names and hex codes',
+    },
+    required: false, // optional field
+  },
+  dynamicFields: [{
+    key: { type: String, required: true, trim: true },
+    placeholder: { type: String, required: true, trim: true },
+    isRequired: { type: Boolean, default: false },
+    isDefault: { type: Boolean, default: false }
+  }],
   predefinedFields: [{
     category: { type: String, required: true, trim: true },
     options: [{ type: String, trim: true }],
@@ -153,5 +201,8 @@ ProductSchema.index({
 
 // Index for category search
 ProductSchema.index({ 'predefinedFields.category': 1, 'predefinedFields.isActive': 1 });
+
+// Index for color availability
+ProductSchema.index({ 'colors.isAvailable': 1 });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);
