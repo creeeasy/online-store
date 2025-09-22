@@ -20,18 +20,12 @@ export const formatAlgerianPhone = (phone: string): string => {
   return cleanPhone;
 };
 
-export interface CustomerData {
-  name: string;
-  phone: string; // Must be 10 digits: 0 + [5|6|7] + 8 additional digits
-  reference: string;
-  [key: string]: string;
-}
 
 export interface OrderInquiry {
   _id: string;
   productId: string;
   productName: string;
-  customerData: CustomerData;
+  customerData: Record<string,any>;
   quantity?: number;
   selectedVariants?: Record<string, string>;
   totalPrice?: number;
@@ -70,14 +64,14 @@ export interface OrderInquiryStats {
 
 export interface CreateOrderInquiryRequest {
   productId: string;
-  customerData: CustomerData;
+  customerData: Record<string,any>;
   quantity?: number;
   selectedVariants?: Record<string, string>;
   notes?: string;
 }
 
 export interface UpdateOrderInquiryRequest {
-  customerData?: Partial<CustomerData>;
+  customerData?: Partial< Record<string,any>>;
   status?: 'pending' | 'contacted' | 'converted' | 'cancelled';
   notes?: string;
 }
@@ -105,7 +99,7 @@ export const customerDataValidation = {
 };
 
 // Type guard for CustomerData validation
-export const isValidCustomerData = (data: any): data is CustomerData => {
+export const isValidCustomerData = (data: any): data is Record<string,any> => {
   if (!data || typeof data !== 'object') return false;
   
   const { name, phone, reference } = data;

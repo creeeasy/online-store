@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { SERVER_URL } from '../utils/apiClient';
 
 interface ProductGalleryProps {
   images: string[];
@@ -339,7 +340,11 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           )}
           
           <img
-            src={images[currentIndex]}
+           src={
+                          images?.[currentIndex]
+                            ? `${images[currentIndex]}`
+                            : 'https://picsum.photos/300/300?random=default'
+                        }
             alt={`Product view ${currentIndex + 1}`}
             className="gallery-main-image"
             style={{

@@ -19,99 +19,87 @@ const Modal: React.FC<ModalProps> = ({ children }) => {
     dispatch(closeModal());
   };
 
-  // Theme-based styles
+  // Overlay (slightly darker so modal stands out)
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
     zIndex: 50,
-    overflowY: 'auto'
-  };
-
-  const backdropStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Light transparent background
-    backdropFilter: 'blur(8px)', // Blur effect
-    WebkitBackdropFilter: 'blur(8px)', // Safari support
-    transition: 'all 0.3s ease',
-    cursor: 'pointer'
-  };
-
-  const containerStyle: React.CSSProperties = {
     display: 'flex',
-    minHeight: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.lg
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backdropFilter: 'blur(6px)',
+    WebkitBackdropFilter: 'blur(6px)',
+    transition: 'opacity 0.3s ease',
+    padding: theme.spacing.lg,
   };
 
+  // Modal (fullscreen-ish, but still padded & elegant)
   const modalStyle: React.CSSProperties = {
     position: 'relative',
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     boxShadow: theme.shadows.lg,
-    maxWidth: '32rem', // max-w-2xl equivalent
-    width: '100%',
-    maxHeight: '90vh',
+    width: '95%',
+    height: '90vh',
+    maxWidth: '1200px',
     overflow: 'hidden',
-    border: `1px solid ${theme.colors.border}`
+    border: `1px solid ${theme.colors.border}`,
+    display: 'flex',
+    flexDirection: 'column',
+    animation: 'fadeInScale 0.25s ease',
   };
 
+  // Close button
   const closeButtonStyle: React.CSSProperties = {
     position: 'absolute',
-    top: theme.spacing.lg,
-    right: theme.spacing.lg,
+    top: theme.spacing.md,
+    right: theme.spacing.md,
     backgroundColor: 'transparent',
     border: 'none',
     color: theme.colors.textSecondary,
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    zIndex: 10,
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
   };
 
+  // Content (scrollable body)
   const contentStyle: React.CSSProperties = {
     padding: theme.spacing.xl,
-    maxHeight: '90vh',
-    overflowY: 'auto'
+    color: theme.colors.text,
+    overflowY: 'auto',
+    flex: 1,
   };
 
   return (
-    <div style={overlayStyle}>
-      <div 
-        style={backdropStyle}
-        onClick={handleClose}
-      />
-      
-      <div style={containerStyle}>
-        <div 
-          style={modalStyle}
-          onClick={(e) => e.stopPropagation()}
+    <div style={overlayStyle} onClick={handleClose}>
+      <div
+        style={modalStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          style={closeButtonStyle}
+          onClick={handleClose}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+            e.currentTarget.style.color = theme.colors.primary;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = theme.colors.textSecondary;
+          }}
+          aria-label="Close modal"
         >
-          <button
-            onClick={handleClose}
-            style={closeButtonStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
-              e.currentTarget.style.color = theme.colors.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = theme.colors.textSecondary;
-            }}
-            aria-label="Close modal"
-          >
-            <FiX size={20} />
-          </button>
-          
-          <div style={contentStyle}>
-            {children}
-          </div>
-        </div>
+          <FiX size={20} />
+        </button>
+
+        {/* Scrollable Content */}
+        <div style={contentStyle}>{children}</div>
       </div>
     </div>
   );

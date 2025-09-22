@@ -440,12 +440,7 @@ export const useProductInquiry = (productId?: string) => {
     
     const inquiryData: CreateOrderInquiryRequest = {
       productId,
-      customerData: {
-        name: customerData.name || '',
-        phone: customerData.phone || '',
-        reference: customerData.reference || '',
-        ...customerData
-      },
+      customerData,
       quantity,
       selectedVariants: selectedVariants && Object.keys(selectedVariants).length > 0 
         ? selectedVariants 

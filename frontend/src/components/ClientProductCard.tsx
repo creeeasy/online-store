@@ -2,6 +2,7 @@ import React from 'react';
 import { FiGift, FiEye } from 'react-icons/fi';
 import type { IProduct } from '../types/product';
 import { useTheme } from '../contexts/ThemeContext';
+import { SERVER_URL } from '../utils/apiClient';
 interface ClientProductCardProps {
   product: IProduct;
   onViewDetails: (product: IProduct) => void;
@@ -112,7 +113,11 @@ const ClientProductCard: React.FC<ClientProductCardProps> = ({
     >
       <div style={imageWrapperStyle}>
         <img
-          src={product.images[0] || 'https://picsum.photos/300/300?random=default'}
+              src={
+                product.images?.[0]
+                  ? `${SERVER_URL}${product.images[0]}`
+                  : 'https://picsum.photos/300/300?random=default'
+              }
           alt={product.name}
           style={{ ...imageStyle, transform: isHovered ? 'scale(1.1)' : 'scale(1)' }}
         />

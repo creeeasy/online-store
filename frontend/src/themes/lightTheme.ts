@@ -2,10 +2,10 @@ import type { Theme } from "../types/theme";
 
 export const lightTheme: Theme = {
   colors: {
-    // Primary colors (Light Orange variations)
-    primary: '#FF8A65',        // Main light orange
-    primaryLight: '#FFB74D',   // Lighter orange
-    primaryDark: '#FF7043',    // Darker orange
+    // Primary colors (Blue variations)
+    primary: '#1E73BE',        // Main royal blue
+    primaryLight: '#4DA8DA',   // Lighter blue
+    primaryDark: '#155A9C',    // Darker blue
     
     // Secondary colors (White variations)
     secondary: '#FFFFFF',      // Pure white
@@ -13,17 +13,17 @@ export const lightTheme: Theme = {
     secondaryDark: '#F5F5F5',  // Light gray-white
     
     // Background colors
-    background: '#FFFFFF',      // Main background
-    backgroundSecondary: '#FFF3E0', // Light orange tint
-    surface: '#FFFFFF',         // Card/surface background
+    background: '#FFFFFF',          // Main background
+    backgroundSecondary: '#EAF4FB', // Very light blue tint
+    surface: '#FFFFFF',             // Card/surface background
     
     // Text colors
-    text: '#212121',           // Primary text
-    textSecondary: '#757575',  // Secondary text
-    textMuted: '#BDBDBD',      // Muted text
+    text: '#212121',           // Primary text (blackish)
+    textSecondary: '#757575',  // Secondary text (gray)
+    textMuted: '#BDBDBD',      // Muted text (light gray)
     
     // Accent and utility colors
-    accent: '#FFB74D',         // Accent color
+    accent: '#4DA8DA',         // Accent color (sky blue)
     border: '#E0E0E0',         // Border color
     shadow: 'rgba(0, 0, 0, 0.1)', // Shadow color
   },

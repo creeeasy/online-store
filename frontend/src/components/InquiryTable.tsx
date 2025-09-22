@@ -3,6 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import StatusBadge from './StatusBadge';
 import InquiryActions from './InquiryActions';
 import type { OrderInquiry } from '../types/orderInquiry';
+import { SERVER_URL } from '../utils/apiClient';
 
 // Utility functions for formatting
 const InquiryUtils = {
@@ -349,34 +350,38 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
                   />
                 </td>
                 
-                {/* Customer Column */}
-                <td style={{ ...tdStyle, paddingLeft: theme.spacing.lg, paddingRight: theme.spacing.sm }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={customerAvatarStyle}>
-                      <span style={customerAvatarTextStyle}>
-                        {inquiry.customerData.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div style={{ marginLeft: theme.spacing.lg }}>
-                      <div style={customerNameStyle} title={inquiry.customerData.name}>
-                        {InquiryUtils.truncateText(inquiry.customerData.name, 20)}
-                      </div>
-                      <div style={customerPhoneStyle}>{inquiry.customerData.phone}</div>
-                      {inquiry.customerData.reference && (
-                        <div style={customerRefStyle}>
-                          Ref: {inquiry.customerData.reference}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </td>
+              {/* Customer Column */}
+<td style={{ ...tdStyle, paddingLeft: theme.spacing.lg, paddingRight: theme.spacing.sm }}>
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div style={{ marginLeft: theme.spacing.lg }}>
+      {inquiry.customerData && Object.keys(inquiry.customerData).length > 0 ? (
+        (() => {
+          const firstKey = Object.keys(inquiry.customerData)[0];
+          const firstValue = inquiry.customerData[firstKey];
+          return (
+            <div style={customerPhoneStyle}>
+              {firstKey}: {String(firstValue)}
+            </div>
+          );
+        })()
+      ) : (
+        <div style={customerPhoneStyle}>No data</div>
+      )}
+    </div>
+  </div>
+</td>
+
 
                 {/* Product Column */}
                 <td style={tdStyle}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     {inquiry.product?.images?.[0] && (
                       <img 
-                        src={inquiry.product.images[0]} 
+                       src={
+                                      inquiry.product.images?.[0]
+                                        ? `${SERVER_URL}${inquiry.product.images[0]}`
+                                        : 'https://picsum.photos/300/300?random=default'
+                                    }
                         alt={inquiry.productName}
                         style={productImageStyle}
                       />

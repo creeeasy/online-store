@@ -1,75 +1,134 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductGallery from '../components/ProductGallery';
-import EnhancedDynamicForm from '../components/EnhancedDynamicForm';
-import { FiGift, FiExternalLink, FiCheck, FiTag, FiClock } from 'react-icons/fi';
+import { FiGift, FiTag, FiClock } from 'react-icons/fi';
 import { useProduct } from '../hooks/useProducts';
-import { useProductInquiry } from '../hooks/useOrderInquiry';
+import { useTheme } from '../contexts/ThemeContext';
+import { toast } from 'react-toastify';
+import type { IDynamicField } from '../types/product';
+import { 
+  useProductInquiry, 
+} from '../hooks/useOrderInquiry';
+import { customerDataValidation, ValidationErrors ,validateAlgerianPhone} from '../types/orderInquiry';
+import { WilayaSelect } from '../components/WilayaInput';
 
-const SERVER_URL = 'http://localhost:5001'; // Add your server URL here
+const SERVER_URL = 'http://localhost:5001';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [formSubmitted, setFormSubmitted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
-  
-  // Use React Query hook for product data - updated to match new response structure
+  const [customerData, setCustomerData] = useState<Record<string, any>>({});
+  const [notes, setNotes] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const { theme } = useTheme();
+
+  // Use React Query hook for product data
   const { 
     data: productResponse, 
     isLoading, 
     error: productError 
   } = useProduct(id || '');
-  
-  const { 
-    submitInquiry, 
-    isLoading: submitting, 
-    error: submitError, 
-    validationErrors 
-  } = useProductInquiry(id);
+
+  // Use the product inquiry hook
+  const { submitInquiry, isLoading: isSubmitting, validationErrors } = useProductInquiry(id);
 
   // Extract product from the response
   const product = productResponse?.data || productResponse;
 
-  // Validation functions
-  const validateAlgerianPhone = (phone: string): boolean => {
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-    const phoneRegex = /^0[567]\d{8}$/;
-    return phoneRegex.test(cleanPhone);
-  };
+  // Determine the primary color from the product data
+  const primaryColor = product?.colors?.[0]?.hexCode || '#ef4444'; // Default to red if no color is found
+  const primaryColorDark = product?.colors?.[0]?.hexCode || '#b91c1c'; // A darker shade for gradients
 
-  const validateFullName = (name: string): boolean => {
-    const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
-    return nameRegex.test(name.trim()) && name.trim().length >= 2;
-  };
-
-  const handleFormSubmit = async (formData: Record<string, string>) => {
-    if (!id || !product) return;
-
-    // Client-side validation
-    const errors: string[] = [];
+  // Get all required customer data fields from product
+  const getCustomerDataFields = () => {
+    const fields: IDynamicField[] = [];
     
-    if (!formData.name || !validateFullName(formData.name)) {
-      errors.push('Full name must be 2-100 characters and contain only letters');
+    if (product?.dynamicFields) {
+      product.dynamicFields.forEach(field => {
+        if (field.isRequired) {
+          fields.push(field);
+        }
+      });
     }
     
-    if (!formData.phone || !validateAlgerianPhone(formData.phone)) {
-      errors.push('Phone number must be 10 digits starting with 05, 06, or 07');
-    }
+    return fields;
+  };
 
-    if (errors.length > 0) {
-      console.error('Validation errors:', errors);
+  // Validate a single field
+  const validateField = (key: string, value: string): string => {
+    if (!value || value.trim() === '') {
+      return 'This field is required';
+    }
+    
+    // Special validation for phone numbers
+    if (key.toLowerCase().includes('phone')) {
+      if (!validateAlgerianPhone(value)) {
+        return ValidationErrors.PHONE_INVALID;
+      }
+    }
+    
+    // Special validation for names
+    if (key.toLowerCase().includes('name')) {
+      if (value.trim().length < customerDataValidation.name.minLength) {
+        return ValidationErrors.NAME_TOO_SHORT;
+      }
+      if (value.trim().length > customerDataValidation.name.maxLength) {
+        return ValidationErrors.NAME_TOO_LONG;
+      }
+      if (!customerDataValidation.name.pattern.test(value)) {
+        return ValidationErrors.NAME_INVALID_CHARS;
+      }
+    }
+    
+    return '';
+  };
+
+  // Validate all fields
+  const validateAllFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+    
+    // Validate customer data fields
+    Object.entries(customerData).forEach(([key, value]) => {
+      const error = validateField(key, value as string);
+      if (error) {
+        errors[key] = error;
+        isValid = false;
+      }
+    });
+    
+    // Check if all required fields are present
+    const requiredFields = getCustomerDataFields();
+    requiredFields.forEach(field => {
+      if (!customerData[field.key] || customerData[field.key].trim() === '') {
+        errors[field.key] = `${field.placeholder || field.key} is required`;
+        isValid = false;
+      }
+    });
+    
+    setFieldErrors(errors);
+    return isValid;
+  };
+
+  const handleFormSubmit = async () => {
+    // Validate all fields
+    if (!validateAllFields()) {
+      toast.error('Please fix the form errors before submitting');
       return;
     }
 
     try {
-      await submitInquiry(formData, quantity, selectedVariants);
-      // Navigate to thank you page instead of showing success message
+      console.log(customerData)
+      // Submit the inquiry
+      await submitInquiry(customerData, quantity, selectedVariants);
+      console.log("success")
+      // Success navigation
       navigate('/thank-you', { 
         state: { 
           productName: product.name,
-          customerName: formData.name,
+          customerData,
           inquiryData: {
             quantity,
             selectedVariants,
@@ -79,6 +138,7 @@ const ProductDetails: React.FC = () => {
       });
     } catch (err) {
       console.error('Failed to submit inquiry:', err);
+      // Error handling is done in the hook
     }
   };
 
@@ -92,6 +152,22 @@ const ProductDetails: React.FC = () => {
       ...prev,
       [category]: value
     }));
+  };
+
+  const handleCustomerDataChange = (field: string, value: string) => {
+    setCustomerData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const isOfferActive = (offer: any) => {
@@ -109,9 +185,41 @@ const ProductDetails: React.FC = () => {
     return unitPrice * quantity;
   };
 
+  // Apply theme styles
+  const containerStyle = {
+    background: `linear-gradient(to bottom right, ${theme.colors.background}, ${theme.colors.backgroundSecondary})`,
+    minHeight: '100vh'
+  };
+
+  const breadcrumbStyle = {
+    backgroundColor: theme.colors.surface,
+    borderBottom: `1px solid ${theme.colors.border}`
+  };
+
+  const orderFormHeaderStyle = {
+    background: `linear-gradient(to right, ${primaryColor}, ${primaryColorDark})`,
+    color: theme.colors.secondary,
+    padding: theme.spacing.lg
+  };
+
+  const priceStyle = {
+    color: primaryColorDark,
+    fontSize: '2.25rem',
+    fontWeight: theme.fonts.bold
+  };
+
+  const discountBadgeStyle = {
+    backgroundColor: primaryColor,
+    color: theme.colors.secondary,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.borderRadius.lg,
+    fontSize: '0.875rem',
+    fontWeight: theme.fonts.bold
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-red-50">
+      <div style={containerStyle}>
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -144,7 +252,7 @@ const ProductDetails: React.FC = () => {
 
   if (productError || !product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-red-50 flex items-center justify-center">
+      <div style={containerStyle} className="flex items-center justify-center">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center max-w-md mx-auto">
             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -156,7 +264,7 @@ const ProductDetails: React.FC = () => {
             <p className="text-gray-600 mb-8">{productError?.message || "Sorry, we couldn't find the product you're looking for."}</p>
             <button 
               onClick={() => window.history.back()}
-              className="bg-red-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors duration-300"
+              className={`bg-[${primaryColor}] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[${primaryColorDark}] transition-colors duration-300`}
             >
               ← Go Back
             </button>
@@ -167,26 +275,26 @@ const ProductDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-red-50">
+    <div style={containerStyle}>
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-100">
+      <div style={breadcrumbStyle}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <button 
               onClick={() => window.location.href = '/'}
-              className="hover:text-red-500 transition-colors"
+              className={`hover:text-[${primaryColor}] transition-colors`}
             >
               Home
             </button>
             <span>→</span>
             <button 
               onClick={() => window.location.href = '/products'}
-              className="hover:text-red-500 transition-colors"
+              className={`hover:text-[${primaryColor}] transition-colors`}
             >
               Products
             </button>
             <span>→</span>
-            <span className="text-red-500 font-medium">{product.name}</span>
+            <span style={{ color: primaryColor }} className="font-medium">{product.name}</span>
           </div>
         </div>
       </div>
@@ -214,67 +322,52 @@ const ProductDetails: React.FC = () => {
               <div className="flex items-center gap-4 mb-6">
                 {product.discountPrice ? (
                   <div className="flex items-center gap-4">
-                    <span className="text-4xl font-bold text-red-500">
+                    <span style={priceStyle}>
                       ${product.discountPrice.toFixed(2)}
                     </span>
                     <div className="flex flex-col">
                       <span className="text-xl text-gray-400 line-through">
                         ${product.price.toFixed(2)}
                       </span>
-                      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      <span style={discountBadgeStyle}>
                         {Math.round(calculateSavings())}% OFF
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <span className="text-4xl font-bold text-gray-800">
+                  <span style={priceStyle}>
                     ${product.price.toFixed(2)}
                   </span>
                 )}
               </div>
-
-              {/* Savings Badge */}
-              {product.discountPrice && (
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-4 py-2 rounded-xl mb-6">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-semibold">
-                    You save ${(product.price - product.discountPrice).toFixed(2)}!
-                  </span>
-                </div>
-              )}
             </div>
 
-            {/* Order Form Section - FIRST PRIORITY */}
-            <div className="bg-white rounded-2xl shadow-xl border-2 border-red-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
+            {/* Order Form Section */}
+            <div className="bg-white rounded-2xl shadow-xl border-2 border-[${primaryColor}] overflow-hidden">
+              <div style={orderFormHeaderStyle}>
                 <h2 className="text-2xl font-bold flex items-center gap-3">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                   Order Inquiry
                 </h2>
-                <p className="text-red-100 mt-2">
+                <p className={`text-[${primaryColorDark}] mt-2`}>
                   Get a personalized quote or ask any questions about this product
                 </p>
               </div>
               
               <div className="p-8">
-                {submitError && (
-                  <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-                    {submitError.message || 'Failed to submit inquiry. Please try again.'}
-                  </div>
-                )}
-                {validationErrors && validationErrors.filter(error => !error.field).length > 0 && (
-                  <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+                {/* Display form errors */}
+                {(Object.keys(fieldErrors).length > 0 || validationErrors.length > 0) && (
+                  <div className={`mb-6 p-4 bg-[${primaryColor}] text-white rounded-xl`}>
                     <h4 className="font-bold mb-2">Please fix the following errors:</h4>
-                    <ul className="list-disc list-inside">
-                      {validationErrors
-                        .filter(error => !error.field)
-                        .map((error, index) => (
-                          <li key={index}>{error.message}</li>
-                        ))}
+                    <ul className="list-disc list-inside space-y-1">
+                      {Object.entries(fieldErrors).map(([field, error], index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                      {validationErrors.map((error, index) => (
+                        <li key={`val-${index}`}>{error.message}</li>
+                      ))}
                     </ul>
                   </div>
                 )}
@@ -285,7 +378,7 @@ const ProductDetails: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-red-300 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
+                      className={`w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-[${primaryColor}] text-gray-600 hover:text-[${primaryColorDark}] font-bold transition-colors duration-300 flex items-center justify-center`}
                     >
                       −
                     </button>
@@ -294,66 +387,123 @@ const ProductDetails: React.FC = () => {
                     </span>
                     <button 
                       onClick={() => setQuantity(quantity + 1)}
-                      className="w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-red-300 text-gray-600 hover:text-red-500 font-bold transition-colors duration-300 flex items-center justify-center"
+                      className={`w-12 h-12 rounded-xl bg-white border-2 border-gray-200 hover:border-[${primaryColor}] text-gray-600 hover:text-[${primaryColorDark}] font-bold transition-colors duration-300 flex items-center justify-center`}
                     >
                       +
                     </button>
                     <div className="ml-4 text-gray-600">
-                      Total: <span className="font-bold text-red-500">
+                      Total: <span className={`font-bold text-[${primaryColor}]`}>
                         ${calculateTotalPrice().toFixed(2)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <EnhancedDynamicForm 
-                  productId={product._id}
-                  dynamicFields={product.dynamicFields || []}
-                  onSubmit={handleFormSubmit}
-                  submitting={submitting}
-                  validationErrors={validationErrors}
-                />
+                {/* Customer Data Fields */}
+                {getCustomerDataFields().map((field) => (
+  <div key={field.key}>
+    {field.key === "wilaya" ? (
+      <WilayaSelect
+        fieldName={field.key} // ✅ required by WilayaSelect
+        value={customerData[field.key] || ''}
+        onChange={(e) => handleCustomerDataChange(field.key, e.target.value)}
+        required={field.isRequired}
+        errors={
+          fieldErrors[field.key]
+            ? { [field.key]: [fieldErrors[field.key]] } // ✅ convert string → Record<string, string[]>
+            : {}
+        }
+      />
+    ) : (
+      <>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          {field.placeholder} {field.isRequired && '*'}
+        </label>
+        <input
+          type="text"
+          value={customerData[field.key] || ''}
+          onChange={(e) => handleCustomerDataChange(field.key, e.target.value)}
+          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+            fieldErrors[field.key] 
+              ? 'border-red-300 focus:border-red-500' 
+              : `border-gray-200 focus:border-[${primaryColor}]`
+          }`}
+          placeholder={field.placeholder}
+        />
+      </>
+    )}
+
+    {fieldErrors[field.key] && (
+      <p className={`text-[${primaryColor}] text-sm mt-1`}>{fieldErrors[field.key]}</p>
+    )}
+  </div>
+))}
+
+                {/* Predefined Variants */}
+                {product.predefinedFields && product.predefinedFields.some((field) => field.isActive && field.selectedOptions.length > 0) && (
+                  <div className="space-y-4 mb-6">
+                    <h3 className="text-lg font-bold text-gray-800">Product Options</h3>
+                    {product.predefinedFields
+                      .filter((field) => field.isActive && field.selectedOptions.length > 0)
+                      .map((field) => (
+                        <div key={field.category}>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2 capitalize">
+                            {field.category}
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {field.selectedOptions.map((option) => (
+                              <button
+                                key={option}
+                                onClick={() => handleVariantChange(field.category, option)}
+                                className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
+                                  selectedVariants[field.category] === option
+                                    ? `border-[${primaryColor}] bg-[${primaryColor}] text-white`
+                                    : `border-gray-200 hover:border-[${primaryColor}] text-gray-700`
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Notes Field */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[${primaryColor}] transition-colors resize-vertical`}
+                    placeholder="Any special requests or questions?"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleFormSubmit}
+                  disabled={isSubmitting}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+                    isSubmitting
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                      : `bg-gradient-to-r from-[${primaryColor}] to-[${primaryColorDark}] text-white hover:from-[${primaryColorDark}] hover:to-[${primaryColor}] transform hover:scale-[1.02] shadow-lg hover:shadow-xl`
+                  }`}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Inquiry'}
+                </button>
               </div>
             </div>
 
-            {/* Available Options (Predefined Fields) - SECOND PRIORITY */}
-            {product.predefinedFields && product.predefinedFields.some((field) => field.isActive && field.selectedOptions.length > 0) && (
-              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Available Options</h3>
-                <div className="space-y-4">
-                  {product.predefinedFields
-                    .filter((field) => field.isActive && field.selectedOptions.length > 0)
-                    .map((field) => (
-                      <div key={field.category}>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 capitalize">
-                          {field.category}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {field.selectedOptions.map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => handleVariantChange(field.category, option)}
-                              className={`px-4 py-2 rounded-lg border-2 transition-all capitalize ${
-                                selectedVariants[field.category] === option
-                                  ? 'border-red-500 bg-red-50 text-red-700'
-                                  : 'border-gray-200 hover:border-red-300 text-gray-700'
-                              }`}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Offers Section - THIRD PRIORITY */}
+            {/* Offers Section */}
             {product.offers && product.offers.filter((offer) => isOfferActive(offer)).length > 0 && (
-              <div className="bg-gradient-to-r from-red-50 to-red-100 p-6 rounded-2xl shadow-lg border-2 border-red-200">
-                <h3 className="text-xl font-bold text-red-800 mb-4 flex items-center gap-2">
-                  <FiGift className="text-red-600" />
+              <div className={`bg-gradient-to-r from-[${primaryColor}] to-[${primaryColorDark}] p-6 rounded-2xl shadow-lg border-2 border-[${primaryColorDark}]`}>
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <FiGift className="text-white" />
                   Special Offers
                 </h3>
                 <div className="space-y-4">
@@ -362,19 +512,19 @@ const ProductDetails: React.FC = () => {
                     .map((offer) => (
                       <div key={offer._id} className="bg-white p-4 rounded-xl border border-red-200">
                         <div className="flex items-center gap-3 mb-2">
-                          <FiTag className="text-red-500" />
-                          <h4 className="font-bold text-red-700">{offer.title}</h4>
+                          <FiTag className={`text-[${primaryColor}]`} />
+                          <h4 className={`font-bold text-[${primaryColorDark}]`}>{offer.title}</h4>
                           {offer.discount && (
-                            <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                            <span className={`bg-[${primaryColor}] text-white px-2 py-1 rounded-full text-xs font-bold`}>
                               {offer.discount}% OFF
                             </span>
                           )}
                         </div>
                         {offer.description && (
-                          <p className="text-red-600 mb-2">{offer.description}</p>
+                          <p className={`text-gray-600 mb-2`}>{offer.description}</p>
                         )}
                         {offer.validUntil && (
-                          <div className="flex items-center gap-2 text-red-500 text-sm">
+                          <div className={`flex items-center gap-2 text-[${primaryColor}] text-sm`}>
                             <FiClock size={14} />
                             <span>Valid until: {new Date(offer.validUntil).toLocaleDateString()}</span>
                           </div>
@@ -385,7 +535,7 @@ const ProductDetails: React.FC = () => {
               </div>
             )}
 
-            {/* Product Description - FOURTH PRIORITY */}
+            {/* Product Description */}
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Product Description</h3>
               <div className="prose max-w-none text-gray-600 leading-relaxed">

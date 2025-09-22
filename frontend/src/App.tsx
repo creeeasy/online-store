@@ -19,6 +19,7 @@ import GlobalLoadingOverlay from './components/GlobalLoadingOverlay';
 import ProtectedRoute from './components/ProtectedRoute';
 import InquiryDashboard from './pages/InquiryDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
+import ThankYou from './pages/ThankYou';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -68,7 +69,17 @@ const AppContent: React.FC = () => {
     <>
       <GlobalLoadingOverlay />
       <Router>
+        
         <Routes>
+          <Route
+  path="/thank-you"
+  element={
+    <>
+      <ClientNavbar />
+      <ThankYou />
+    </>
+  }
+/>
           {/* Public routes */}
           <Route 
             path="/" 

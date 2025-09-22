@@ -1,3 +1,4 @@
+// components/ProductForm.tsx - Updated version
 import React, { useState, useEffect } from 'react';
 import { FiSave } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,6 +10,7 @@ import OffersTab from './OffersTab';
 import PredefinedTab from './PredefinedTab';
 import DynamicFieldsTab from './DynamicFieldsTab';
 import HiddenFieldsTab from './HiddenFieldsTab';
+import ColorsTab from './ColorsTab'; // Add this import
 
 interface ProductFormProps {
   product: Partial<IProduct>;
@@ -35,6 +37,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     discountPrice: undefined,
     description: '',
     images: [''],
+    colors: [], // Add colors field
     dynamicFields: [],
     predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map(category => ({
       category,
@@ -57,6 +60,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       discountPrice: undefined,
       description: '',
       images: [''],
+      colors: [], // Add colors field
       dynamicFields: [],
       predefinedFields: Object.keys(PREDEFINED_CATEGORIES).map(category => ({
         category,
@@ -76,8 +80,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
     setSubmitAttempted(true);
     try {
       await onSubmit(formData);
-    } catch (error) {
-      // Error handling is done in parent component
+    } catch {
+      // error handled in parent
     }
   };
 
@@ -92,13 +96,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
     handleInputChange,
   };
 
-  // Theme-based styles
+  // --- Theme-based styles ---
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     boxShadow: theme.shadows.lg,
     border: `1px solid ${theme.colors.border}`,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    animation: 'fadeSlideIn 0.25s ease'
   };
 
   const formStyle: React.CSSProperties = {
@@ -106,69 +113,82 @@ const ProductForm: React.FC<ProductFormProps> = ({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing.xl,
-    maxHeight: 'calc(100vh - 200px)',
+    maxHeight: 'calc(100vh - 220px)',
     overflowY: 'auto'
   };
 
   const actionsContainerStyle: React.CSSProperties = {
     display: 'flex',
+    justifyContent: 'flex-end',
     gap: theme.spacing.md,
     paddingTop: theme.spacing.lg,
-    borderTop: `1px solid ${theme.colors.border}`
+    borderTop: `1px solid ${theme.colors.border}`,
+    backgroundColor: theme.colors.secondaryLight,
+    position: 'sticky',
+    bottom: 0,
+    padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+    zIndex: 5,
   };
 
   const submitButtonStyle = (disabled: boolean): React.CSSProperties => ({
-    flex: 1,
+    minWidth: '160px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
     padding: `${theme.spacing.md} ${theme.spacing.lg}`,
-    backgroundColor: disabled ? theme.colors.textMuted : theme.colors.primary,
+    background: disabled
+      ? theme.colors.textMuted
+      : `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.primaryDark})`,
     color: theme.colors.secondary,
     borderRadius: theme.borderRadius.lg,
     border: 'none',
     fontWeight: theme.fonts.semiBold,
-    fontSize: '0.875rem',
+    fontSize: '0.95rem',
     cursor: disabled ? 'not-allowed' : 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.25s ease',
     opacity: disabled ? 0.6 : 1,
-    boxShadow: disabled ? 'none' : theme.shadows.sm
+    boxShadow: disabled ? 'none' : theme.shadows.md
   });
 
   const cancelButtonStyle: React.CSSProperties = {
-    padding: `${theme.spacing.md} ${theme.spacing.xl}`,
-    backgroundColor: theme.colors.backgroundSecondary,
-    color: theme.colors.text,
+    minWidth: '120px',
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    backgroundColor: theme.colors.background,
+    color: theme.colors.textSecondary,
     borderRadius: theme.borderRadius.lg,
     border: `1px solid ${theme.colors.border}`,
     fontWeight: theme.fonts.medium,
-    fontSize: '0.875rem',
+    fontSize: '0.9rem',
     cursor: 'pointer',
-    transition: 'all 0.2s ease'
+    transition: 'all 0.25s ease',
+    boxShadow: theme.shadows.sm
   };
 
   const loadingSpinnerStyle: React.CSSProperties = {
-    width: '16px',
-    height: '16px',
+    width: '18px',
+    height: '18px',
     border: `2px solid ${theme.colors.secondary}`,
     borderTop: '2px solid transparent',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
-    marginRight: theme.spacing.sm
   };
 
-  // Add keyframes for loading spinner
-  const spinKeyframes = `
+  // --- Keyframes ---
+  const keyframes = `
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+    @keyframes fadeSlideIn {
+      0% { opacity: 0; transform: translateY(12px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
   `;
 
   return (
     <>
-      <style>{spinKeyframes}</style>
+      <style>{keyframes}</style>
       <div style={containerStyle}>
         <ProductFormTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <form onSubmit={handleSubmit} style={formStyle}>
@@ -177,6 +197,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           {activeTab === 'offers' && <OffersTab {...commonProps} />}
           {activeTab === 'hidden' && <HiddenFieldsTab {...commonProps} />}
           {activeTab === 'dynamic' && <DynamicFieldsTab {...commonProps} />}
+          {activeTab === 'colors' && <ColorsTab {...commonProps} />} {/* Add ColorsTab */}
 
           <div style={actionsContainerStyle}>
             <button
@@ -185,16 +206,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
               style={submitButtonStyle(isLoading)}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = theme.shadows.md;
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = theme.shadows.lg;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = theme.colors.primary;
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = theme.shadows.sm;
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = theme.shadows.md;
                 }
               }}
             >
@@ -215,11 +234,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
               onClick={onCancel}
               style={cancelButtonStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = theme.colors.border;
-                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.backgroundColor = theme.colors.secondaryDark;
+                e.currentTarget.style.color = theme.colors.text;
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                e.currentTarget.style.backgroundColor = theme.colors.background;
+                e.currentTarget.style.color = theme.colors.textSecondary;
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
