@@ -1,7 +1,11 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-})
+export default {
+  theme: {
+    extend: {
+      fontFamily: {
+        heading: ['Poppins', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        body: ['Inter', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['Fira Code', 'monospace'],
+      },
+    },
+  },
+};
