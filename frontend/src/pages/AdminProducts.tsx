@@ -6,7 +6,6 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import LoadingState from '../components/LoadingState';
 import ErrorState from '../components/ErrorState';
 import Pagination from '../components/Pagination';
-import ProductForm from '../components/ProductForm';
 import CloneProductModal from '../components/CloneProductModal.tsx';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useCloneProduct } from '../hooks/useProducts';
 import { INITIAL_PRODUCT_STATE } from '../constants/products';
@@ -14,8 +13,8 @@ import type { IProduct, ApiError } from '../types/product';
 import { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
 import ProductCard from '../components/ProductCard.tsx';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAppDispatch } from '../hooks/redux';
-import { openModal } from '../store/slices/modalSlice';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { openModal, closeModal, selectModalType, selectIsModalOpen } from '../store/slices/modalSlice';
 
 interface ValidationError {
   field: string;
@@ -25,12 +24,15 @@ interface ValidationError {
 const AdminProducts: React.FC = () => {
   const { theme } = useTheme();
   const dispatch = useAppDispatch();
+  const modalType = useAppSelector(selectModalType);
+  const isModalOpen = useAppSelector(selectIsModalOpen);
   
   const [cloningProduct, setCloningProduct] = useState<IProduct | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // Add product state for creation mode to persist form data
+  const [createProductData, setCreateProductData] = useState<Partial<IProduct>>(INITIAL_PRODUCT_STATE);
 
   const {
     data: productsResponse,
@@ -71,13 +73,22 @@ const AdminProducts: React.FC = () => {
     setValidationErrors([]);
   };
 
+  const handleCreateClick = () => {
+    dispatch(openModal({
+      modalType: 'createProduct'
+    }));
+    // Only reset form data if there are no validation errors (fresh start)
+    if (validationErrors.length === 0) {
+      setCreateProductData(INITIAL_PRODUCT_STATE);
+    }
+    clearErrors();
+  };
+
   const handleEditClick = (product: IProduct) => {
-     dispatch(openModal(
-      
-      {
-        modalType:'editProduct',
-        product
-      }));
+    dispatch(openModal({
+      modalType: 'editProduct',
+      product
+    }));
     clearErrors();
   };
 
@@ -113,6 +124,7 @@ const AdminProducts: React.FC = () => {
   const handleDeleteConfirm = async (id: string) => {
     try {
       await deleteProductMutation.mutateAsync(id);
+      dispatch(closeModal());
     } catch (error: any) {
       console.error('Error deleting product:', error);
     }
@@ -121,9 +133,8 @@ const AdminProducts: React.FC = () => {
   const handleSaveProduct = async (id: string, productData: Partial<IProduct>) => {
     try {
       clearErrors();
-            console.log(productData)
-
       await updateProductMutation.mutateAsync({ id, data: productData });
+      dispatch(closeModal());
     } catch (error: any) {
       console.error('Error updating product:', error);
       const errors = extractValidationErrors(error);
@@ -137,12 +148,17 @@ const AdminProducts: React.FC = () => {
   const handleCreateProduct = async (productData: Partial<IProduct>) => {
     try {
       clearErrors();
+      // Save form data before API call to preserve it in case of errors
+      setCreateProductData(productData);
       await createProductMutation.mutateAsync(productData);
-      setShowForm(false);
+      // Only close modal and reset form data on successful creation
+      dispatch(closeModal());
+      setCreateProductData(INITIAL_PRODUCT_STATE);
     } catch (error: any) {
       console.error('Error creating product:', error);
       const errors = extractValidationErrors(error);
       setValidationErrors(errors);
+      // Don't close modal or reset form data - let user fix the issues
       if (errors.length === 0 || errors.every(e => e.field === 'general')) {
         toast.error(error.message || 'Failed to create product');
       }
@@ -151,7 +167,9 @@ const AdminProducts: React.FC = () => {
 
   const handleCancel = () => {
     setCloningProduct(null);
-    setShowForm(false);
+    dispatch(closeModal());
+    // Reset form data on cancel
+    setCreateProductData(INITIAL_PRODUCT_STATE);
     clearErrors();
   };
 
@@ -275,22 +293,6 @@ const AdminProducts: React.FC = () => {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: `${theme.spacing.xl} ${theme.spacing.lg}`,
-  };
-
-  const gridLayoutStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: showForm ? '1fr 2fr' : '1fr',
-    gap: theme.spacing['2xl'],
-    alignItems: 'start',
-  };
-
-  const formSidebarStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    boxShadow: theme.shadows.lg,
-    border: `1px solid ${theme.colors.border}`,
-    overflow: 'hidden',
-    maxWidth: '100%',
   };
 
   const productSectionStyle: React.CSSProperties = {
@@ -448,7 +450,7 @@ const AdminProducts: React.FC = () => {
           
           <div style={headerActionsStyle}>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={handleCreateClick}
               disabled={createProductMutation.isPending}
               style={{
                 ...addButtonStyle,
@@ -605,129 +607,115 @@ const AdminProducts: React.FC = () => {
 
       {/* Enhanced Main Content */}
       <main style={contentStyle}>
-        <div style={gridLayoutStyle}>
-          {/* Enhanced Form Sidebar */}
-          {showForm && (
-            <aside style={formSidebarStyle}>
-              <ProductForm
-                product={INITIAL_PRODUCT_STATE}
-                onSubmit={handleCreateProduct}
-                onCancel={handleCancel}
-                isLoading={createProductMutation.isPending}
-                validationErrors={groupedErrors}
-              />
-            </aside>
-          )}
-
-          {/* Enhanced Product Section */}
-          <section style={productSectionStyle}>
-            {/* Enhanced Status Bar */}
-            <div style={statusBarStyle}>
-              <div style={statusInfoStyle}>
-                {isFetching && (
-                  <div style={loadingIndicatorStyle}>
-                    <div style={{ 
-                      animation: 'spin 1s linear infinite', 
-                      borderRadius: '50%', 
-                      height: '16px', 
-                      width: '16px', 
-                      border: `2px solid ${theme.colors.primary}`, 
-                      borderBottomColor: 'transparent' 
-                    }} />
-                    <span>Refreshing...</span>
-                  </div>
-                )}
-                <div style={badgeStyle}>
-                  {products.length} {products.length === 1 ? 'product' : 'products'}
-                </div>
-                {pagination && (
-                  <div style={badgeStyle}>
-                    Page {pagination.currentPage} of {pagination.totalPages}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Products Display */}
-            {products.length === 0 ? (
-              <div style={emptyStateStyle}>
-                <div style={emptyIconStyle}>
-                  <FiPlus style={{ color: theme.colors.primary }} size={40} />
-                </div>
-                <h3 style={emptyTitleStyle}>No products yet</h3>
-                <p style={emptyDescriptionStyle}>
-                  Get started by adding your first product to build your catalog and start managing your inventory.
-                </p>
-                <button
-                  onClick={() => setShowForm(true)}
-                  style={{
-                    ...addButtonStyle,
-                    margin: '0 auto',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                    e.currentTarget.style.boxShadow = theme.shadows.lg;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = theme.shadows.md;
-                  }}
-                >
-                  <FiPlus size={18} />
-                  Add Your First Product
-                </button>
-              </div>
-            ) : (
-              <>
-                <div style={viewMode === 'grid' ? productGridStyle : productListStyle}>
-                  {products.map((product: IProduct, index: number) => (
-                    <div 
-                      key={product._id} 
-                      style={{ 
-                        animation: `slideInUp 0.3s ease-out ${index * 0.05}s forwards`,
-                        opacity: 0,
-                        transform: 'translateY(20px)'
-                      }}
-                    >
-                      <ProductCard
-                        product={product}
-                        onEdit={handleEditClick}
-                        onDelete={handleDeleteClick}
-                        onClone={handleCloneClick}
-                        viewMode={viewMode}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Enhanced Pagination */}
-                {pagination && pagination.totalPages > 1 && (
+        <section style={productSectionStyle}>
+          {/* Enhanced Status Bar */}
+          <div style={statusBarStyle}>
+            <div style={statusInfoStyle}>
+              {isFetching && (
+                <div style={loadingIndicatorStyle}>
                   <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center',
-                    padding: theme.spacing.xl,
-                    borderTop: `1px solid ${theme.colors.border}`,
-                    marginTop: theme.spacing.xl
-                  }}>
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={pagination.totalPages}
-                      onPageChange={setCurrentPage}
+                    animation: 'spin 1s linear infinite', 
+                    borderRadius: '50%', 
+                    height: '16px', 
+                    width: '16px', 
+                    border: `2px solid ${theme.colors.primary}`, 
+                    borderBottomColor: 'transparent' 
+                  }} />
+                  <span>Refreshing...</span>
+                </div>
+              )}
+              <div style={badgeStyle}>
+                {products.length} {products.length === 1 ? 'product' : 'products'}
+              </div>
+              {pagination && (
+                <div style={badgeStyle}>
+                  Page {pagination.currentPage} of {pagination.totalPages}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Products Display */}
+          {products.length === 0 ? (
+            <div style={emptyStateStyle}>
+              <div style={emptyIconStyle}>
+                <FiPlus style={{ color: theme.colors.primary }} size={40} />
+              </div>
+              <h3 style={emptyTitleStyle}>No products yet</h3>
+              <p style={emptyDescriptionStyle}>
+                Get started by adding your first product to build your catalog and start managing your inventory.
+              </p>
+              <button
+                onClick={handleCreateClick}
+                style={{
+                  ...addButtonStyle,
+                  margin: '0 auto',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                  e.currentTarget.style.boxShadow = theme.shadows.lg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = theme.shadows.md;
+                }}
+              >
+                <FiPlus size={18} />
+                Add Your First Product
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={viewMode === 'grid' ? productGridStyle : productListStyle}>
+                {products.map((product: IProduct, index: number) => (
+                  <div 
+                    key={product._id} 
+                    style={{ 
+                      animation: `slideInUp 0.3s ease-out ${index * 0.05}s forwards`,
+                      opacity: 0,
+                      transform: 'translateY(20px)'
+                    }}
+                  >
+                    <ProductCard
+                      product={product}
+                      onEdit={handleEditClick}
+                      onDelete={handleDeleteClick}
+                      onClone={handleCloneClick}
+                      viewMode={viewMode}
                     />
                   </div>
-                )}
-              </>
-            )}
-          </section>
-        </div>
+                ))}
+              </div>
+
+              {/* Enhanced Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center',
+                  padding: theme.spacing.xl,
+                  borderTop: `1px solid ${theme.colors.border}`,
+                  marginTop: theme.spacing.xl
+                }}>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </section>
       </main>
 
-      {/* Modals */}
+      {/* Unified Modal System */}
       <ProductModal
+        onCreate={handleCreateProduct}
         onSave={handleSaveProduct}
         predefinedCategories={PREDEFINED_CATEGORIES}
-        isLoading={updateProductMutation.isPending}
+        isLoading={createProductMutation.isPending || updateProductMutation.isPending}
         validationErrors={groupedErrors}
+        createProductData={createProductData}
       />
 
       <DeleteConfirmationModal
