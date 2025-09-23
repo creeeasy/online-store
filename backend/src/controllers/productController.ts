@@ -1,278 +1,11 @@
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import Product, { IProduct, WILAYAS } from '../models/Product';
+import Offer from '../models/Offer';
 import { AuthRequest } from '../types';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
-
-// Predefined categories configuration
-const PREDEFINED_CATEGORIES = {
-  size: { options: ["small", "medium", "large", "x-large", "xx-large"] },
-  color: { options: ["red", "blue", "green", "black", "white", "yellow", "purple", "pink"] },
-  material: { options: ["cotton", "polyester", "silk", "wool", "leather", "denim"] },
-  style: { options: ["casual", "formal", "sport", "vintage", "modern"] }
-};
-
-// Enhanced validation rules with better error messages
-export const productValidationRules = {
-  create: [
-    body('name')
-      .trim()
-      .notEmpty()
-      .withMessage('Product name is required and cannot be empty')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Product name must be between 2 and 100 characters'),
-    
-    body('price')
-      .optional()
-      .isNumeric()
-      .withMessage('Price must be a valid number')
-      .isFloat({ min: 0.01 })
-      .withMessage('Price must be greater than 0')
-      .toFloat(),
-
-    body('discountPrice')
-      .optional()
-      .isNumeric()
-      .withMessage('Discount price must be a valid number')
-      .isFloat({ min: 0 })
-      .withMessage('Discount price cannot be negative')
-      .toFloat()
-      .custom((value, { req }) => {
-        if (req.body.price && value >= req.body.price) {
-          throw new Error('Discount price must be less than the original price');
-        }
-        return true;
-      }),
-    
-    body('description')
-      .trim()
-      .notEmpty()
-      .withMessage('Product description is required')
-      .isLength({ min: 10, max: 1000 })
-      .withMessage('Description must be between 10 and 1000 characters'),
-    
-    body('images')
-      .optional()
-      .isArray({ min: 0 })
-      .withMessage('At least one image is required if images are provided'),
-    
-    // Colors validation
-    body('colors')
-      .optional()
-      .isArray({ max: 3 })
-      .withMessage('Maximum 3 colors allowed'),
-    
-    body('colors.*.name')
-      .if(body('colors').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Color name is required')
-      .isLength({ min: 1, max: 30 })
-      .withMessage('Color name must be between 1 and 30 characters'),
-    
-    body('colors.*.hexCode')
-      .if(body('colors').exists())
-      .trim()
-      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
-    
-    body('colors.*.isAvailable')
-      .if(body('colors').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
-    
-    body('dynamicFields')
-      .optional()
-      .isArray()
-      .withMessage('Dynamic fields must be an array'),
-    
-    body('dynamicFields.*.key')
-      .if(body('dynamicFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field key cannot be empty')
-      .isLength({ max: 50 })
-      .withMessage('Dynamic field key cannot exceed 50 characters'),
-    
-    body('dynamicFields.*.placeholder')
-      .if(body('dynamicFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field placeholder cannot be empty')
-      .isLength({ max: 100 })
-      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
-    
-    body('dynamicFields.*.isRequired')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isRequired must be a boolean value'),
-    
-    body('dynamicFields.*.isDefault')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isDefault must be a boolean value'),
-    
-    body('offers')
-      .optional()
-      .isArray()
-      .withMessage('Offers must be an array'),
-    
-    body('offers.*.discount')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 99 })
-      .withMessage('Discount must be between 1 and 99 percent'),
-    
-    body('offers.*.validUntil')
-      .if(body('offers').exists())
-      .optional()
-      .isISO8601()
-      .withMessage('Valid until date must be a valid date')
-      .custom((value) => {
-        if (value && new Date(value) <= new Date()) {
-          throw new Error('Valid until date must be in the future');
-        }
-        return true;
-      }),
-    
-    body('hiddenFields')
-      .optional()
-      .isArray()
-      .withMessage('Hidden fields must be an array'),
-    
-    body('hiddenFields.*.key')
-      .if(body('hiddenFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Hidden field key cannot be empty'),
-    
-    body('hiddenFields.*.value')
-      .if(body('hiddenFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Hidden field value cannot be empty'),
-    
-    body('reference')
-      .optional()
-      .trim()
-      .isLength({ max: 200 })
-      .withMessage('Reference cannot exceed 200 characters')
-  ],
-  
-  update: [
-    body('name')
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Product name cannot be empty if provided')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Product name must be between 2 and 100 characters'),
-    
-    body('price')
-      .optional()
-      .isNumeric()
-      .withMessage('Price must be a valid number')
-      .isFloat({ min: 0.01 })
-      .withMessage('Price must be greater than 0'),
-    
-    body('discountPrice')
-      .optional()
-      .isNumeric()
-      .withMessage('Discount price must be a valid number')
-      .isFloat({ min: 0 })
-      .withMessage('Discount price cannot be negative')
-      .toFloat(),
-    
-    body('description')
-      .optional()
-      .trim()
-      .isLength({ min: 10, max: 1000 })
-      .withMessage('Description must be between 10 and 1000 characters if provided'),
-    
-    body('images')
-      .optional()
-      .isArray({ min: 0 })
-      .withMessage('At least one image is required if images are provided'),
-    
-    // Colors validation for updates
-    body('colors')
-      .optional()
-      .isArray({ max: 3 })
-      .withMessage('Maximum 3 colors allowed'),
-    
-    body('colors.*.name')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Color name cannot be empty if provided')
-      .isLength({ min: 1, max: 30 })
-      .withMessage('Color name must be between 1 and 30 characters'),
-    
-    body('colors.*.hexCode')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
-    
-    body('colors.*.isAvailable')
-      .if(body('colors').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
-    
-    body('dynamicFields.*.key')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field key cannot be empty')
-      .isLength({ max: 50 })
-      .withMessage('Dynamic field key cannot exceed 50 characters'),
-    
-    body('dynamicFields.*.placeholder')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field placeholder cannot be empty')
-      .isLength({ max: 100 })
-      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
-    
-    body('dynamicFields.*.isRequired')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isRequired must be a boolean value'),
-    
-    body('dynamicFields.*.isDefault')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isDefault must be a boolean value'),
-    
-    body('offers.*.discount')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 99 })
-      .withMessage('Discount must be between 1 and 99 percent'),
-    
-    body('offers.*.discountPercentage')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 100 })
-      .withMessage('Discount percentage must be between 0 and 100'),
-    
-    body('offers.*.wilaya')
-      .optional()
-      .isIn(WILAYAS)
-      .withMessage('Wilaya must be one of the valid Algerian regions'),
-  ]
-};
+import { PREDEFINED_CATEGORIES } from '../constant/consts';
+import { productValidationRules } from '../utils/validations/productValidationRules';
 
 // Helper function to initialize predefined fields
 const initializePredefinedFields = () => {
@@ -342,12 +75,25 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   
   // Active offers filter
   if (req.query.hasOffers === 'true') {
-    filter['offers.isActive'] = true;
-    filter['offers.validUntil'] = { $gt: new Date() };
+    // Find products that have active offers
+    const activeOffers = await Offer.find({
+      isActive: true,
+      $or: [
+        { validUntil: { $exists: false } },
+        { validUntil: { $gt: new Date() } }
+      ]
+    }).select('_id');
+    
+    filter.offers = { $in: activeOffers.map(offer => offer._id) };
   }
 
   const products = await Product.find(filter)
     .populate('createdBy', 'username email')
+    .populate({
+      path: 'offers',
+      match: { isActive: true }, // Only populate active offers
+      select: 'title description discount validUntil isActive'
+    })
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -368,10 +114,12 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
 // @route   GET /api/products/:id
 // @access  Public
 export const getProduct = asyncHandler(async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id).populate(
-    'createdBy',
-    'username email'
-  );
+  const product = await Product.findById(req.params.id)
+    .populate('createdBy', 'username email')
+    .populate({
+      path: 'offers',
+      select: 'title description discount validUntil isActive'
+    });
 
   if (!product) {
     return ResponseHandler.notFound(res, 'Product');
@@ -391,6 +139,8 @@ export const createProduct = [
   ...productValidationRules.create,
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
+      console.log("validated")
+
     // Validate unique colors
     if (req.body.colors && !validateUniqueColors(req.body.colors)) {
       return ResponseHandler.error(
@@ -405,6 +155,25 @@ export const createProduct = [
         }],
         'VALIDATION_ERROR'
       );
+    }
+
+    // Validate offer IDs if provided
+    if (req.body.offers && req.body.offers.length > 0) {
+      const validOffers = await Offer.find({ _id: { $in: req.body.offers } });
+      if (validOffers.length !== req.body.offers.length) {
+        return ResponseHandler.error(
+          res,
+          'One or more invalid offer IDs provided',
+          400,
+          [{
+            field: 'offers',
+            message: 'All offer IDs must be valid',
+            value: req.body.offers,
+            location: 'body'
+          }],
+          'VALIDATION_ERROR'
+        );
+      }
     }
 
     // Initialize predefined fields if not provided
@@ -426,7 +195,10 @@ export const createProduct = [
     };
 
     const product = await Product.create(productData);
-    await product.populate('createdBy', 'username email');
+    await product.populate([
+      { path: 'createdBy', select: 'username email' },
+      { path: 'offers', select: 'title description discount validUntil isActive' }
+    ]);
 
     ResponseHandler.success(
       res,
@@ -461,32 +233,65 @@ export const updateProduct = [
     }
 
     let product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return ResponseHandler.notFound(res, 'Product');
-    }
+    if (!product) return ResponseHandler.notFound(res, 'Product');
 
     // Check if user owns the product or is admin
     if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
       return ResponseHandler.forbidden(res, 'Not authorized to update this product');
     }
 
-    product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).populate('createdBy', 'username email');
+    // Handle offers: accept both IDs and new objects
+    if (req.body.offers && req.body.offers.length > 0) {
+      const finalOffers: string[] = [];
 
-    ResponseHandler.success(
-      res,
-      { product },
-      'Product updated successfully'
-    );
+      for (const offer of req.body.offers) {
+        if (typeof offer === 'string') {
+          // Case 1: existing Offer ID
+          const existing = await Offer.findById(offer);
+          if (!existing) {
+            return ResponseHandler.error(
+              res,
+              'One or more invalid offer IDs provided',
+              400,
+              [{
+                field: 'offers',
+                message: `Offer ID ${offer} is invalid`,
+                value: offer,
+                location: 'body'
+              }],
+              'VALIDATION_ERROR'
+            );
+          }
+          finalOffers.push(existing._id.toString());
+        } else if (typeof offer === 'object') {
+          // Case 2: new Offer object → create it
+          const newOffer = await Offer.create({
+            title: offer.title,
+            description: offer.description,
+            discount: offer.discount,
+            validUntil: offer.validUntil,
+            isActive: offer.isActive ?? true
+          });
+          finalOffers.push(newOffer._id.toString());
+        }
+      }
+
+      req.body.offers = finalOffers;
+    }
+
+    // Update product
+    product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    }).populate([
+      { path: 'createdBy', select: 'username email' },
+      { path: 'offers', select: 'title description discount validUntil isActive' }
+    ]);
+
+    ResponseHandler.success(res, { product }, 'Product updated successfully');
   })
 ];
+
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
@@ -562,12 +367,24 @@ export const searchProducts = asyncHandler(async (req: Request, res: Response) =
 
   // Active offers filter
   if (hasOffers === 'true') {
-    query['offers.isActive'] = true;
-    query['offers.validUntil'] = { $gt: new Date() };
+    const activeOffers = await Offer.find({
+      isActive: true,
+      $or: [
+        { validUntil: { $exists: false } },
+        { validUntil: { $gt: new Date() } }
+      ]
+    }).select('_id');
+    
+    query.offers = { $in: activeOffers.map(offer => offer._id) };
   }
 
   const products = await Product.find(query)
     .populate('createdBy', 'username email')
+    .populate({
+      path: 'offers',
+      match: { isActive: true },
+      select: 'title description discount validUntil isActive'
+    })
     .skip(skip)
     .limit(limit)
     .sort({ score: { $meta: 'textScore' }, createdAt: -1 });
@@ -636,6 +453,25 @@ export const bulkUpdateProducts = asyncHandler(async (req: AuthRequest, res: Res
     );
   }
 
+  // Validate offer IDs in bulk update if provided
+  if (updateData.offers && updateData.offers.length > 0) {
+    const validOffers = await Offer.find({ _id: { $in: updateData.offers } });
+    if (validOffers.length !== updateData.offers.length) {
+      return ResponseHandler.error(
+        res,
+        'One or more invalid offer IDs provided',
+        400,
+        [{
+          field: 'updateData.offers',
+          message: 'All offer IDs must be valid',
+          value: updateData.offers,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+  }
+
   const result = await Product.updateMany(
     { _id: { $in: productIds }, createdBy: req.user?.id },
     updateData,
@@ -666,13 +502,16 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
   });
 
   // Products with at least one active offer
+  const activeOffers = await Offer.find({
+    isActive: true,
+    $or: [
+      { validUntil: { $exists: false } },
+      { validUntil: { $gt: new Date() } }
+    ]
+  }).select('_id');
+  
   const withActiveOffers = await Product.countDocuments({
-    offers: { 
-      $elemMatch: { 
-        isActive: true, 
-        validUntil: { $gt: new Date() } 
-      } 
-    }
+    offers: { $in: activeOffers.map(offer => offer._id) }
   });
 
   // Products with colors
@@ -721,11 +560,37 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     { $sort: { totalProducts: -1 } }
   ]);
 
+  // Most popular offers
+  const offerStats = await Product.aggregate([
+    { $unwind: "$offers" },
+    {
+      $lookup: {
+        from: "offers",
+        localField: "offers",
+        foreignField: "_id",
+        as: "offerDetails"
+      }
+    },
+    { $unwind: "$offerDetails" },
+    { $match: { "offerDetails.isActive": true } },
+    {
+      $group: {
+        _id: "$offerDetails._id",
+        offerTitle: { $first: "$offerDetails.title" },
+        discount: { $first: "$offerDetails.discount" },
+        productCount: { $sum: 1 }
+      }
+    },
+    { $sort: { productCount: -1 } },
+    { $limit: 10 }
+  ]);
+
   // Recently created products (e.g., last 5)
   const recentProducts = await Product.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .select("name price discountPrice images colors createdAt");
+    .select("name price discountPrice images colors createdAt")
+    .populate('offers', 'title discount isActive');
 
   ResponseHandler.success(
     res,
@@ -736,6 +601,7 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
       withColorsCount,
       popularColors,
       categoryStats,
+      offerStats,
       recentProducts
     },
     'Product statistics retrieved successfully'
@@ -756,7 +622,7 @@ export const cloneProduct = [
     const productId = req.params.id;
     
     // Find the original product
-    const originalProduct = await Product.findById(productId);
+    const originalProduct = await Product.findById(productId).populate('offers');
     
     if (!originalProduct) {
       return ResponseHandler.notFound(res, 'Product');
@@ -775,7 +641,10 @@ export const cloneProduct = [
     
     // Create the cloned product
     const clonedProduct = await Product.create(productData);
-    await clonedProduct.populate('createdBy', 'username email');
+    await clonedProduct.populate([
+      { path: 'createdBy', select: 'username email' },
+      { path: 'offers', select: 'title description discount validUntil isActive' }
+    ]);
     
     ResponseHandler.success(
       res,
@@ -806,6 +675,11 @@ export const getProductsByColor = asyncHandler(async (req: Request, res: Respons
 
   const products = await Product.find(filter)
     .populate('createdBy', 'username email')
+    .populate({
+      path: 'offers',
+      match: { isActive: true },
+      select: 'title description discount validUntil isActive'
+    })
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -819,5 +693,140 @@ export const getProductsByColor = asyncHandler(async (req: Request, res: Respons
     page,
     limit,
     `Products with color "${colorName}" retrieved successfully`
+  );
+});
+
+// @desc    Add offers to product
+// @route   POST /api/products/:id/offers
+// @access  Private/Admin
+export const addOffersToProduct = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { offerIds } = req.body;
+  
+  if (!offerIds || !Array.isArray(offerIds) || offerIds.length === 0) {
+    return ResponseHandler.error(
+      res,
+      'Offer IDs are required and must be a non-empty array',
+      400,
+      [{
+        field: 'offerIds',
+        message: 'Offer IDs are required and must be a non-empty array',
+        value: offerIds,
+        location: 'body'
+      }],
+      'VALIDATION_ERROR'
+    );
+  }
+
+  // Validate offer IDs
+  const validOffers = await Offer.find({ _id: { $in: offerIds } });
+  if (validOffers.length !== offerIds.length) {
+    return ResponseHandler.error(
+      res,
+      'One or more invalid offer IDs provided',
+      400,
+      [{
+        field: 'offerIds',
+        message: 'All offer IDs must be valid',
+        value: offerIds,
+        location: 'body'
+      }],
+      'VALIDATION_ERROR'
+    );
+  }
+
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return ResponseHandler.notFound(res, 'Product');
+  }
+
+  // Check authorization
+  if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+    return ResponseHandler.forbidden(res, 'Not authorized to update this product');
+  }
+
+  // Add offers to product (avoid duplicates)
+  const existingOfferIds = product.offers.map(id => id.toString());
+  const newOfferIds = offerIds.filter(id => !existingOfferIds.includes(id));
+  
+  if (newOfferIds.length === 0) {
+    return ResponseHandler.error(
+      res,
+      'All provided offers are already associated with this product',
+      400,
+      [],
+      'VALIDATION_ERROR'
+    );
+  }
+
+  product.offers.push(...newOfferIds);
+  await product.save();
+  await product.populate({
+    path: 'offers',
+    select: 'title description discount validUntil isActive'
+  });
+
+  ResponseHandler.success(
+    res,
+    { product },
+    `${newOfferIds.length} offers added to product successfully`
+  );
+});
+
+// @desc    Remove offers from product
+// @route   DELETE /api/products/:id/offers
+// @access  Private/Admin
+export const removeOffersFromProduct = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { offerIds } = req.body;
+  
+  if (!offerIds || !Array.isArray(offerIds) || offerIds.length === 0) {
+    return ResponseHandler.error(
+      res,
+      'Offer IDs are required and must be a non-empty array',
+      400,
+      [{
+        field: 'offerIds',
+        message: 'Offer IDs are required and must be a non-empty array',
+        value: offerIds,
+        location: 'body'
+      }],
+      'VALIDATION_ERROR'
+    );
+  }
+
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return ResponseHandler.notFound(res, 'Product');
+  }
+
+  // Check authorization
+  if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+    return ResponseHandler.forbidden(res, 'Not authorized to update this product');
+  }
+
+  // Remove offers from product
+  const originalLength = product.offers.length;
+  product.offers = product.offers.filter(offerId => !offerIds.includes(offerId.toString()));
+  const removedCount = originalLength - product.offers.length;
+
+  if (removedCount === 0) {
+    return ResponseHandler.error(
+      res,
+      'None of the provided offers were associated with this product',
+      400,
+      [],
+      'VALIDATION_ERROR'
+    );
+  }
+
+  await product.save();
+  await product.populate({
+    path: 'offers',
+    select: 'title description discount validUntil isActive'
+  });
+
+  ResponseHandler.success(
+    res,
+    { product },
+    `${removedCount} offers removed from product successfully`
   );
 });

@@ -163,13 +163,17 @@ const ProductSchema = new Schema({
     isRequired: { type: Boolean, default: false },
     isDefault: { type: Boolean, default: false }
   }],
-  predefinedFields: [{
+    predefinedFields: [{
     category: { type: String, required: true, trim: true },
     options: [{ type: String, trim: true }],
     selectedOptions: [{ type: String, trim: true }],
     isActive: { type: Boolean, default: false }
   }],
-  offers: [OfferSchema],
+  // ✅ Now offers are referenced instead of embedded
+  offers: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Offer'
+  }],
   hiddenFields: [{
     key: { type: String, required: true, trim: true },
     value: { type: String, required: true, trim: true },
@@ -190,6 +194,7 @@ const ProductSchema = new Schema({
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
+
 
 // Index for text search
 ProductSchema.index({ 
