@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductGallery from '../components/ProductGallery';
-import { FiGift, FiTag, FiClock, FiStar, FiCheck } from 'react-icons/fi';
+import { FiGift, FiTag, FiClock, FiStar, FiCheck, FiShoppingCart } from 'react-icons/fi';
 import { useProduct } from '../hooks/useProducts';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'react-toastify';
@@ -14,10 +14,16 @@ import { WilayaSelect } from '../components/WilayaInput';
 
 const SERVER_URL = 'http://localhost:5001';
 
+// Define offer selection interface
+interface ISelectedOffer {
+  offer: IOffer;
+  quantity: number;
+}
+
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [quantity, setQuantity] = useState(1);
+  const [selectedOffers, setSelectedOffers] = useState<ISelectedOffer[]>([]);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [customerData, setCustomerData] = useState<Record<string, any>>({});
   const [notes, setNotes] = useState('');
@@ -158,6 +164,74 @@ const ProductDetails: React.FC = () => {
     return product?.offers?.filter(offer => isOfferActive(offer)) || [];
   };
 
+  // Add offer to selection
+  const addOfferToSelection = (offer: IOffer) => {
+    setSelectedOffers(prev => {
+      const existing = prev.find(item => item.offer._id === offer._id);
+      if (existing) {
+        return prev.map(item => 
+          item.offer._id === offer._id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { offer, quantity: 1 }];
+    });
+  };
+
+  // Remove offer from selection
+  const removeOfferFromSelection = (offerId: string) => {
+    setSelectedOffers(prev => prev.filter(item => item.offer._id !== offerId));
+  };
+
+  // Update offer quantity
+  const updateOfferQuantity = (offerId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeOfferFromSelection(offerId);
+      return;
+    }
+    
+    setSelectedOffers(prev => 
+      prev.map(item => 
+        item.offer._id === offerId 
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  // Calculate total items
+  const getTotalItems = () => {
+    return selectedOffers.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  // Calculate total price with offers
+  const calculateTotalPrice = () => {
+    if (!product) return 0;
+    
+    return selectedOffers.reduce((total, selectedOffer) => {
+      const basePrice = product.discountPrice || product.price;
+      let itemPrice = basePrice;
+      
+      // Apply offer discount if available
+      if (selectedOffer.offer.discount) {
+        itemPrice = basePrice * (1 - selectedOffer.offer.discount / 100);
+      }
+      
+      return total + (itemPrice * selectedOffer.quantity);
+    }, 0);
+  };
+
+  // Calculate savings percentage
+  const calculateSavingsPercentage = () => {
+    if (!product || selectedOffers.length === 0) return 0;
+    
+    const baseTotal = (product.discountPrice || product.price) * getTotalItems();
+    const discountedTotal = calculateTotalPrice();
+    
+    return ((baseTotal - discountedTotal) / baseTotal) * 100;
+  };
+
   // Format offer discount text
   const getOfferDiscountText = (offer: IOffer) => {
     if (offer.discount) {
@@ -232,6 +306,11 @@ const ProductDetails: React.FC = () => {
   };
 
   const handleFormSubmit = async () => {
+    if (selectedOffers.length === 0) {
+      toast.error('Please select at least one offer before submitting');
+      return;
+    }
+
     // Validate all fields
     if (!validateAllFields()) {
       toast.error('Please fix the form errors before submitting');
@@ -239,19 +318,25 @@ const ProductDetails: React.FC = () => {
     }
 
     try {
-      console.log(customerData)
-      // Submit the inquiry
-      await submitInquiry(customerData, quantity, selectedVariants);
-      console.log("success")
+      // Submit the inquiry with offers data
+      await submitInquiry(
+        customerData, 
+        getTotalItems(), 
+        selectedVariants,
+        selectedOffers // Pass offers selection
+      );
+
       // Success navigation
       navigate('/thank-you', { 
         state: { 
           productName: product.name,
           customerData,
           inquiryData: {
-            quantity,
+            selectedOffers,
+            totalItems: getTotalItems(),
             selectedVariants,
-            totalPrice: calculateTotalPrice()
+            totalPrice: calculateTotalPrice(),
+            savings: calculateSavingsPercentage()
           }
         }
       });
@@ -287,12 +372,6 @@ const ProductDetails: React.FC = () => {
         return newErrors;
       });
     }
-  };
-
-  const calculateTotalPrice = () => {
-    if (!product) return 0;
-    const unitPrice = product.discountPrice || product.price;
-    return unitPrice * quantity;
   };
 
   if (isLoading) {
@@ -538,29 +617,29 @@ const ProductDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Offers Section - Added before Order Inquiry */}
-            {activeOffers.length > 0 && (
+            {/* Offers Selection Section - REPLACES Quantity Selector */}
+            <div 
+              className="rounded-2xl shadow-xl overflow-hidden"
+              style={{
+                backgroundColor: theme.colors.surface,
+                border: `2px solid ${productColors.primary}`,
+                boxShadow: theme.shadows.lg
+              }}
+            >
               <div 
-                className="rounded-2xl shadow-xl overflow-hidden border-2"
                 style={{
-                  backgroundColor: theme.colors.surface,
-                  borderColor: productColors.primary,
-                  boxShadow: theme.shadows.lg
+                  background: `linear-gradient(to right, ${productColors.primary}, ${productColors.primaryDark})`,
+                  color: theme.colors.textOnPrimary,
+                  padding: theme.spacing.lg
                 }}
               >
-                <div 
-                  style={{
-                    background: `linear-gradient(135deg, ${productColors.primary}, ${productColors.primaryDark})`,
-                    color: theme.colors.textOnPrimary,
-                    padding: theme.spacing.lg
-                  }}
+                <h2 
+                  className="text-2xl font-bold flex items-center gap-3"
+                  style={{ fontFamily: theme.fonts.family.heading }}
                 >
-                  <h2 
-                    className="text-2xl font-bold flex items-center gap-3"
-                    style={{ fontFamily: theme.fonts.family.heading }}
-                  >
-                    <FiGift className="text-white" />
-                    Special Offers
+                  <FiShoppingCart className="text-white" />
+                  Select Offers
+                  {selectedOffers.length > 0 && (
                     <span 
                       className="px-3 py-1 rounded-full text-sm font-bold ml-2"
                       style={{
@@ -568,115 +647,210 @@ const ProductDetails: React.FC = () => {
                         backdropFilter: 'blur(10px)'
                       }}
                     >
-                      {activeOffers.length} Active
+                      {getTotalItems()} items selected
                     </span>
-                  </h2>
-                  <p className="mt-2 opacity-90">
-                    Don't miss these exclusive deals for this product
-                  </p>
-                </div>
-                
-                <div style={{ padding: theme.spacing.lg }}>
-                  <div className="space-y-4">
-                    {activeOffers.map((offer, index) => (
-                      <div 
-                        key={offer._id || `offer-${index}`}
-                        className="p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]"
-                        style={{
-                          backgroundColor: theme.colors.backgroundSecondary,
-                          borderColor: productColors.primaryLight,
-                          borderStyle: 'dashed'
-                        }}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  )}
+                </h2>
+                <p className="mt-2 opacity-90">
+                  Choose from available promotions and deals
+                </p>
+              </div>
+              
+              <div style={{ padding: theme.spacing.lg }}>
+                {/* Selected Offers Summary */}
+                {selectedOffers.length > 0 && (
+                  <div 
+                    className="mb-6 p-4 rounded-xl border-2"
+                    style={{
+                      backgroundColor: theme.colors.success + '10',
+                      borderColor: theme.colors.success,
+                      borderStyle: 'dashed'
+                    }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold" style={{ color: theme.colors.success }}>
+                        Selected Offers
+                      </span>
+                      <span className="font-bold" style={{ color: productColors.primary }}>
+                        Total: ${calculateTotalPrice().toFixed(2)}
+                      </span>
+                    </div>
+                    {calculateSavingsPercentage() > 0 && (
+                      <div className="text-sm" style={{ color: theme.colors.success }}>
+                        You're saving {calculateSavingsPercentage().toFixed(1)}%!
+                      </div>
+                    )}
+                    
+                    {/* Selected offers list */}
+                    <div className="mt-3 space-y-2">
+                      {selectedOffers.map((selectedOffer) => (
+                        <div key={selectedOffer.offer._id} className="flex justify-between items-center text-sm">
+                          <span>{selectedOffer.offer.title} × {selectedOffer.quantity}</span>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => updateOfferQuantity(selectedOffer.offer._id!, selectedOffer.quantity - 1)}
+                              className="w-6 h-6 rounded flex items-center justify-center"
                               style={{
-                                backgroundColor: productColors.primary,
+                                backgroundColor: theme.colors.error,
                                 color: theme.colors.textOnPrimary
                               }}
                             >
-                              <FiTag size={18} />
-                            </div>
-                            <div>
-                              <h3 
-                                className="font-bold text-lg"
-                                style={{ color: theme.colors.text }}
-                              >
-                                {offer.title}
-                              </h3>
-                              {offer.discount && (
-                                <span 
-                                  className="px-2 py-1 rounded-full text-xs font-bold mt-1 inline-block"
-                                  style={{
-                                    backgroundColor: theme.colors.success,
-                                    color: theme.colors.textOnPrimary
-                                  }}
-                                >
-                                  {getOfferDiscountText(offer)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {offer.validUntil && (
-                            <div 
-                              className="flex items-center gap-2 text-sm px-3 py-1 rounded-full"
+                              −
+                            </button>
+                            <span>{selectedOffer.quantity}</span>
+                            <button 
+                              onClick={() => updateOfferQuantity(selectedOffer.offer._id!, selectedOffer.quantity + 1)}
+                              className="w-6 h-6 rounded flex items-center justify-center"
                               style={{
-                                backgroundColor: productColors.primary + '15',
-                                color: productColors.primaryDark
+                                backgroundColor: theme.colors.success,
+                                color: theme.colors.textOnPrimary
                               }}
                             >
-                              <FiClock size={14} />
-                              <span className="font-semibold">
-                                {getDaysRemaining(offer.validUntil)} days left
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Available Offers */}
+                <div className="space-y-4">
+                  {activeOffers.map((offer, index) => (
+                    <div 
+                      key={offer._id || `offer-${index}`}
+                      className="p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                      style={{
+                        backgroundColor: theme.colors.backgroundSecondary,
+                        borderColor: selectedOffers.some(so => so.offer._id === offer._id)
+                          ? theme.colors.success
+                          : productColors.primaryLight,
+                        borderStyle: selectedOffers.some(so => so.offer._id === offer._id) 
+                          ? 'solid' 
+                          : 'dashed'
+                      }}
+                      onClick={() => addOfferToSelection(offer)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{
+                              backgroundColor: selectedOffers.some(so => so.offer._id === offer._id)
+                                ? theme.colors.success
+                                : productColors.primary,
+                              color: theme.colors.textOnPrimary
+                            }}
+                          >
+                            <FiGift size={18} />
+                          </div>
+                          <div>
+                            <h3 
+                              className="font-bold text-lg"
+                              style={{ color: theme.colors.text }}
+                            >
+                              {offer.title}
+                            </h3>
+                            {offer.discount && (
+                              <span 
+                                className="px-2 py-1 rounded-full text-xs font-bold mt-1 inline-block"
+                                style={{
+                                  backgroundColor: theme.colors.success,
+                                  color: theme.colors.textOnPrimary
+                                }}
+                              >
+                                {getOfferDiscountText(offer)}
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                         
-                        {offer.description && (
-                          <p 
-                            className="mb-3 leading-relaxed"
-                            style={{ color: theme.colors.textSecondary }}
+                        {offer.validUntil && (
+                          <div 
+                            className="flex items-center gap-2 text-sm px-3 py-1 rounded-full"
+                            style={{
+                              backgroundColor: productColors.primary + '15',
+                              color: productColors.primaryDark
+                            }}
                           >
-                            {offer.description}
-                          </p>
+                            <FiClock size={14} />
+                            <span className="font-semibold">
+                              {getDaysRemaining(offer.validUntil)} days left
+                            </span>
+                          </div>
                         )}
-                        
+                      </div>
+                      
+                      {offer.description && (
+                        <p 
+                          className="mb-3 leading-relaxed"
+                          style={{ color: theme.colors.textSecondary }}
+                        >
+                          {offer.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm">
                           <FiCheck 
                             size={16} 
-                            style={{ color: theme.colors.success }} 
+                            style={{ 
+                              color: selectedOffers.some(so => so.offer._id === offer._id)
+                                ? theme.colors.success
+                                : theme.colors.textMuted
+                            }} 
                           />
-                          <span style={{ color: theme.colors.success, fontWeight: '600' }}>
-                            Offer is active and applicable
+                          <span style={{ 
+                            color: selectedOffers.some(so => so.offer._id === offer._id)
+                              ? theme.colors.success
+                              : theme.colors.textMuted,
+                            fontWeight: '600' 
+                          }}>
+                            {selectedOffers.some(so => so.offer._id === offer._id)
+                              ? 'Added to order'
+                              : 'Click to add to order'
+                            }
                           </span>
                         </div>
+                        
+                        <div className="text-right">
+                          <div 
+                            className="font-bold"
+                            style={{ color: productColors.primary }}
+                          >
+                            ${((product.discountPrice || product.price) * (1 - (offer.discount || 0) / 100)).toFixed(2)}
+                          </div>
+                          {offer.discount && offer.discount > 0 && (
+                            <div 
+                              className="text-sm line-through"
+                              style={{ color: theme.colors.textMuted }}
+                            >
+                              ${(product.discountPrice || product.price).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  
-                  {activeOffers.length > 1 && (
-                    <div 
-                      className="mt-4 p-3 rounded-lg text-center"
-                      style={{
-                        backgroundColor: theme.colors.info + '10',
-                        border: `1px solid ${theme.colors.info}`
-                      }}
-                    >
-                      <p 
-                        className="text-sm font-semibold"
-                        style={{ color: theme.colors.info }}
-                      >
-                        💡 Multiple offers can be combined for maximum savings!
-                      </p>
                     </div>
-                  )}
+                  ))}
                 </div>
+
+                {activeOffers.length === 0 && (
+                  <div 
+                    className="text-center p-8 rounded-xl"
+                    style={{
+                      backgroundColor: theme.colors.backgroundSecondary,
+                      border: `2px dashed ${theme.colors.border}`
+                    }}
+                  >
+                    <FiGift size={48} style={{ color: theme.colors.textMuted, margin: '0 auto 1rem' }} />
+                    <p style={{ color: theme.colors.textMuted }}>
+                      No active offers available at the moment.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Order Form Section */}
             <div 
@@ -737,78 +911,6 @@ const ProductDetails: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Quantity Selector */}
-                <div 
-                  className="mb-6 p-4 rounded-xl"
-                  style={{ backgroundColor: theme.colors.backgroundSecondary }}
-                >
-                  <h3 
-                    className="text-lg font-bold mb-4"
-                    style={{ 
-                      color: theme.colors.text,
-                      fontFamily: theme.fonts.family.heading
-                    }}
-                  >
-                    Quantity
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-12 h-12 rounded-xl font-bold transition-all duration-300 flex items-center justify-center"
-                      style={{
-                        backgroundColor: theme.colors.surface,
-                        border: `2px solid ${theme.colors.border}`,
-                        color: theme.colors.textSecondary
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = productColors.primary;
-                        e.currentTarget.style.color = productColors.primary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = theme.colors.border;
-                        e.currentTarget.style.color = theme.colors.textSecondary;
-                      }}
-                    >
-                      −
-                    </button>
-                    <span 
-                      className="text-2xl font-bold min-w-[3rem] text-center"
-                      style={{ color: theme.colors.text }}
-                    >
-                      {quantity}
-                    </span>
-                    <button 
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-12 h-12 rounded-xl font-bold transition-all duration-300 flex items-center justify-center"
-                      style={{
-                        backgroundColor: theme.colors.surface,
-                        border: `2px solid ${theme.colors.border}`,
-                        color: theme.colors.textSecondary
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = productColors.primary;
-                        e.currentTarget.style.color = productColors.primary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = theme.colors.border;
-                        e.currentTarget.style.color = theme.colors.textSecondary;
-                      }}
-                    >
-                      +
-                    </button>
-                    <div style={{ color: theme.colors.textSecondary, marginLeft: theme.spacing.md }}>
-                      Total: <span 
-                        style={{ 
-                          fontWeight: theme.fonts.weight.bold,
-                          color: productColors.primary
-                        }}
-                      >
-                        ${calculateTotalPrice().toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Customer Data Fields */}
                 <div className="space-y-6">
                   {getCustomerDataFields().map((field) => (

@@ -28,6 +28,7 @@ export const productAPI = {
   // Create product
   createProduct: async (productData: Partial<IProduct>): Promise<IProduct> => {
     try {
+      console.log(productData)
       const response = await apiClient.post<{ product: IProduct }>('/products', productData);
       return response.data.product;
     } catch (error) {

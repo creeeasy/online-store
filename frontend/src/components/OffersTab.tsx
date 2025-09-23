@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiTrash2, FiPlus, FiPercent } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiPercent, FiCalendar } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IOffer } from '../types/product';
 import { ValidatedInput, ValidatedTextarea, ValidatedCheckbox } from './ValidationErrorDisplay';
@@ -15,8 +15,23 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
   const [newOffer, setNewOffer] = useState<Partial<IOffer>>({
     title: '',
     description: '',
+    discount: 0,
+    validUntil: undefined,
     isActive: true
   });
+
+  // Helper function to format date for input
+  const formatDateForInput = (date: Date | undefined): string => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+  };
+
+  // Helper function to parse date from input
+  const parseDateFromInput = (dateString: string): Date | undefined => {
+    if (!dateString) return undefined;
+    return new Date(dateString);
+  };
 
   const addOffer = () => {
     if (!newOffer.title?.trim()) return;
@@ -28,13 +43,19 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
     setNewOffer({
       title: '',
       description: '',
+      discount: 0,
+      validUntil: undefined,
       isActive: true
     });
   };
 
   const updateOffer = (index: number, field: string, value: any) => {
     const newOffers = [...(formData.offers || [])];
-    newOffers[index] = { ...newOffers[index], [field]: value };
+    if (field === 'validUntil') {
+      newOffers[index] = { ...newOffers[index], [field]: parseDateFromInput(value) };
+    } else {
+      newOffers[index] = { ...newOffers[index], [field]: value };
+    }
     setFormData(prev => ({ ...prev, offers: newOffers }));
   };
 
@@ -98,6 +119,13 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
   const gridStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '1rem',
+    marginBottom: '1rem'
+  };
+
+  const threeColumnGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '1rem',
     marginBottom: '1rem'
   };
@@ -198,7 +226,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
                 </button>
               </div>
 
-              <div style={gridStyle}>
+              <div style={threeColumnGridStyle}>
                 <ValidatedInput
                   label="Offer Title"
                   fieldName={`offers.${index}.title`}
@@ -215,10 +243,19 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
                   errors={validationErrors}
                   type="number"
                   min="0"
-                  max="99"
-                  value={offer.discount}
+                  max="100"
+                  value={offer.discount || 0}
                   onChange={(e) => updateOffer(index, 'discount', parseInt(e.target.value) || 0)}
                   placeholder="e.g., 20"
+                />
+                <ValidatedInput
+                  label="Valid Until"
+                  fieldName={`offers.${index}.validUntil`}
+                  errors={validationErrors}
+                  type="datetime-local"
+                  value={formatDateForInput(offer.validUntil)}
+                  onChange={(e) => updateOffer(index, 'validUntil', e.target.value)}
+                  placeholder="Select expiry date (optional)"
                 />
               </div>
 
@@ -251,7 +288,7 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
       <div style={addOfferSectionStyle}>
         <h4 style={addOfferHeaderStyle}>Add New Offer</h4>
         
-        <div style={gridStyle}>
+        <div style={threeColumnGridStyle}>
           <ValidatedInput
             label="Offer Title"
             fieldName="newOffer.title"
@@ -266,13 +303,21 @@ const OffersTab: React.FC<OffersTabProps> = ({ formData, setFormData, validation
             label="Discount (%)"
             fieldName="newOffer.discount"
             errors={validationErrors}
-            required
             type="number"
             min="0"
-            max="99"
-            value={newOffer.discount || ''}
+            max="100"
+            value={newOffer.discount || 0}
             onChange={(e) => setNewOffer({ ...newOffer, discount: parseInt(e.target.value) || 0 })}
             placeholder="e.g., 20"
+          />
+          <ValidatedInput
+            label="Valid Until"
+            fieldName="newOffer.validUntil"
+            errors={validationErrors}
+            type="datetime-local"
+            value={formatDateForInput(newOffer.validUntil)}
+            onChange={(e) => setNewOffer({ ...newOffer, validUntil: parseDateFromInput(e.target.value) })}
+            placeholder="Select expiry date (optional)"
           />
         </div>
 
