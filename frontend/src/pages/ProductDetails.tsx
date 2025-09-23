@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductGallery from '../components/ProductGallery';
-import { FiGift, FiTag, FiClock } from 'react-icons/fi';
+import { FiGift, FiTag, FiClock, FiStar, FiCheck } from 'react-icons/fi';
 import { useProduct } from '../hooks/useProducts';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'react-toastify';
-import type { IDynamicField } from '../types/product';
+import type { IDynamicField, IHiddenField, IOffer } from '../types/product';
 import { 
   useProductInquiry, 
 } from '../hooks/useOrderInquiry';
@@ -100,6 +100,79 @@ const ProductDetails: React.FC = () => {
     }
     
     return fields;
+  };
+
+  // Add this function to get hidden fields
+  const getHiddenFields = () => {
+    return product?.hiddenFields?.filter(field => field.key && field.value) || [];
+  };
+
+  // Add this function to handle hidden field injection
+  const injectHiddenFields = () => {
+    const hiddenFields = getHiddenFields();
+    
+    // Create a hidden container for all hidden fields
+    return (
+      <div style={{ display: 'none' }} className="hidden-fields-container">
+        {hiddenFields.map((field: IHiddenField, index: number) => (
+          <div 
+            key={field._id || `hidden-${index}`}
+            data-field-key={field.key}
+            data-field-value={field.value}
+            data-field-description={field.description || ''}
+            className="hidden-field"
+          >
+            {field.value}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Add this function to get hidden fields as data attributes for forms
+  const getHiddenFieldsDataAttributes = () => {
+    const hiddenFields = getHiddenFields();
+    const attributes: Record<string, string> = {};
+    
+    hiddenFields.forEach(field => {
+      if (field.key && field.value) {
+        attributes[`data-hidden-${field.key}`] = field.value;
+      }
+    });
+    
+    return attributes;
+  };
+
+  // Check if offer is active
+  const isOfferActive = (offer: IOffer) => {
+    if (!offer.isActive) return false;
+    if (offer.validUntil) {
+      const validDate = new Date(offer.validUntil);
+      return validDate > new Date();
+    }
+    return true;
+  };
+
+  // Get active offers
+  const getActiveOffers = () => {
+    return product?.offers?.filter(offer => isOfferActive(offer)) || [];
+  };
+
+  // Format offer discount text
+  const getOfferDiscountText = (offer: IOffer) => {
+    if (offer.discount) {
+      return `${offer.discount}% OFF`;
+    }
+    return 'Special Offer';
+  };
+
+  // Calculate days remaining for offer
+  const getDaysRemaining = (validUntil: Date) => {
+    const now = new Date();
+    const validDate = new Date(validUntil);
+    const diffTime = validDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   // Validate a single field
@@ -214,15 +287,6 @@ const ProductDetails: React.FC = () => {
         return newErrors;
       });
     }
-  };
-
-  const isOfferActive = (offer: any) => {
-    if (!offer.isActive) return false;
-    if (offer.validUntil) {
-      const validDate = new Date(offer.validUntil);
-      return validDate > new Date();
-    }
-    return true;
   };
 
   const calculateTotalPrice = () => {
@@ -348,6 +412,8 @@ const ProductDetails: React.FC = () => {
     );
   }
 
+  const activeOffers = getActiveOffers();
+
   return (
     <div style={{
       background: `linear-gradient(to bottom right, ${theme.colors.background}, ${theme.colors.backgroundSecondary})`,
@@ -401,6 +467,8 @@ const ProductDetails: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Inject hidden fields into DOM */}
+        {injectHiddenFields()}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Gallery Section */}
           <div className="lg:sticky lg:top-8 self-start">
@@ -470,6 +538,146 @@ const ProductDetails: React.FC = () => {
               </div>
             </div>
 
+            {/* Offers Section - Added before Order Inquiry */}
+            {activeOffers.length > 0 && (
+              <div 
+                className="rounded-2xl shadow-xl overflow-hidden border-2"
+                style={{
+                  backgroundColor: theme.colors.surface,
+                  borderColor: productColors.primary,
+                  boxShadow: theme.shadows.lg
+                }}
+              >
+                <div 
+                  style={{
+                    background: `linear-gradient(135deg, ${productColors.primary}, ${productColors.primaryDark})`,
+                    color: theme.colors.textOnPrimary,
+                    padding: theme.spacing.lg
+                  }}
+                >
+                  <h2 
+                    className="text-2xl font-bold flex items-center gap-3"
+                    style={{ fontFamily: theme.fonts.family.heading }}
+                  >
+                    <FiGift className="text-white" />
+                    Special Offers
+                    <span 
+                      className="px-3 py-1 rounded-full text-sm font-bold ml-2"
+                      style={{
+                        backgroundColor: theme.colors.textOnPrimary + '20',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                    >
+                      {activeOffers.length} Active
+                    </span>
+                  </h2>
+                  <p className="mt-2 opacity-90">
+                    Don't miss these exclusive deals for this product
+                  </p>
+                </div>
+                
+                <div style={{ padding: theme.spacing.lg }}>
+                  <div className="space-y-4">
+                    {activeOffers.map((offer, index) => (
+                      <div 
+                        key={offer._id || `offer-${index}`}
+                        className="p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]"
+                        style={{
+                          backgroundColor: theme.colors.backgroundSecondary,
+                          borderColor: productColors.primaryLight,
+                          borderStyle: 'dashed'
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                              style={{
+                                backgroundColor: productColors.primary,
+                                color: theme.colors.textOnPrimary
+                              }}
+                            >
+                              <FiTag size={18} />
+                            </div>
+                            <div>
+                              <h3 
+                                className="font-bold text-lg"
+                                style={{ color: theme.colors.text }}
+                              >
+                                {offer.title}
+                              </h3>
+                              {offer.discount && (
+                                <span 
+                                  className="px-2 py-1 rounded-full text-xs font-bold mt-1 inline-block"
+                                  style={{
+                                    backgroundColor: theme.colors.success,
+                                    color: theme.colors.textOnPrimary
+                                  }}
+                                >
+                                  {getOfferDiscountText(offer)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {offer.validUntil && (
+                            <div 
+                              className="flex items-center gap-2 text-sm px-3 py-1 rounded-full"
+                              style={{
+                                backgroundColor: productColors.primary + '15',
+                                color: productColors.primaryDark
+                              }}
+                            >
+                              <FiClock size={14} />
+                              <span className="font-semibold">
+                                {getDaysRemaining(offer.validUntil)} days left
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {offer.description && (
+                          <p 
+                            className="mb-3 leading-relaxed"
+                            style={{ color: theme.colors.textSecondary }}
+                          >
+                            {offer.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center gap-2 text-sm">
+                          <FiCheck 
+                            size={16} 
+                            style={{ color: theme.colors.success }} 
+                          />
+                          <span style={{ color: theme.colors.success, fontWeight: '600' }}>
+                            Offer is active and applicable
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {activeOffers.length > 1 && (
+                    <div 
+                      className="mt-4 p-3 rounded-lg text-center"
+                      style={{
+                        backgroundColor: theme.colors.info + '10',
+                        border: `1px solid ${theme.colors.info}`
+                      }}
+                    >
+                      <p 
+                        className="text-sm font-semibold"
+                        style={{ color: theme.colors.info }}
+                      >
+                        💡 Multiple offers can be combined for maximum savings!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Order Form Section */}
             <div 
               className="rounded-2xl shadow-xl overflow-hidden"
@@ -478,6 +686,7 @@ const ProductDetails: React.FC = () => {
                 border: `2px solid ${productColors.primary}`,
                 boxShadow: theme.shadows.lg
               }}
+              {...getHiddenFieldsDataAttributes()}
             >
               <div 
                 style={{
@@ -498,6 +707,11 @@ const ProductDetails: React.FC = () => {
                 <p className="mt-2 opacity-90">
                   Get a personalized quote or ask any questions about this product
                 </p>
+                {activeOffers.length > 0 && (
+                  <p className="mt-1 text-sm opacity-80">
+                    ⚡ Special offers will be automatically applied to your order
+                  </p>
+                )}
               </div>
               
               <div style={{ padding: theme.spacing.xl }}>
@@ -754,23 +968,8 @@ const ProductDetails: React.FC = () => {
                     background: isSubmitting
                       ? theme.colors.disabled
                       : `linear-gradient(to right, ${productColors.primary}, ${productColors.primaryDark})`,
-                    color: isSubmitting
-                      ? theme.colors.textMuted
-                      : theme.colors.textOnPrimary,
-                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                    boxShadow: isSubmitting ? 'none' : theme.shadows.lg
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.background = `linear-gradient(to right, ${productColors.primaryDark}, ${productColors.primary})`;
-                      e.currentTarget.style.boxShadow = theme.shadows.xl;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSubmitting) {
-                      e.currentTarget.style.background = `linear-gradient(to right, ${productColors.primary}, ${productColors.primaryDark})`;
-                      e.currentTarget.style.boxShadow = theme.shadows.lg;
-                    }
+                    color: theme.colors.textOnPrimary,
+                    boxShadow: theme.shadows.lg
                   }}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Inquiry'}
@@ -778,108 +977,32 @@ const ProductDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Offers Section */}
-            {product.offers && product.offers.filter((offer) => isOfferActive(offer)).length > 0 && (
-              <div 
-                className="p-6 rounded-2xl border-2"
-                style={{
-                  background: `linear-gradient(to right, ${productColors.primary}, ${productColors.primaryDark})`,
-                  borderColor: productColors.primaryDark,
-                  boxShadow: theme.shadows.lg
-                }}
-              >
-                <h3 
-                  className="text-xl font-bold mb-4 flex items-center gap-2"
+            {/* Product Description */}
+            <div 
+              className="rounded-2xl shadow-xl overflow-hidden"
+              style={{
+                backgroundColor: theme.colors.surface,
+                border: `2px solid ${theme.colors.border}`,
+                boxShadow: theme.shadows.md
+              }}
+            >
+              <div style={{ padding: theme.spacing.xl }}>
+                <h2 
+                  className="text-2xl font-bold mb-4"
                   style={{ 
-                    color: theme.colors.textOnPrimary,
+                    color: theme.colors.text,
                     fontFamily: theme.fonts.family.heading
                   }}
                 >
-                  <FiGift className="text-white" />
-                  Special Offers
-                </h3>
-                <div className="space-y-4">
-                  {product.offers
-                    .filter((offer) => isOfferActive(offer))
-                    .map((offer) => (
-                      <div 
-                        key={offer._id} 
-                        className="p-4 rounded-xl border"
-                        style={{
-                          backgroundColor: theme.colors.surface,
-                          borderColor: productColors.primaryLight
-                        }}
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <FiTag style={{ color: productColors.primary }} />
-                          <h4 
-                            className="font-bold"
-                            style={{ color: productColors.primaryDark }}
-                          >
-                            {offer.title}
-                          </h4>
-                          {offer.discount && (
-                            <span 
-                              className="px-2 py-1 rounded-full text-xs font-bold"
-                              style={{
-                                backgroundColor: theme.colors.success,
-                                color: theme.colors.textOnPrimary
-                              }}
-                            >
-                              {offer.discount}% OFF
-                            </span>
-                          )}
-                        </div>
-                        {offer.description && (
-                          <p style={{ color: theme.colors.textSecondary, marginBottom: theme.spacing.sm }}>
-                            {offer.description}
-                          </p>
-                        )}
-                        {offer.validUntil && (
-                          <div 
-                            className="flex items-center gap-2 text-sm"
-                            style={{ color: productColors.primary }}
-                          >
-                            <FiClock size={14} />
-                            <span>Valid until: {new Date(offer.validUntil).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Product Description */}
-            <div 
-              className="p-8 rounded-2xl shadow-lg border"
-              style={{
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-                boxShadow: theme.shadows.lg
-              }}
-            >
-              <h3 
-                className="text-xl font-bold mb-4"
-                style={{ 
-                  color: theme.colors.text,
-                  fontFamily: theme.fonts.family.heading
-                }}
-              >
-                Product Description
-              </h3>
-              <div 
-                className="prose max-w-none leading-relaxed"
-                style={{ 
-                  color: theme.colors.textSecondary,
-                  lineHeight: theme.fonts.lineHeight.relaxed
-                }}
-              >
-                <p>{product.description}</p>
+                  Product Details
+                </h2>
+                <div 
+                  className="prose max-w-none"
+                  style={{ color: theme.colors.textSecondary }}
+                  dangerouslySetInnerHTML={{ __html: product.description || 'No description available.' }}
+                />
               </div>
             </div>
-
-
           </div>
         </div>
       </div>

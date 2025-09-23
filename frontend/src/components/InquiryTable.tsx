@@ -7,15 +7,16 @@ import { SERVER_URL } from '../utils/apiClient';
 
 // Utility functions for formatting
 const InquiryUtils = {
-  formatPrice: (price?: number) => {
-    if (!price) return '$0';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  },
+formatPrice: (price?: number) => {
+  if (!price) return '0 DZD';
+  return new Intl.NumberFormat('fr-DZ', {
+    style: 'currency',
+    currency: 'DZD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+},
+
 
   formatDate: (dateString: string) => {
     const date = new Date(dateString);
@@ -41,6 +42,21 @@ const InquiryUtils = {
   truncateText: (text: string, maxLength: number = 30) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  },
+
+  getWilaya: (customerData: any) => {
+    if (!customerData || typeof customerData !== 'object') return 'N/A';
+    
+    // Check for common wilaya field names (case-insensitive)
+    const wilayaFields = ['wilaya', 'Wilaya', 'WILAYA', 'state', 'State', 'province', 'Province'];
+    
+    for (const field of wilayaFields) {
+      if (customerData[field] && String(customerData[field]).trim()) {
+        return String(customerData[field]);
+      }
+    }
+    
+    return 'N/A';
   }
 };
 
@@ -248,6 +264,23 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
     fontFamily: theme.fonts.family.monospace,
   };
 
+  const wilayaStyle: React.CSSProperties = {
+    color: theme.colors.text,
+    fontWeight: theme.fonts.weight.medium,
+    fontSize: theme.fonts.size.sm,
+    backgroundColor: theme.colors.backgroundSecondary,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.borderRadius.md,
+    border: `1px solid ${theme.colors.border}`,
+    display: 'inline-block',
+  };
+
+  const wilayaNAStyle: React.CSSProperties = {
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    fontSize: theme.fonts.size.sm,
+  };
+
   const productContainerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -405,6 +438,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
                 />
               </th>
               <th scope="col" style={thStyle}>Customer</th>
+              <th scope="col" style={thStyle}>Wilaya</th>
               <th scope="col" style={thStyle}>Product</th>
               <th scope="col" style={thStyle}>Qty</th>
               <th scope="col" style={thStyle}>Total</th>
@@ -454,6 +488,20 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
                       )}
                     </div>
                   </div>
+                </td>
+
+                {/* Wilaya Column */}
+                <td style={tdStyle}>
+                  {(() => {
+                    const wilaya = InquiryUtils.getWilaya(inquiry.customerData);
+                    return wilaya === 'N/A' ? (
+                      <span style={wilayaNAStyle}>N/A</span>
+                    ) : (
+                      <span style={wilayaStyle}>
+                        {wilaya}
+                      </span>
+                    );
+                  })()}
                 </td>
 
                 {/* Product Column */}
