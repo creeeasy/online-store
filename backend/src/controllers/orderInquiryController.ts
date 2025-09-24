@@ -1,8 +1,9 @@
 // controllers/orderInquiryController.ts
 import { Request, Response } from 'express';
-import Product from '../models/Product';
-import OrderInquiry from '../models/OrderInquiry';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
+import { OrderInquiry } from '../models/OrderInquiry';
+import Product from '../models/Product';
+import Offer, { IOffer } from '../models/Offer';
 
 // Phone validation utility
 const validateAlgerianPhone = (phone: string): boolean => {
@@ -12,36 +13,31 @@ const validateAlgerianPhone = (phone: string): boolean => {
 };
 
 export class OrderInquiryController {
-  // Create new order inquiry
-  static createInquiry = asyncHandler(async (req: Request, res: Response) => {
-    // Check for validation errors
-   // const validationError = ResponseHandler.validationError(res, req);
-    //if (validationError) return;
+
+
+    static createInquiry = asyncHandler(async (req: Request, res: Response) => {
     const { 
       productId, 
       customerData = {}, 
       quantity = 1, 
+      typeOfOrder,       // 'offer' | 'quantity'
+      offerId,           // optional
       selectedVariants = {},
       notes 
     } = req.body;
+
     // Verify product exists
     const product = await Product.findById(productId);
     if (!product) {
       return ResponseHandler.notFound(res, 'Product');
     }
-    // Validate required dynamic fields from product
-    const validationErrors: any[] = [];
-    // Check if product has dynamic fields and validate them
-    if (product.dynamicFields && product.dynamicFields.length > 0) {
-      for (const field of product.dynamicFields) {
-        console.log("field")
-        console.log(field)
 
+    // Validate required dynamic fields
+    const validationErrors: any[] = [];
+    if (product.dynamicFields?.length) {
+      for (const field of product.dynamicFields) {
         if (field.isRequired) {
           const fieldValue = customerData[field.key];
-          console.log("fieldValue")
-          console.log(fieldValue)
-
           if (!fieldValue || fieldValue.trim() === '') {
             validationErrors.push({
               field: `customerData.${field.key}`,
@@ -50,8 +46,8 @@ export class OrderInquiryController {
               location: 'body'
             });
           }
-          
-          // Special validation for phone fields
+
+          // Phone validation
           if (field.key.toLowerCase().includes('phone') && fieldValue) {
             if (!validateAlgerianPhone(fieldValue)) {
               validationErrors.push({
@@ -62,8 +58,8 @@ export class OrderInquiryController {
               });
             }
           }
-          
-          // Special validation for name fields
+
+          // Name validation
           if (field.key.toLowerCase().includes('name') && fieldValue) {
             const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
             if (!nameRegex.test(fieldValue.trim())) {
@@ -78,8 +74,7 @@ export class OrderInquiryController {
         }
       }
     }
-    console.log("error validations")
-    console.log(validationErrors)
+
     // Return validation errors if any
     if (validationErrors.length > 0) {
       return ResponseHandler.error(
@@ -90,24 +85,43 @@ export class OrderInquiryController {
         'VALIDATION_ERROR'
       );
     }
+
     // Calculate total price
-    const price = product.discountPrice || product.price;
-    const totalPrice = price * quantity;
+    let totalPrice = 0;
+
+    if (typeOfOrder === 'offer') {
+      if (!offerId) {
+        return ResponseHandler.error(res, 'Offer ID is required for offer inquiries', 400);
+      }
+
+      const offer: IOffer | null = await Offer.findById(offerId);
+      console.log(offerId)
+      if (!offer || !offer.isActive || (offer.validUntil && new Date(offer.validUntil) < new Date())) {
+        return ResponseHandler.error(res, 'Selected offer is not valid or has expired', 400);
+      }
+
+      totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
+
+    } else if (typeOfOrder === 'quantity') {
+      totalPrice = (product.discountPrice ?? product.price) * quantity;
+    } else {
+      return ResponseHandler.error(res, 'Invalid typeOfOrder', 400);
+    }
 
     // Create new inquiry
     const inquiry = new OrderInquiry({
       productId,
       productName: product.name,
       customerData,
-      quantity,
+      quantity: typeOfOrder === 'quantity' ? quantity : 1,
+      offerId: typeOfOrder === 'offer' ? offerId : undefined,
       selectedVariants,
       totalPrice,
-      notes
+      notes,
+      typeOfOrder
     });
-    console.log(inquiry)
-    await inquiry.save();
 
-    // Populate product details in response
+    await inquiry.save();
     await inquiry.populate('product');
 
     ResponseHandler.success(
@@ -117,6 +131,9 @@ export class OrderInquiryController {
       201
     );
   });
+
+
+
 
   // Get all inquiries with filtering and pagination
   static getAllInquiries = asyncHandler(async (req: Request, res: Response) => {
@@ -209,136 +226,9 @@ export class OrderInquiryController {
     );
   });
 
-  // Update inquiry
-  static updateInquiry = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const updates = req.body;
+ 
 
-    // Validate customer data if provided
-    if (updates.customerData) {
-      const validationErrors: any[] = [];
-      
-      // Get the existing inquiry to know the product
-      const existingInquiry = await OrderInquiry.findById(id);
-      if (!existingInquiry) {
-        return ResponseHandler.notFound(res, 'Order inquiry');
-      }
-      
-      // Get product to validate dynamic fields
-      const product = await Product.findById(existingInquiry.productId);
-      if (product && product.dynamicFields) {
-        for (const field of product.dynamicFields) {
-          const fieldValue = updates.customerData[field.key];
-          
-          // Only validate if the field is being updated and is required
-          if (fieldValue !== undefined && field.isRequired) {
-            if (!fieldValue || fieldValue.trim() === '') {
-              validationErrors.push({
-                field: `customerData.${field.key}`,
-                message: `${field.placeholder || field.key} is required`,
-                value: fieldValue,
-                location: 'body'
-              });
-            }
-            
-            // Phone validation
-            if (field.key.toLowerCase().includes('phone') && fieldValue) {
-              if (!validateAlgerianPhone(fieldValue)) {
-                validationErrors.push({
-                  field: `customerData.${field.key}`,
-                  message: 'Invalid phone format. Must be 10 digits: 0[567]XXXXXXXX',
-                  value: fieldValue,
-                  location: 'body'
-                });
-              }
-            }
-            
-            // Name validation
-            if (field.key.toLowerCase().includes('name') && fieldValue) {
-              const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
-              if (!nameRegex.test(fieldValue.trim())) {
-                validationErrors.push({
-                  field: `customerData.${field.key}`,
-                  message: 'Name must contain only letters and spaces, and be between 2-100 characters',
-                  value: fieldValue,
-                  location: 'body'
-                });
-              }
-            }
-          }
-        }
-      }
-      
-      if (validationErrors.length > 0) {
-        return ResponseHandler.error(
-          res,
-          'Validation failed for customer data',
-          400,
-          validationErrors,
-          'VALIDATION_ERROR'
-        );
-      }
-    }
-
-    // Remove fields that shouldn't be updated directly
-    delete updates._id;
-    delete updates.createdAt;
-    delete updates.updatedAt;
-
-    const inquiry = await OrderInquiry.findByIdAndUpdate(
-      id,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).populate('product', 'name price discountPrice images dynamicFields');
-
-    if (!inquiry) {
-      return ResponseHandler.notFound(res, 'Order inquiry');
-    }
-
-    ResponseHandler.success(
-      res,
-      { inquiry },
-      'Order inquiry updated successfully'
-    );
-  });
-
-  // Update inquiry status
-  static updateInquiryStatus = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { status, notes } = req.body;
-
-    const validStatuses = ['pending', 'contacted', 'converted', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return ResponseHandler.error(
-        res,
-        'Invalid status. Must be one of: ' + validStatuses.join(', '),
-        400,
-        undefined,
-        'VALIDATION_ERROR'
-      );
-    }
-
-    const updateData: any = { status };
-    if (notes !== undefined) {
-      updateData.notes = notes;
-    }
-
-    const inquiry = await OrderInquiry.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).populate('product', 'name price discountPrice images');
-
-    if (!inquiry) {
-      return ResponseHandler.notFound(res, 'Order inquiry');
-    }
-
-    ResponseHandler.success(
-      res,
-      { inquiry },
-      'Inquiry status updated successfully'
-    );
-  });
+ 
 
   // Delete inquiry
   static deleteInquiry = asyncHandler(async (req: Request, res: Response) => {
@@ -400,32 +290,6 @@ export class OrderInquiryController {
     );
   });
 
-  // Bulk update inquiry status
-  static bulkUpdateStatus = asyncHandler(async (req: Request, res: Response) => {
-    const { ids, status } = req.body;
-
-    const validStatuses = ['pending', 'contacted', 'converted', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return ResponseHandler.error(
-        res,
-        'Invalid status. Must be one of: ' + validStatuses.join(', '),
-        400,
-        undefined,
-        'VALIDATION_ERROR'
-      );
-    }
-
-    const result = await OrderInquiry.updateMany(
-      { _id: { $in: ids } },
-      { $set: { status } }
-    );
-
-    ResponseHandler.success(
-      res,
-      { updatedCount: result.modifiedCount },
-      `${result.modifiedCount} inquiries updated successfully`
-    );
-  });
 
   // Bulk delete inquiries
   static bulkDelete = asyncHandler(async (req: Request, res: Response) => {
@@ -439,4 +303,31 @@ export class OrderInquiryController {
       `${result.deletedCount} inquiries deleted successfully`
     );
   });
+
+  // Delete all inquiries (requires confirmation code)
+static deleteAllInquiries = asyncHandler(async (req: Request, res: Response) => {
+  const { confirmationCode } = req.body;
+
+  // Security check – to avoid accidental deletion
+  const REQUIRED_CODE = process.env.DELETE_ALL_CONFIRMATION || 'CONFIRM_DELETE_ALL';
+
+  if (!confirmationCode || confirmationCode !== REQUIRED_CODE) {
+    return ResponseHandler.error(
+      res,
+      'Invalid or missing confirmation code',
+      403,
+      undefined,
+      'INVALID_CONFIRMATION'
+    );
+  }
+
+  const result = await OrderInquiry.deleteMany({});
+
+  ResponseHandler.success(
+    res,
+    { deletedCount: result.deletedCount },
+    `${result.deletedCount} inquiries deleted successfully`
+  );
+});
+
 }

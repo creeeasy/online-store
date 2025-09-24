@@ -3,276 +3,10 @@ import { body } from 'express-validator';
 import Product, { IProduct, WILAYAS } from '../models/Product';
 import { AuthRequest } from '../types';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
-
-// Predefined categories configuration
-const PREDEFINED_CATEGORIES = {
-  size: { options: ["small", "medium", "large", "x-large", "xx-large"] },
-  color: { options: ["red", "blue", "green", "black", "white", "yellow", "purple", "pink"] },
-  material: { options: ["cotton", "polyester", "silk", "wool", "leather", "denim"] },
-  style: { options: ["casual", "formal", "sport", "vintage", "modern"] }
-};
-
-// Enhanced validation rules with better error messages
-export const productValidationRules = {
-  create: [
-    body('name')
-      .trim()
-      .notEmpty()
-      .withMessage('Product name is required and cannot be empty')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Product name must be between 2 and 100 characters'),
-    
-    body('price')
-      .optional()
-      .isNumeric()
-      .withMessage('Price must be a valid number')
-      .isFloat({ min: 0.01 })
-      .withMessage('Price must be greater than 0')
-      .toFloat(),
-
-    body('discountPrice')
-      .optional()
-      .isNumeric()
-      .withMessage('Discount price must be a valid number')
-      .isFloat({ min: 0 })
-      .withMessage('Discount price cannot be negative')
-      .toFloat()
-      .custom((value, { req }) => {
-        if (req.body.price && value >= req.body.price) {
-          throw new Error('Discount price must be less than the original price');
-        }
-        return true;
-      }),
-    
-    body('description')
-      .trim()
-      .notEmpty()
-      .withMessage('Product description is required')
-      .isLength({ min: 10, max: 1000 })
-      .withMessage('Description must be between 10 and 1000 characters'),
-    
-    body('images')
-      .optional()
-      .isArray({ min: 0 })
-      .withMessage('At least one image is required if images are provided'),
-    
-    // Colors validation
-    body('colors')
-      .optional()
-      .isArray({ max: 3 })
-      .withMessage('Maximum 3 colors allowed'),
-    
-    body('colors.*.name')
-      .if(body('colors').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Color name is required')
-      .isLength({ min: 1, max: 30 })
-      .withMessage('Color name must be between 1 and 30 characters'),
-    
-    body('colors.*.hexCode')
-      .if(body('colors').exists())
-      .trim()
-      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
-    
-    body('colors.*.isAvailable')
-      .if(body('colors').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
-    
-    body('dynamicFields')
-      .optional()
-      .isArray()
-      .withMessage('Dynamic fields must be an array'),
-    
-    body('dynamicFields.*.key')
-      .if(body('dynamicFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field key cannot be empty')
-      .isLength({ max: 50 })
-      .withMessage('Dynamic field key cannot exceed 50 characters'),
-    
-    body('dynamicFields.*.placeholder')
-      .if(body('dynamicFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field placeholder cannot be empty')
-      .isLength({ max: 100 })
-      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
-    
-    body('dynamicFields.*.isRequired')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isRequired must be a boolean value'),
-    
-    body('dynamicFields.*.isDefault')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isDefault must be a boolean value'),
-    
-    body('offers')
-      .optional()
-      .isArray()
-      .withMessage('Offers must be an array'),
-    
-    body('offers.*.discount')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 99 })
-      .withMessage('Discount must be between 1 and 99 percent'),
-    
-    body('offers.*.validUntil')
-      .if(body('offers').exists())
-      .optional()
-      .isISO8601()
-      .withMessage('Valid until date must be a valid date')
-      .custom((value) => {
-        if (value && new Date(value) <= new Date()) {
-          throw new Error('Valid until date must be in the future');
-        }
-        return true;
-      }),
-    
-    body('hiddenFields')
-      .optional()
-      .isArray()
-      .withMessage('Hidden fields must be an array'),
-    
-    body('hiddenFields.*.key')
-      .if(body('hiddenFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Hidden field key cannot be empty'),
-    
-    body('hiddenFields.*.value')
-      .if(body('hiddenFields').exists())
-      .trim()
-      .notEmpty()
-      .withMessage('Hidden field value cannot be empty'),
-    
-    body('reference')
-      .optional()
-      .trim()
-      .isLength({ max: 200 })
-      .withMessage('Reference cannot exceed 200 characters')
-  ],
-  
-  update: [
-    body('name')
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Product name cannot be empty if provided')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Product name must be between 2 and 100 characters'),
-    
-    body('price')
-      .optional()
-      .isNumeric()
-      .withMessage('Price must be a valid number')
-      .isFloat({ min: 0.01 })
-      .withMessage('Price must be greater than 0'),
-    
-    body('discountPrice')
-      .optional()
-      .isNumeric()
-      .withMessage('Discount price must be a valid number')
-      .isFloat({ min: 0 })
-      .withMessage('Discount price cannot be negative')
-      .toFloat(),
-    
-    body('description')
-      .optional()
-      .trim()
-      .isLength({ min: 10, max: 1000 })
-      .withMessage('Description must be between 10 and 1000 characters if provided'),
-    
-    body('images')
-      .optional()
-      .isArray({ min: 0 })
-      .withMessage('At least one image is required if images are provided'),
-    
-    // Colors validation for updates
-    body('colors')
-      .optional()
-      .isArray({ max: 3 })
-      .withMessage('Maximum 3 colors allowed'),
-    
-    body('colors.*.name')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Color name cannot be empty if provided')
-      .isLength({ min: 1, max: 30 })
-      .withMessage('Color name must be between 1 and 30 characters'),
-    
-    body('colors.*.hexCode')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
-    
-    body('colors.*.isAvailable')
-      .if(body('colors').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
-    
-    body('dynamicFields.*.key')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field key cannot be empty')
-      .isLength({ max: 50 })
-      .withMessage('Dynamic field key cannot exceed 50 characters'),
-    
-    body('dynamicFields.*.placeholder')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field placeholder cannot be empty')
-      .isLength({ max: 100 })
-      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
-    
-    body('dynamicFields.*.isRequired')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isRequired must be a boolean value'),
-    
-    body('dynamicFields.*.isDefault')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isDefault must be a boolean value'),
-    
-    body('offers.*.discount')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 99 })
-      .withMessage('Discount must be between 1 and 99 percent'),
-    
-    body('offers.*.discountPercentage')
-      .if(body('offers').exists())
-      .optional()
-      .isInt({ min: 0, max: 100 })
-      .withMessage('Discount percentage must be between 0 and 100'),
-    
-    body('offers.*.wilaya')
-      .optional()
-      .isIn(WILAYAS)
-      .withMessage('Wilaya must be one of the valid Algerian regions'),
-  ]
-};
+import { PREDEFINED_CATEGORIES } from '../constants';
+import { productValidationRules, validateUniqueColors, validateQuantityConfiguration } from '../validators';
+import mongoose from 'mongoose';
+import Offer from '../models/Offer';
 
 // Helper function to initialize predefined fields
 const initializePredefinedFields = () => {
@@ -284,20 +18,7 @@ const initializePredefinedFields = () => {
   }));
 };
 
-// Helper function to validate unique colors
-const validateUniqueColors = (colors: any[]) => {
-  if (!colors || colors.length === 0) return true;
-  
-  const names = colors.map(color => color.name?.toLowerCase()).filter(Boolean);
-  const hexCodes = colors.map(color => color.hexCode?.toLowerCase()).filter(Boolean);
-  
-  const uniqueNames = new Set(names);
-  const uniqueHexCodes = new Set(hexCodes);
-  
-  return names.length === uniqueNames.size && hexCodes.length === uniqueHexCodes.size;
-};
-
-// @desc    Get all products with advanced filtering
+// @desc    Get all products with advanced filtering and offer support
 // @route   GET /api/products
 // @access  Public
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
@@ -346,6 +67,30 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
     filter['offers.validUntil'] = { $gt: new Date() };
   }
 
+  // ✅ Enhanced quantity filters
+  if (req.query.allowsQuantity === 'true') {
+    filter.allowQuantity = true;
+  } else if (req.query.allowsQuantity === 'false') {
+    filter.$or = [
+      { allowQuantity: false },
+      { allowQuantity: { $exists: false } }
+    ];
+  }
+
+  if (req.query.allowsMultipleQuantities === 'true') {
+    filter.allowQuantity = true;
+    filter.allowMultipleQuantities = true;
+  }
+
+  if (req.query.singleItemOnly === 'true') {
+    filter.$or = [
+      { allowQuantity: false },
+      { allowQuantity: { $exists: false } },
+      { allowMultipleQuantities: false },
+      { allowMultipleQuantities: { $exists: false } }
+    ];
+  }
+
   const products = await Product.find(filter)
     .populate('createdBy', 'username email')
     .skip(skip)
@@ -364,27 +109,56 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// @desc    Get single product
+// @desc    Get single product with order inquiry configuration
 // @route   GET /api/products/:id
 // @access  Public
 export const getProduct = asyncHandler(async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id).populate(
-    'createdBy',
-    'username email'
-  );
+  const product = await Product.findById(req.params.id)
+    .populate('createdBy', 'username email')
+    .populate({
+      path: 'offers',
+      match: { 
+        isActive: true, 
+        $or: [{ validUntil: { $exists: false } }, { validUntil: { $gt: new Date() } }]
+      }
+    });
 
   if (!product) {
     return ResponseHandler.notFound(res, 'Product');
   }
 
+  // ✅ Determine quantity mode
+  const determineQuantityMode = () => {
+    if (!product.allowQuantity) return 'disabled';
+    if (!product.allowMultipleQuantities) return 'single';
+    return 'multiple';
+  };
+
+  const orderInquiryConfig = {
+    quantityMode: determineQuantityMode(),
+    allowQuantity: product.allowQuantity || false,
+    allowMultipleQuantities: product.allowMultipleQuantities || false,
+    maxQuantityPerInquiry: product.maxQuantityPerInquiry || 1,
+    quantityRules: {
+      disabled: !product.allowQuantity,
+      singleOnly: product.allowQuantity && !product.allowMultipleQuantities,
+      multipleAllowed: product.allowQuantity && product.allowMultipleQuantities,
+      maxAllowed: product.maxQuantityPerInquiry || 1
+    },
+    hasActiveOffers: (product.offers?.length ?? 0) > 0,
+    activeOffers: product.offers ?? []
+  };
+
   ResponseHandler.success(
     res,
-    { product },
+    { product, orderInquiryConfig },
     'Product retrieved successfully'
   );
 });
 
-// @desc    Create product
+
+
+// @desc    Create product with enhanced order inquiry support
 // @route   POST /api/products
 // @access  Private/Admin
 export const createProduct = [
@@ -407,22 +181,69 @@ export const createProduct = [
       );
     }
 
-    // Initialize predefined fields if not provided
+    // Validate quantity configuration
+    const quantityValidation = validateQuantityConfiguration(
+      req.body.allowQuantity ?? true,
+      req.body.allowMultipleQuantities ?? false,
+      req.body.maxQuantityPerInquiry
+    );
+
+    if (!quantityValidation.isValid) {
+      return ResponseHandler.error(
+        res,
+        quantityValidation.error!,
+        400,
+        [{
+          field: 'quantityConfiguration',
+          message: quantityValidation.error!,
+          value: {
+            allowQuantity: req.body.allowQuantity,
+            allowMultipleQuantities: req.body.allowMultipleQuantities,
+            maxQuantityPerInquiry: req.body.maxQuantityPerInquiry
+          },
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+
+    // Initialize predefined fields
     const predefinedFields = req.body.predefinedFields || initializePredefinedFields();
 
-    // Auto-detect reference from query parameters if not provided
+    // Auto-detect reference
     let reference = req.body.reference;
-    if (!reference && req.query.ref) {
-      reference = req.query.ref as string;
-    } else if (!reference && req.query.utm_source) {
-      reference = req.query.utm_source as string;
+    if (!reference && req.query.ref) reference = req.query.ref as string;
+    else if (!reference && req.query.utm_source) reference = req.query.utm_source as string;
+
+    // Quantity config
+    const quantityConfig = {
+      allowQuantity: req.body.allowQuantity ?? true,
+      allowMultipleQuantities: req.body.allowMultipleQuantities ?? false,
+      maxQuantityPerInquiry: (() => {
+        if (!req.body.allowQuantity) return undefined;
+        if (!req.body.allowMultipleQuantities) return 1;
+        return req.body.maxQuantityPerInquiry || 10;
+      })()
+    };
+
+    // ✅ Create Offer documents separately if provided
+    let offerIds: mongoose.Types.ObjectId[] = [];
+    if (req.body.offers?.length) {
+      const offersToCreate = req.body.offers.map((offer: any) => ({
+        ...offer,
+        isActive: offer.isActive ?? true
+      }));
+      const createdOffers = await Offer.insertMany(offersToCreate);
+      offerIds = createdOffers.map((o) => o._id);
     }
 
     const productData = {
       ...req.body,
+      ...quantityConfig,
       predefinedFields,
       createdBy: req.user?.id,
-      reference
+      reference,
+      offers: offerIds
     };
 
     const product = await Product.create(productData);
@@ -437,7 +258,8 @@ export const createProduct = [
   })
 ];
 
-// @desc    Update product
+
+// @desc    Update product with quantity validation
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 export const updateProduct = [
@@ -471,9 +293,84 @@ export const updateProduct = [
       return ResponseHandler.forbidden(res, 'Not authorized to update this product');
     }
 
+    // Validate quantity configuration if any fields are being updated
+    const quantityFieldsBeingUpdated = ['allowQuantity', 'allowMultipleQuantities', 'maxQuantityPerInquiry']
+      .some(field => req.body.hasOwnProperty(field));
+
+    if (quantityFieldsBeingUpdated) {
+      const finalQuantityConfig = {
+        allowQuantity: req.body.hasOwnProperty('allowQuantity') ? req.body.allowQuantity : product.allowQuantity,
+        allowMultipleQuantities: req.body.hasOwnProperty('allowMultipleQuantities') ? req.body.allowMultipleQuantities : product.allowMultipleQuantities,
+        maxQuantityPerInquiry: req.body.hasOwnProperty('maxQuantityPerInquiry') ? req.body.maxQuantityPerInquiry : product.maxQuantityPerInquiry
+      };
+
+      const quantityValidation = validateQuantityConfiguration(
+        finalQuantityConfig.allowQuantity,
+        finalQuantityConfig.allowMultipleQuantities,
+        finalQuantityConfig.maxQuantityPerInquiry
+      );
+
+      if (!quantityValidation.isValid) {
+        return ResponseHandler.error(
+          res,
+          quantityValidation.error!,
+          400,
+          [{
+            field: 'quantityConfiguration',
+            message: quantityValidation.error!,
+            value: finalQuantityConfig,
+            location: 'body'
+          }],
+          'VALIDATION_ERROR'
+        );
+      }
+    }
+
+    // Auto-adjust quantity-related fields
+    const updateData = { ...req.body };
+    if (updateData.allowQuantity === false) {
+      updateData.allowMultipleQuantities = false;
+      updateData.maxQuantityPerInquiry = undefined;
+    } else if (updateData.allowMultipleQuantities === false) {
+      updateData.maxQuantityPerInquiry = 1;
+    } else if (updateData.allowMultipleQuantities === true && !updateData.maxQuantityPerInquiry && !product.maxQuantityPerInquiry) {
+      updateData.maxQuantityPerInquiry = 10;
+    }
+
+
+
+// When updating offers
+if (Array.isArray(req.body.offers)) {
+  const offerIds: mongoose.Types.ObjectId[] = [];
+
+  for (const offer of req.body.offers) {
+    if (offer._id) {
+      // Explicitly cast _id as ObjectId
+      const offerId = typeof offer._id === 'string'
+        ? new mongoose.Types.ObjectId(offer._id)
+        : offer._id as mongoose.Types.ObjectId;
+
+      const updatedOffer = await Offer.findByIdAndUpdate(
+        offerId,
+        { ...offer },
+        { new: true, runValidators: true }
+      );
+      if (updatedOffer) offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);
+    } else {
+      // Create new offer if _id not present
+      const newOffer = await Offer.create({ ...offer, isActive: offer.isActive ?? true });
+      offerIds.push(newOffer._id as mongoose.Types.ObjectId);
+    }
+  }
+
+  updateData.offers = offerIds;
+}
+
+
+
     product = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -487,6 +384,7 @@ export const updateProduct = [
     );
   })
 ];
+
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
@@ -512,147 +410,9 @@ export const deleteProduct = asyncHandler(async (req: AuthRequest, res: Response
   );
 });
 
-// @desc    Search products
-// @route   GET /api/products/search
-// @access  Public
-export const searchProducts = asyncHandler(async (req: Request, res: Response) => {
-  const { q, category, color, availableColorsOnly, minPrice, maxPrice, onSale, hasOffers } = req.query;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
 
-  let query: any = {};
 
-  // Text search
-  if (q) {
-    query.$text = { $search: q as string };
-  }
-
-  // Category filter
-  if (category) {
-    query['predefinedFields.category'] = category;
-    query['predefinedFields.isActive'] = true;
-  }
-
-  // Color filter
-  if (color) {
-    const colorQuery = color as string;
-    query.$or = [
-      { 'colors.name': { $regex: colorQuery, $options: 'i' } },
-      { 'colors.hexCode': { $regex: colorQuery, $options: 'i' } }
-    ];
-  }
-
-  // Available colors only filter
-  if (availableColorsOnly === 'true') {
-    query['colors.isAvailable'] = true;
-  }
-
-  // Price range filter
-  if (minPrice || maxPrice) {
-    query.price = {};
-    if (minPrice) query.price.$gte = parseFloat(minPrice as string);
-    if (maxPrice) query.price.$lte = parseFloat(maxPrice as string);
-  }
-
-  // Sale items filter
-  if (onSale === 'true') {
-    query.discountPrice = { $exists: true, $lt: query.price?.$gte || 0 };
-  }
-
-  // Active offers filter
-  if (hasOffers === 'true') {
-    query['offers.isActive'] = true;
-    query['offers.validUntil'] = { $gt: new Date() };
-  }
-
-  const products = await Product.find(query)
-    .populate('createdBy', 'username email')
-    .skip(skip)
-    .limit(limit)
-    .sort({ score: { $meta: 'textScore' }, createdAt: -1 });
-
-  const total = await Product.countDocuments(query);
-
-  ResponseHandler.paginated(
-    res,
-    products,
-    total,
-    page,
-    limit,
-    'Products search results'
-  );
-});
-
-// @desc    Bulk update products
-// @route   PATCH /api/products/bulk
-// @access  Private/Admin
-export const bulkUpdateProducts = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { productIds, updateData } = req.body;
-
-  if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-    return ResponseHandler.error(
-      res,
-      'Product IDs are required and must be a non-empty array',
-      400,
-      [{
-        field: 'productIds',
-        message: 'Product IDs are required and must be a non-empty array',
-        value: productIds,
-        location: 'body'
-      }],
-      'VALIDATION_ERROR'
-    );
-  }
-
-  if (!updateData || Object.keys(updateData).length === 0) {
-    return ResponseHandler.error(
-      res,
-      'Update data is required',
-      400,
-      [{
-        field: 'updateData',
-        message: 'Update data is required and cannot be empty',
-        value: updateData,
-        location: 'body'
-      }],
-      'VALIDATION_ERROR'
-    );
-  }
-
-  // Validate colors in bulk update if provided
-  if (updateData.colors && !validateUniqueColors(updateData.colors)) {
-    return ResponseHandler.error(
-      res,
-      'Colors must have unique names and hex codes',
-      400,
-      [{
-        field: 'updateData.colors',
-        message: 'Duplicate color names or hex codes are not allowed',
-        value: updateData.colors,
-        location: 'body'
-      }],
-      'VALIDATION_ERROR'
-    );
-  }
-
-  const result = await Product.updateMany(
-    { _id: { $in: productIds }, createdBy: req.user?.id },
-    updateData,
-    { runValidators: true }
-  );
-
-  ResponseHandler.success(
-    res,
-    { 
-      modifiedCount: result.modifiedCount,
-      matchedCount: result.matchedCount
-    },
-    `${result.modifiedCount} products updated successfully`
-  );
-});
-
-// @desc    Get product statistics
+// @desc    Get product statistics with enhanced order inquiry metrics
 // @route   GET /api/products/stats
 // @access  Public
 export const getProductStats = asyncHandler(async (req: Request, res: Response) => {
@@ -670,9 +430,33 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     offers: { 
       $elemMatch: { 
         isActive: true, 
-        validUntil: { $gt: new Date() } 
+        $or: [
+          { validUntil: { $exists: false } },
+          { validUntil: { $gt: new Date() } }
+        ]
       } 
     }
+  });
+
+  // ✅ Enhanced quantity statistics
+  const quantityDisabled = await Product.countDocuments({
+    $or: [
+      { allowQuantity: false },
+      { allowQuantity: { $exists: false } }
+    ]
+  });
+
+  const quantitySingleOnly = await Product.countDocuments({
+    allowQuantity: true,
+    $or: [
+      { allowMultipleQuantities: false },
+      { allowMultipleQuantities: { $exists: false } }
+    ]
+  });
+
+  const quantityMultipleAllowed = await Product.countDocuments({
+    allowQuantity: true,
+    allowMultipleQuantities: true
   });
 
   // Products with colors
@@ -721,11 +505,66 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     { $sort: { totalProducts: -1 } }
   ]);
 
+  // Offer statistics - using originalPrice/discountedPrice structure
+  const offerStats = await Product.aggregate([
+    { $unwind: "$offers" },
+    { 
+      $match: { 
+        "offers.isActive": true, 
+        $or: [
+          { "offers.validUntil": { $exists: false } },
+          { "offers.validUntil": { $gt: new Date() } }
+        ]
+      } 
+    },
+    {
+      $group: {
+        _id: null,
+        totalActiveOffers: { $sum: 1 },
+        avgOriginalPrice: { $avg: "$offers.originalPrice" },
+        avgDiscountedPrice: { $avg: "$offers.discountedPrice" },
+        maxOriginalPrice: { $max: "$offers.originalPrice" },
+        minDiscountedPrice: { $min: "$offers.discountedPrice" }
+      }
+    }
+  ]);
+
+  // ✅ Enhanced quantity configuration distribution
+  const quantityConfigStats = await Product.aggregate([
+    {
+      $addFields: {
+        quantityMode: {
+          $cond: {
+            if: { $eq: ["$allowQuantity", false] },
+            then: "disabled",
+            else: {
+              $cond: {
+                if: { $eq: ["$allowMultipleQuantities", true] },
+                then: "multiple",
+                else: "single"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          mode: "$quantityMode",
+          maxQuantity: "$maxQuantityPerInquiry"
+        },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } }
+  ]);
+
   // Recently created products (e.g., last 5)
   const recentProducts = await Product.find()
     .sort({ createdAt: -1 })
     .limit(5)
-    .select("name price discountPrice images colors createdAt");
+    .select("name price discountPrice images colors allowQuantity allowMultipleQuantities maxQuantityPerInquiry createdAt");
 
   ResponseHandler.success(
     res,
@@ -733,16 +572,29 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
       totalProducts,
       onSaleCount,
       withActiveOffers,
+      quantityStats: {
+        disabled: quantityDisabled,
+        singleOnly: quantitySingleOnly,
+        multipleAllowed: quantityMultipleAllowed
+      },
       withColorsCount,
       popularColors,
       categoryStats,
+      offerStats: offerStats[0] || {
+        totalActiveOffers: 0,
+        avgOriginalPrice: 0,
+        avgDiscountedPrice: 0,
+        maxOriginalPrice: 0,
+        minDiscountedPrice: 0
+      },
+      quantityConfigStats,
       recentProducts
     },
     'Product statistics retrieved successfully'
   );
 });
 
-// @desc    Clone an existing product
+// @desc    Clone an existing product with enhanced quantity configuration
 // @route   POST /api/products/:id/clone
 // @access  Private/Admin
 export const cloneProduct = [
@@ -751,6 +603,18 @@ export const cloneProduct = [
     .trim()
     .isLength({ max: 200 })
     .withMessage('Reference cannot exceed 200 characters'),
+  body('allowQuantity')
+    .optional()
+    .isBoolean()
+    .withMessage('allowQuantity must be a boolean value'),
+  body('allowMultipleQuantities')
+    .optional()
+    .isBoolean()
+    .withMessage('allowMultipleQuantities must be a boolean value'),
+  body('maxQuantityPerInquiry')
+    .optional()
+    .isInt({ min: 1, })
+    .withMessage('1 Maximum quantity per inquiry must be between 1 and 100'),
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const productId = req.params.id;
@@ -762,11 +626,49 @@ export const cloneProduct = [
       return ResponseHandler.notFound(res, 'Product');
     }
     
+    // ✅ Handle quantity configuration overrides with validation
+    const quantityConfig = {
+      allowQuantity: req.body.allowQuantity ?? originalProduct.allowQuantity,
+      allowMultipleQuantities: req.body.allowMultipleQuantities ?? originalProduct.allowMultipleQuantities,
+      maxQuantityPerInquiry: req.body.maxQuantityPerInquiry ?? originalProduct.maxQuantityPerInquiry
+    };
+
+    // Validate the quantity configuration
+    const quantityValidation = validateQuantityConfiguration(
+      quantityConfig.allowQuantity,
+      quantityConfig.allowMultipleQuantities,
+      quantityConfig.maxQuantityPerInquiry
+    );
+
+    if (!quantityValidation.isValid) {
+      return ResponseHandler.error(
+        res,
+        quantityValidation.error!,
+        400,
+        [{
+          field: 'quantityConfiguration',
+          message: quantityValidation.error!,
+          value: quantityConfig,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+
+    // Auto-adjust quantity settings for consistency
+    if (quantityConfig.allowQuantity === false) {
+      quantityConfig.allowMultipleQuantities = false;
+      quantityConfig.maxQuantityPerInquiry = undefined;
+    } else if (quantityConfig.allowMultipleQuantities === false) {
+      quantityConfig.maxQuantityPerInquiry = 1;
+    }
+    
     // Create a copy of the product data
     const productData = {
       ...originalProduct.toObject(),
       _id: undefined, // Remove the original ID
       name: `${originalProduct.name} (Copy)`, // Append "Copy" to the name
+      ...quantityConfig, // Apply validated quantity configuration
       createdBy: req.user?.id,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -785,39 +687,3 @@ export const cloneProduct = [
     );
   })
 ];
-
-// @desc    Get products by color
-// @route   GET /api/products/colors/:colorName
-// @access  Public
-export const getProductsByColor = asyncHandler(async (req: Request, res: Response) => {
-  const { colorName } = req.params;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
-  const availableOnly = req.query.availableOnly === 'true';
-
-  let filter: any = {
-    'colors.name': { $regex: colorName, $options: 'i' }
-  };
-
-  if (availableOnly) {
-    filter['colors.isAvailable'] = true;
-  }
-
-  const products = await Product.find(filter)
-    .populate('createdBy', 'username email')
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
-
-  const total = await Product.countDocuments(filter);
-
-  ResponseHandler.paginated(
-    res,
-    products,
-    total,
-    page,
-    limit,
-    `Products with color "${colorName}" retrieved successfully`
-  );
-});

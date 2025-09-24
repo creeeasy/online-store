@@ -5,6 +5,15 @@ import { OrderInquiryController } from '../controllers/orderInquiryController';
 const router = express.Router();
 
 // Validation middleware
+const validateBulkDelete = [
+  body('ids')
+    .isArray({ min: 1 })
+    .withMessage('ids must be a non-empty array of inquiry IDs'),
+  body('ids.*')
+    .isMongoId()
+    .withMessage('Each id must be a valid Mongo ID')
+];
+
 const validateCreateInquiry = [
   body('productId')
     .isMongoId()
@@ -102,13 +111,21 @@ const validateQueryParams = [
     .withMessage('End date must be a valid ISO 8601 date')
 ];
 
+// New validation for delete-all
+const validateDeleteAll = [
+  body('confirmationCode')
+    .notEmpty()
+    .withMessage('Confirmation code is required')
+];
+
 // Routes
 router.post('/create', validateCreateInquiry, OrderInquiryController.createInquiry);
 router.get('/', validateQueryParams, OrderInquiryController.getAllInquiries);
 router.get('/stats', OrderInquiryController.getInquiriesStats);
 router.get('/:id', validateIdParam, OrderInquiryController.getInquiryById);
-router.put('/:id', validateUpdateInquiry, OrderInquiryController.updateInquiry);
-router.patch('/:id/status', validateStatusUpdate, OrderInquiryController.updateInquiryStatus);
+// Bulk delete inquiries
+router.delete('/bulk-delete', validateBulkDelete, OrderInquiryController.bulkDelete);
+router.delete('/delete-all', validateDeleteAll, OrderInquiryController.deleteAllInquiries);
 router.delete('/:id', validateIdParam, OrderInquiryController.deleteInquiry);
 
 export default router;
