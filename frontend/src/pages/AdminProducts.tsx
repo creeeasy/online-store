@@ -133,6 +133,7 @@ const AdminProducts: React.FC = () => {
   const handleSaveProduct = async (id: string, productData: Partial<IProduct>) => {
     try {
       clearErrors();
+      console.log(productData)
       await updateProductMutation.mutateAsync({ id, data: productData });
       dispatch(closeModal());
     } catch (error: any) {

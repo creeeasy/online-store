@@ -120,27 +120,6 @@ export const useProductStats = () => {
   });
 };
 
-export const useBulkUpdateProducts = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation<{ modifiedCount: number; matchedCount: number }, ApiError, { 
-    productIds: string[]; 
-    updateData: any 
-  }>({
-    mutationFn: ({ productIds, updateData }) => 
-      productAPI.bulkUpdateProducts(productIds, updateData),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product-stats'] });
-      
-      toast.success(`${data.modifiedCount} products updated successfully!`);
-    },
-    onError: (error: ApiError) => {
-      const handledError = handleApiError(error);
-      toast.error(handledError.message);
-    },
-  });
-};
 
 export const useSearchProducts = () => {
   return useMutation<ProductsResponse, ApiError, ProductFilters>({
@@ -168,25 +147,5 @@ export const useCloneProduct = () => {
         toast.error(handledError.message);
       }
     },
-  });
-};
-
-// NEW: Get wilayas list (static data)
-export const useWilayas = () => {
-  // This is a static query since wilayas don't change
-  return useQuery<string[]>({
-    queryKey: ['wilayas'],
-    queryFn: async () => {
-      // Return the predefined list of Algerian wilayas
-      return [
-        'Adrar', 'Chlef', 'Laghouat', 'Oum El Bouaghi', 'Batna', 'Béjaïa', 'Biskra', 'Béchar', 'Blida', 'Bouira',
-        'Tamanrasset', 'Tébessa', 'Tlemcen', 'Tiaret', 'Tizi Ouzou', 'Algiers', 'Djelfa', 'Jijel', 'Sétif', 'Saïda',
-        'Skikda', 'Sidi Bel Abbès', 'Annaba', 'Guelma', 'Constantine', 'Médéa', 'Mostaganem', 'M\'Sila', 'Mascara', 'Ouargla',
-        'Oran', 'El Bayadh', 'Illizi', 'Bordj Bou Arréridj', 'Boumerdès', 'El Tarf', 'Tindouf', 'Tissemsilt', 'El Oued', 'Khenchela',
-        'Souk Ahras', 'Tipaza', 'Mila', 'Aïn Defla', 'Naâma', 'Aïn Témouchent', 'Ghardaïa', 'Relizane', 'Timimoun', 'Bordj Badji Mokhtar',
-        'Ouled Djellal', 'Béni Abbès', 'In Salah', 'In Guezzam', 'Touggourt', 'Djanet', 'El M\'Ghair', 'El Meniaa'
-      ];
-    },
-    staleTime: Infinity, // Never stale since it's static data
   });
 };

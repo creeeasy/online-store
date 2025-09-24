@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
+import { useState } from 'react';
 import type { 
   OrderInquiry,
   OrderInquiryFilters, 
@@ -166,6 +167,7 @@ const orderInquiryAPI = {
     return (result as SuccessResponse<{ inquiry: OrderInquiry }>).data.inquiry;
   },
 
+  // Enhanced delete single inquiry
   async deleteInquiry(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/order-inquiries/${id}`, {
       method: 'DELETE',
@@ -185,6 +187,26 @@ const orderInquiryAPI = {
     
     if (!response.ok || !result.success) {
       throw new Error(result.message || 'Failed to fetch inquiry stats');
+    }
+
+    return result.data;
+  },
+
+  // NEW: Delete all inquiries with confirmation
+  async deleteAllInquiries(confirmationCode?: string): Promise<{ deletedCount: number }> {
+    const response = await fetch(`${API_BASE_URL}/order-inquiries/delete-all`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ confirmationCode }),
+    });
+
+    const result: SuccessResponse<{ deletedCount: number }> | ErrorResponse = await response.json();
+    
+    if (!response.ok || !result.success) {
+      const errorResult = result as ErrorResponse;
+      throw new Error(errorResult.message || 'Failed to delete all inquiries');
     }
 
     return result.data;
@@ -210,7 +232,7 @@ const orderInquiryAPI = {
   },
 
   async bulkDelete(ids: string[]): Promise<{ deletedCount: number }> {
-    const response = await fetch(`${API_BASE_URL}/order-inquiries/bulk/delete`, {
+    const response = await fetch(`${API_BASE_URL}/order-inquiries/bulk-delete`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -365,19 +387,23 @@ export const useUpdateOrderInquiryStatus = () => {
   });
 };
 
+// Enhanced delete single inquiry hook
 export const useDeleteOrderInquiry = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: (id: string) => orderInquiryAPI.deleteInquiry(id),
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
+      // Remove the specific inquiry from cache
+      queryClient.removeQueries({ queryKey: ['order-inquiry', deletedId] });
+      // Invalidate lists
       queryClient.invalidateQueries({ queryKey: ['order-inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
       toast.success('Inquiry deleted successfully!');
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
-      toast.error(apiError.message);
+      toast.error(apiError.message || 'Failed to delete inquiry');
     },
   });
 };
@@ -408,57 +434,121 @@ export const useBulkUpdateOrderInquiryStatus = () => {
   });
 };
 
+// Enhanced bulk delete hook
 export const useBulkDeleteOrderInquiries = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: (ids: string[]) => orderInquiryAPI.bulkDelete(ids),
-    onSuccess: (data) => {
+    onSuccess: (data, deletedIds) => {
+      // Remove specific inquiries from cache
+      deletedIds.forEach(id => {
+        queryClient.removeQueries({ queryKey: ['order-inquiry', id] });
+      });
+      // Invalidate lists
       queryClient.invalidateQueries({ queryKey: ['order-inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
-      toast.success(`${data.deletedCount || 0} inquiries deleted successfully!`);
+      
+      const count = data.deletedCount || 0;
+      toast.success(`${count} inquir${count === 1 ? 'y' : 'ies'} deleted successfully!`);
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
-      toast.error(apiError.message);
+      toast.error(apiError.message || 'Failed to delete selected inquiries');
     },
   });
 };
 
-// Product-specific inquiry hook
+// NEW: Delete all inquiries hook
+export const useDeleteAllOrderInquiries = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (confirmationCode?: string) => orderInquiryAPI.deleteAllInquiries(confirmationCode),
+    onSuccess: (data) => {
+      // Clear all inquiry-related cache
+      queryClient.removeQueries({ queryKey: ['order-inquiries'] });
+      queryClient.removeQueries({ queryKey: ['order-inquiry'] });
+      queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
+      
+      const count = data.deletedCount || 0;
+      toast.success(`All inquiries deleted successfully! (${count} inquiries removed)`);
+    },
+    onError: (error: any) => {
+      const apiError = handleApiError(error);
+      toast.error(apiError.message || 'Failed to delete all inquiries');
+    },
+  });
+};
+
+// Helper hook for confirmation dialogs
+export const useDeleteConfirmation = () => {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const confirmDelete = (action: () => void) => {
+    setPendingAction(() => action);
+    setIsConfirming(true);
+  };
+
+  const handleConfirm = () => {
+    if (pendingAction) {
+      pendingAction();
+    }
+    setIsConfirming(false);
+    setPendingAction(null);
+  };
+
+  const handleCancel = () => {
+    setIsConfirming(false);
+    setPendingAction(null);
+  };
+
+  return {
+    isConfirming,
+    confirmDelete,
+    handleConfirm,
+    handleCancel,
+  };
+};
+
+// useProductInquiry.ts
 export const useProductInquiry = (productId?: string) => {
   const createInquiryMutation = useCreateOrderInquiry();
-  
-  const submitInquiry = async (
-    customerData: Record<string, string>, 
-    quantity: number, 
-    selectedVariants?: Record<string, string>
-  ) => {
+
+  const submitInquiry = async (inquiryData: {
+    customerData: Record<string, any>;
+    selectedVariants?: Record<string, string>;
+    typeOfOrder: 'offer' | 'quantity';
+    data: string | number;
+  }) => {
     if (!productId) {
       throw new Error('Product ID is required');
     }
-    
-    const inquiryData: CreateOrderInquiryRequest = {
+
+    const payload: CreateOrderInquiryRequest = {
       productId,
-      customerData,
-      quantity,
-      selectedVariants: selectedVariants && Object.keys(selectedVariants).length > 0 
-        ? selectedVariants 
+      customerData: inquiryData.customerData,
+      selectedVariants: inquiryData.selectedVariants && Object.keys(inquiryData.selectedVariants).length > 0
+        ? inquiryData.selectedVariants
         : undefined,
-      notes: `Quantity: ${quantity}\nVariants: ${JSON.stringify(selectedVariants || {})}`
+      typeOfOrder: inquiryData.typeOfOrder,
+      ...(inquiryData.typeOfOrder === 'offer'
+        ? { offerId: inquiryData.data as string }
+        : { quantity: inquiryData.data as number }),
     };
-    
-    return createInquiryMutation.mutateAsync(inquiryData);
+
+    return createInquiryMutation.mutateAsync(payload);
   };
-  
+
   return {
     submitInquiry,
     isLoading: createInquiryMutation.isPending,
     isError: createInquiryMutation.isError,
     error: createInquiryMutation.error ? handleApiError(createInquiryMutation.error) : null,
     isSuccess: createInquiryMutation.isSuccess,
-    validationErrors: createInquiryMutation.error 
-      ? handleApiError(createInquiryMutation.error).validationErrors 
+    validationErrors: createInquiryMutation.error
+      ? handleApiError(createInquiryMutation.error).validationErrors
       : []
   };
 };

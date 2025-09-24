@@ -1,5 +1,5 @@
 import type { SuccessResponse } from '../types/api';
-import type { IProduct, IProductStats, ProductFilters, ProductsResponse, CloneProductRequest } from '../types/product';
+import type { IProduct, IProductStats, ProductFilters, ProductsResponse } from '../types/product';
 import { apiClient, ApiError } from './apiClient';
 
 export const productAPI = {
@@ -61,22 +61,6 @@ export const productAPI = {
       const response = await apiClient.get<ProductsResponse>('/products/search', {
         params: filters
       });
-      return response.data;
-    } catch (error) {
-      throw error as ApiError;
-    }
-  },
-
-  // Bulk update products
-  bulkUpdateProducts: async (productIds: string[], updateData: any): Promise<{
-    modifiedCount: number;
-    matchedCount: number;
-  }> => {
-    try {
-      const response = await apiClient.patch<{
-        modifiedCount: number;
-        matchedCount: number;
-      }>('/products/bulk', { productIds, updateData });
       return response.data;
     } catch (error) {
       throw error as ApiError;

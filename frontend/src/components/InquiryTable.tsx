@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import StatusBadge from './StatusBadge';
 import InquiryActions from './InquiryActions';
 import type { OrderInquiry } from '../types/orderInquiry';
 import { SERVER_URL } from '../utils/apiClient';
+import { useDeleteConfirmation, useDeleteOrderInquiry } from '../hooks/useOrderInquiry';
 
 // Utility functions for formatting
 const InquiryUtils = {
-formatPrice: (price?: number) => {
-  if (!price) return '0 DZD';
-  return new Intl.NumberFormat('fr-DZ', {
-    style: 'currency',
-    currency: 'DZD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
-},
-
+  formatPrice: (price?: number) => {
+    if (!price) return '0 DZD';
+    return new Intl.NumberFormat('fr-DZ', {
+      style: 'currency',
+      currency: 'DZD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  },
 
   formatDate: (dateString: string) => {
     const date = new Date(dateString);
@@ -47,7 +46,6 @@ formatPrice: (price?: number) => {
   getWilaya: (customerData: any) => {
     if (!customerData || typeof customerData !== 'object') return 'N/A';
     
-    // Check for common wilaya field names (case-insensitive)
     const wilayaFields = ['wilaya', 'Wilaya', 'WILAYA', 'state', 'State', 'province', 'Province'];
     
     for (const field of wilayaFields) {
@@ -62,12 +60,17 @@ formatPrice: (price?: number) => {
 
 interface InquiryTableProps {
   inquiries: OrderInquiry[];
+  totalCount?: number;
 }
 
-const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
+const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) => {
   const { theme } = useTheme();
   const [selectedInquiries, setSelectedInquiries] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  
+  // Delete hooks
+  const deleteInquiry = useDeleteOrderInquiry();
+  const { isConfirming, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
 
   const toggleSelectInquiry = (id: string) => {
     setSelectedInquiries(prev =>
@@ -84,11 +87,48 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
   };
 
   const handleViewInquiry = (inquiry: OrderInquiry) => {
-    // TODO: Navigate to inquiry detail page or open modal
     console.log('View inquiry:', inquiry._id);
   };
 
-  // Enhanced theme-based styles
+  // Handle single delete with confirmation
+  const handleDeleteSingle = (inquiryId: string) => {
+    confirmDelete(() => {
+      deleteInquiry.mutate(inquiryId);
+    });
+  };
+
+  // Enhanced theme-based styles with delete button
+  const actionButtonStyle: React.CSSProperties = {
+    color: theme.colors.primary,
+    backgroundColor: `${theme.colors.primary}10`,
+    border: `1px solid ${theme.colors.primary}30`,
+    borderRadius: theme.borderRadius.md,
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    cursor: 'pointer',
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
+    transition: theme.transitions.fast,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginRight: theme.spacing.xs,
+  };
+
+  const deleteButtonStyle: React.CSSProperties = {
+    ...actionButtonStyle,
+    color: '#ef4444',
+    backgroundColor: '#ef444410',
+    border: '1px solid #ef444430',
+  };
+
+  const actionsContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    justifyContent: 'center',
+  };
+
+  // All existing styles from your original component
   const emptyStateStyle: React.CSSProperties = {
     textAlign: 'center',
     padding: theme.spacing['3xl'],
@@ -132,7 +172,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
   };
 
   const tableContainerStyle: React.CSSProperties = {
-    overflow: 'hidden',
+    overflow: 'scroll',
     boxShadow: theme.shadows.lg,
     borderRadius: theme.borderRadius.lg,
     border: `1px solid ${theme.colors.border}`,
@@ -255,7 +295,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
   };
 
   const customerDetailsStyle: React.CSSProperties = {
-    minWidth: 0, // Allow text truncation
+    minWidth: 0,
   };
 
   const customerPhoneStyle: React.CSSProperties = {
@@ -363,21 +403,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
     fontStyle: 'italic',
   };
 
-  const actionButtonStyle: React.CSSProperties = {
-    color: theme.colors.primary,
-    backgroundColor: `${theme.colors.primary}10`,
-    border: `1px solid ${theme.colors.primary}30`,
-    borderRadius: theme.borderRadius.md,
-    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-    cursor: 'pointer',
-    fontSize: theme.fonts.size.sm,
-    fontWeight: theme.fonts.weight.medium,
-    transition: theme.transitions.fast,
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  };
-
   const footerStyle: React.CSSProperties = {
     background: `linear-gradient(135deg, ${theme.colors.backgroundSecondary} 0%, ${theme.colors.gray100} 100%)`,
     padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
@@ -397,6 +422,46 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
     padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
     borderRadius: theme.borderRadius.full,
     fontSize: theme.fonts.size.xs,
+  };
+
+  const modalOverlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+  };
+
+  const modalContentStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing['2xl'],
+    borderRadius: theme.borderRadius.lg,
+    boxShadow: theme.shadows.xl,
+    maxWidth: '28rem',
+    width: '90%',
+    margin: theme.spacing.md,
+  };
+
+  const modalTitleStyle: React.CSSProperties = {
+    fontSize: theme.fonts.size.lg,
+    fontWeight: theme.fonts.weight.semiBold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+  };
+
+  const buttonBaseStyle: React.CSSProperties = {
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    borderRadius: theme.borderRadius.md,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
+    border: 'none',
+    cursor: 'pointer',
+    transition: theme.transitions.fast,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
   };
 
   if (inquiries.length === 0) {
@@ -422,6 +487,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
         <InquiryActions 
           selectedIds={selectedInquiries} 
           onSelectionChange={setSelectedInquiries} 
+          totalCount={totalCount || inquiries.length}
         />
       )}
       
@@ -557,11 +623,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
                   </div>
                 </td>
 
-                {/* Status Column */}
-                <td style={tdStyle}>
-                  <StatusBadge status={inquiry.status} />
-                </td>
-
                 {/* Date Column */}
                 <td style={tdStyle}>
                   <div style={dateContainerStyle}>
@@ -570,33 +631,66 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
                   </div>
                 </td>
 
-                {/* Actions Column */}
+                {/* Enhanced Actions Column with Delete */}
                 <td style={{ ...tdStyle, textAlign: 'center', paddingRight: theme.spacing.xl }}>
-                  <button 
-                    onClick={() => handleViewInquiry(inquiry)}
-                    style={actionButtonStyle}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = theme.colors.primary;
-                      e.currentTarget.style.color = theme.colors.textOnPrimary;
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = theme.shadows.md;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
-                      e.currentTarget.style.color = theme.colors.primary;
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    View
-                    <span style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
-                      inquiry details
-                    </span>
-                  </button>
+                  <div style={actionsContainerStyle}>
+                    <button 
+                      onClick={() => handleViewInquiry(inquiry)}
+                      style={actionButtonStyle}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = theme.colors.primary;
+                        e.currentTarget.style.color = theme.colors.textOnPrimary;
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = theme.shadows.md;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
+                        e.currentTarget.style.color = theme.colors.primary;
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      View
+                    </button>
+
+                    <button 
+                      onClick={() => handleDeleteSingle(inquiry._id)}
+                      disabled={deleteInquiry.isPending}
+                      style={{
+                        ...deleteButtonStyle,
+                        opacity: deleteInquiry.isPending ? 0.5 : 1,
+                        cursor: deleteInquiry.isPending ? 'not-allowed' : 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!deleteInquiry.isPending) {
+                          e.currentTarget.style.backgroundColor = '#ef4444';
+                          e.currentTarget.style.color = 'white';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = theme.shadows.md;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!deleteInquiry.isPending) {
+                          e.currentTarget.style.backgroundColor = '#ef444410';
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3,6 5,6 21,6"/>
+                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                      </svg>
+                      {deleteInquiry.isPending ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -608,6 +702,11 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
       <div style={footerStyle}>
         <div>
           <strong>{inquiries.length}</strong> {inquiries.length === 1 ? 'inquiry' : 'inquiries'} total
+          {totalCount && totalCount !== inquiries.length && (
+            <span style={{ color: theme.colors.textMuted, marginLeft: theme.spacing.sm }}>
+              (of {totalCount} total)
+            </span>
+          )}
         </div>
         {selectedInquiries.length > 0 && (
           <div style={selectedCountStyle}>
@@ -615,6 +714,41 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries }) => {
           </div>
         )}
       </div>
+
+      {/* Single Delete Confirmation Dialog */}
+      {isConfirming && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h3 style={modalTitleStyle}>Confirm Deletion</h3>
+            <p style={{ color: theme.colors.textSecondary, marginBottom: theme.spacing.lg }}>
+              Are you sure you want to delete this inquiry? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: theme.spacing.sm, justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleCancel}
+                style={{
+                  ...buttonBaseStyle,
+                  backgroundColor: 'transparent',
+                  color: theme.colors.text,
+                  border: `1px solid ${theme.colors.border}`,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                style={{
+                  ...buttonBaseStyle,
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                }}
+              >
+                Delete Inquiry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

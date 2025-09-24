@@ -184,6 +184,78 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   );
 };
 
+// Simplified ValidatedNumberInput component
+interface ValidatedNumberInputProps {
+  label: string;
+  fieldName: string;
+  description?: string;
+  value: number;
+  onChange: (value: number) => void;
+  onBlur?: () => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  validationErrors?: Record<string, string[]>;
+}
+
+export const ValidatedNumberInput: React.FC<ValidatedNumberInputProps> = ({
+  label,
+  fieldName,
+  description,
+  value,
+  onChange,
+  onBlur,
+  min,
+  max,
+  step = 1,
+  validationErrors = {},
+}) => {
+  const hasErrors = validationErrors[fieldName]?.length > 0;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = parseInt(e.target.value) || 0;
+    onChange(newValue);
+  };
+
+  const handleBlur = () => {
+    onBlur?.();
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      {description && (
+        <p className="text-sm text-gray-500">{description}</p>
+      )}
+      <input
+        type="number"
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        min={min}
+        max={max}
+        step={step}
+        className={`
+          w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500
+          ${hasErrors 
+            ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' 
+            : 'border-gray-300 focus:border-blue-500'
+          }
+        `}
+      />
+      {hasErrors && (
+        <div className="text-sm text-red-600">
+          {validationErrors[fieldName].map((error, index) => (
+            <div key={index}>{error}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Input component with built-in validation display
 interface ValidatedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'style'> {
   label: string;

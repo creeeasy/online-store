@@ -1,15 +1,16 @@
-// src/components/ProductForm/ProductFormTabs.tsx
 import React from 'react';
-import { FiX } from 'react-icons/fi'; // Keeping close button for usability
+import { FiX, FiPackage, FiLayers, FiPercent, FiHash, FiEyeOff, FiEdit3, FiArrowUpLeft } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 
+// ✅ Updated tab configuration with quantity tab and icons
 const tabConfig = [
-  { id: 'basic', label: 'Basic Info' },
-  { id: 'predefined', label: 'Categories' },
-  { id: 'offers', label: 'Offers' },
-  { id: 'hidden', label: 'Hidden' },
-  { id: 'dynamic', label: 'Custom Fields' },
-  { id: 'colors', label: 'Colors' }, // Colors tab still here
+  { id: 'basic', label: 'Basic Info', icon: FiPackage, description: 'Name, price, and description' },
+  { id: 'quantity', label: 'Quantity', icon: FiHash, description: 'Order inquiry settings' },
+  { id: 'offers', label: 'Offers', icon: FiPercent, description: 'Promotions and discounts' },
+  { id: 'predefined', label: 'Categories', icon: FiLayers, description: 'Product categories' },
+  { id: 'colors', label: 'Colors', icon: FiArrowUpLeft, description: 'Color variations' },
+  { id: 'dynamic', label: 'Custom Fields', icon: FiEdit3, description: 'Customer form fields' },
+  { id: 'hidden', label: 'Hidden', icon: FiEyeOff, description: 'Internal data fields' },
 ];
 
 interface ProductFormTabsProps {
@@ -31,18 +32,18 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
   // Header styles
   const headerContainerStyle: React.CSSProperties = {
     background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.primaryDark} 100%)`,
-    padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
-    color: theme.colors.secondary,
-    borderTopLeftRadius: theme.borderRadius.lg,
-    borderTopRightRadius: theme.borderRadius.lg,
-    boxShadow: theme.shadows.md
+    padding: `${theme.spacing?.lg || '1.5rem'} ${theme.spacing?.xl || '2rem'}`,
+    color: theme.colors.secondary || theme.colors.textOnPrimary,
+    borderTopLeftRadius: theme.borderRadius?.lg || '16px',
+    borderTopRightRadius: theme.borderRadius?.lg || '16px',
+    boxShadow: theme.shadows?.md || `0 4px 12px ${theme.colors.shadow}`
   };
 
   const headerContentStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md
+    marginBottom: theme.spacing?.md || '1rem'
   };
 
   const titleGroupStyle: React.CSSProperties = {
@@ -52,9 +53,9 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
 
   const titleStyle: React.CSSProperties = {
     fontSize: '1.4rem',
-    fontWeight: theme.fonts.weight.bold,
+    fontWeight: theme.fonts?.weight?.bold || '700',
     margin: 0,
-    color: theme.colors.secondary,
+    color: theme.colors.secondary || theme.colors.textOnPrimary,
     letterSpacing: '0.5px'
   };
 
@@ -62,16 +63,16 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
     color: 'rgba(255, 255, 255, 0.85)',
     fontSize: '0.85rem',
     margin: 0,
-    marginTop: theme.spacing.xs,
-    fontWeight: theme.fonts.weight.light
+    marginTop: theme.spacing?.xs || '0.25rem',
+    fontWeight: theme.fonts?.weight?.light || '300'
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    padding: theme.spacing.sm,
+    padding: theme.spacing?.sm || '0.75rem',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     border: 'none',
-    borderRadius: theme.borderRadius.md,
-    color: theme.colors.secondary,
+    borderRadius: theme.borderRadius?.md || '8px',
+    color: theme.colors.secondary || theme.colors.textOnPrimary,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     display: 'flex',
@@ -79,42 +80,90 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
     justifyContent: 'center'
   };
 
-  // Tabs styles
+  // Enhanced tabs styles
   const tabsContainerStyle: React.CSSProperties = {
     display: 'flex',
-    gap: '2px',
+    gap: '4px',
     overflowX: 'auto',
     borderBottom: `2px solid rgba(255,255,255,0.25)`,
-    paddingBottom: theme.spacing.sm,
-    position: 'relative'
+    paddingBottom: theme.spacing?.sm || '0.75rem',
+    position: 'relative',
+    scrollbarWidth: 'thin'
   };
 
-  const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
+  const tabButtonStyle = (isActive: boolean, tab: typeof tabConfig[0]): React.CSSProperties => ({
     position: 'relative',
-    padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
-    borderRadius: theme.borderRadius.md,
-    fontSize: '0.95rem',
-    fontWeight: isActive ? theme.fonts.weight.semiBold : theme.fonts.weight.medium,
-    textTransform: 'uppercase',
-    letterSpacing: '0.8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: `${theme.spacing?.sm || '0.75rem'} ${theme.spacing?.lg || '1.5rem'}`,
+    borderRadius: theme.borderRadius?.md || '8px',
+    fontSize: '0.875rem',
+    fontWeight: isActive ? (theme.fonts?.weight?.semiBold || '600') : (theme.fonts?.weight?.medium || '500'),
+    textTransform: 'none',
+    letterSpacing: '0.3px',
     transition: 'all 0.25s ease',
     border: 'none',
     cursor: 'pointer',
-    backgroundColor: isActive ? theme.colors.secondary : 'transparent',
-    color: isActive ? theme.colors.text : theme.colors.secondary,
-    boxShadow: isActive ? theme.shadows.sm : 'none',
-    transform: isActive ? 'translateY(-2px)' : 'none'
+    backgroundColor: isActive ? theme.colors.secondary || 'white' : 'transparent',
+    color: isActive ? (theme.colors.text || theme.colors.primary) : (theme.colors.secondary || 'white'),
+    boxShadow: isActive ? (theme.shadows?.sm || '0 2px 4px rgba(0,0,0,0.1)') : 'none',
+    transform: isActive ? 'translateY(-2px)' : 'none',
+    whiteSpace: 'nowrap',
+    minWidth: 'fit-content'
   });
+
+  const tabIconStyle = (isActive: boolean): React.CSSProperties => ({
+    flexShrink: 0,
+    opacity: isActive ? 1 : 0.8
+  });
+
+  const tabContentStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start'
+  };
+
+  const tabDescriptionStyle = (isActive: boolean): React.CSSProperties => ({
+    fontSize: '0.7rem',
+    opacity: isActive ? 0.7 : 0.6,
+    marginTop: '1px',
+    lineHeight: 1.2
+  });
+
+  const progressIndicatorStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '4px',
+    marginTop: '0.5rem'
+  };
+
+  const progressDotStyle = (isCompleted: boolean, isCurrent: boolean): React.CSSProperties => ({
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: isCompleted || isCurrent 
+      ? 'rgba(255, 255, 255, 0.9)' 
+      : 'rgba(255, 255, 255, 0.3)',
+    transition: 'all 0.2s ease'
+  });
+
+  // Get current tab index for progress indication
+  const currentTabIndex = tabConfig.findIndex(tab => tab.id === activeTab);
 
   return (
     <div style={headerContainerStyle}>
       <div style={headerContentStyle}>
         <div style={titleGroupStyle}>
           <h2 style={titleStyle}>
-            {isEditing ? 'Edit Product' : 'Add New Product'}
+            {isEditing ? 'Edit Product' : 'Create New Product'}
           </h2>
           <p style={subtitleStyle}>
-            {currentTab ? `Currently on: ${currentTab.label}` : 'Manage product details'}
+            {currentTab 
+              ? `${currentTab.label}: ${currentTab.description}` 
+              : 'Configure product details and order settings'
+            }
           </p>
         </div>
         {onCancel && (
@@ -128,6 +177,7 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
               e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
             }}
             aria-label="Close form"
+            title="Close form"
           >
             <FiX size={20} />
           </button>
@@ -135,25 +185,34 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
       </div>
       
       <div style={tabsContainerStyle}>
-        {tabConfig.map((tab) => {
+        {tabConfig.map((tab, index) => {
           const isActive = activeTab === tab.id;
+          const Icon = tab.icon;
+          
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={tabButtonStyle(isActive)}
+              style={tabButtonStyle(isActive, tab)}
               onMouseEnter={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }
               }}
+              title={`${tab.label}: ${tab.description}`}
             >
-              {tab.label}
+              <Icon size={16} style={tabIconStyle(isActive)} />
+              <div style={tabContentStyle}>
+                <span>{tab.label}</span>
+                <span style={tabDescriptionStyle(isActive)}>{tab.description}</span>
+              </div>
               {isActive && (
                 <span
                   style={{
@@ -172,6 +231,25 @@ const ProductFormTabs: React.FC<ProductFormTabsProps> = ({
           );
         })}
       </div>
+
+      {/* Progress indicator */}
+      <div style={progressIndicatorStyle}>
+        {tabConfig.map((_, index) => (
+          <div 
+            key={index}
+            style={progressDotStyle(index < currentTabIndex, index === currentTabIndex)}
+          />
+        ))}
+      </div>
+
+      <style>
+        {`
+          @keyframes tabHighlight {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+          }
+        `}
+      </style>
     </div>
   );
 };

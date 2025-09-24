@@ -1,40 +1,35 @@
-// types/orderInquiry.ts
-
 // Phone validation utility
 export const validateAlgerianPhone = (phone: string): boolean => {
-  // Remove any whitespace or special characters
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  
-  // Check if it's exactly 10 digits, starts with 0, and second digit is 5, 6, or 7
-  const phoneRegex = /^0[567]\d{8}$/;
-  return phoneRegex.test(cleanPhone);
+  return /^0[567]\d{8}$/.test(cleanPhone);
 };
 
 // Phone formatting utility
 export const formatAlgerianPhone = (phone: string): string => {
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
   if (cleanPhone.length === 10 && validateAlgerianPhone(cleanPhone)) {
-    // Format as 0XXX XX XX XX
     return `${cleanPhone.slice(0, 4)} ${cleanPhone.slice(4, 6)} ${cleanPhone.slice(6, 8)} ${cleanPhone.slice(8)}`;
   }
   return cleanPhone;
 };
 
-
+// Core OrderInquiry interface
 export interface OrderInquiry {
   _id: string;
   productId: string;
   productName: string;
-  customerData: Record<string,any>;
+  customerData: Record<string, any>;
   quantity?: number;
   selectedVariants?: Record<string, string>;
   totalPrice?: number;
-  status: 'pending' | 'contacted' | 'converted' | 'cancelled';
   notes?: string;
+  typeOfOrder: 'offer' | 'quantity';
+  offerId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// Filters for querying inquiries
 export interface OrderInquiryFilters {
   page?: number;
   limit?: number;
@@ -44,8 +39,10 @@ export interface OrderInquiryFilters {
   name?: string;
   startDate?: string;
   endDate?: string;
+  [key: string]: any; // Allow dynamic customerData filtering
 }
 
+// Statistics returned by the system
 export interface OrderInquiryStats {
   statusStats: Array<{
     _id: string;
@@ -62,27 +59,31 @@ export interface OrderInquiryStats {
   }>;
 }
 
+// Payload for creating a new inquiry
 export interface CreateOrderInquiryRequest {
   productId: string;
-  customerData: Record<string,any>;
+  customerData: Record<string, any>;
   quantity?: number;
+  typeOfOrder: 'offer' | 'quantity';
+  offerId?: string;
   selectedVariants?: Record<string, string>;
   notes?: string;
 }
 
+// Payload for updating an existing inquiry
 export interface UpdateOrderInquiryRequest {
-  customerData?: Partial< Record<string,any>>;
+  customerData?: Partial<Record<string, any>>;
   status?: 'pending' | 'contacted' | 'converted' | 'cancelled';
   notes?: string;
 }
 
-// Validation schemas
+// Validation schemas for customer data
 export const customerDataValidation = {
   name: {
     required: true,
     minLength: 2,
     maxLength: 100,
-    pattern: /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/, // Arabic and Latin characters
+    pattern: /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/,
     message: 'Name must be 2-100 characters and contain only letters'
   },
   phone: {
@@ -99,30 +100,19 @@ export const customerDataValidation = {
 };
 
 // Type guard for CustomerData validation
-export const isValidCustomerData = (data: any): data is Record<string,any> => {
+export const isValidCustomerData = (data: any): data is Record<string, any> => {
   if (!data || typeof data !== 'object') return false;
-  
+
   const { name, phone, reference } = data;
-  
-  // Validate name
-  if (!name || typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 100) {
-    return false;
-  }
-  
-  // Validate phone
-  if (!phone || typeof phone !== 'string' || !validateAlgerianPhone(phone)) {
-    return false;
-  }
-  
-  // Validate reference (optional)
-  if (reference && (typeof reference !== 'string' || reference.length > 200)) {
-    return false;
-  }
-  
+
+  if (!name || typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 100) return false;
+  if (!phone || typeof phone !== 'string' || !validateAlgerianPhone(phone)) return false;
+  if (reference && (typeof reference !== 'string' || reference.length > 200)) return false;
+
   return true;
 };
 
-// Error messages for validation
+// Centralized validation error messages
 export const ValidationErrors = {
   PHONE_INVALID: 'Phone number must be 10 digits starting with 05, 06, or 07',
   PHONE_REQUIRED: 'Phone number is required',

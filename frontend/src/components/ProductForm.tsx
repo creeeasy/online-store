@@ -1,4 +1,4 @@
-// components/ProductForm.tsx - Enhanced UI
+// components/ProductForm.tsx - Enhanced UI with Quantity Tab
 import React, { useState, useEffect } from 'react';
 import { FiSave } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -7,6 +7,7 @@ import { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
 import BasicInfoTab from './BasicInfoTab';
 import ProductFormTabs from './ProductFormTabs';
 import OffersTab from './OffersTab';
+import QuantityTab from './QuantityTab.tsx'; // ✅ New import
 import PredefinedTab from './PredefinedTab';
 import DynamicFieldsTab from './DynamicFieldsTab';
 import HiddenFieldsTab from './HiddenFieldsTab';
@@ -29,6 +30,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   validationErrors = {},
   isEditing = false,
 }) => {
+  console.log(validationErrors)
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('basic');
   const [formData, setFormData] = useState<Partial<IProduct>>({
@@ -48,6 +50,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
     offers: [],
     hiddenFields: [],
     reference: '',
+    // ✅ Add default quantity configuration
+    allowMultipleQuantities: false,
+    maxQuantityPerInquiry: 1,
     ...product,
   });
 
@@ -70,6 +75,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
       offers: [],
       hiddenFields: [],
       reference: '',
+      // ✅ Add default quantity configuration
+      allowMultipleQuantities: false,
+      maxQuantityPerInquiry: 1,
       ...product,
     });
   }, [product]);
@@ -193,6 +201,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <ProductFormTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <form onSubmit={handleSubmit} style={formStyle}>
           {activeTab === 'basic' && <BasicInfoTab {...commonProps} />}
+          {activeTab === 'quantity' && <QuantityTab {...commonProps} />} {/* ✅ New tab */}
           {activeTab === 'predefined' && <PredefinedTab {...commonProps} />}
           {activeTab === 'offers' && <OffersTab {...commonProps} />}
           {activeTab === 'hidden' && <HiddenFieldsTab {...commonProps} />}

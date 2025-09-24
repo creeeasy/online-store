@@ -1,10 +1,12 @@
 import type { PaginationData, ValidationErrorDetail } from "./api";
 
+// ✅ Fixed IOffer interface to match backend model
 export interface IOffer {
   _id?: string;
   title: string;
   description?: string;
-  discount?: number;
+  originalPrice?: number;    // Before price
+  discountedPrice?: number;  // After price
   validUntil?: Date;
   isActive: boolean;
 }
@@ -35,10 +37,11 @@ export interface IPredefinedField {
 export interface IHiddenField {
   key: string;
   value: string;
-  description?: string;
+  description: string;
   _id?: string;
 }
 
+// ✅ Enhanced Product interface aligned with backend
 export interface IProduct {
   _id: string;
   name: string;
@@ -47,14 +50,78 @@ export interface IProduct {
   description: string;
   images: string[];
   colors?: IProductColor[];
-  dynamicFields?: IDynamicField[];
-  predefinedFields?: IPredefinedField[];
-  offers?: IOffer[];
-  hiddenFields?: IHiddenField[];
-  reference?: string;
+  dynamicFields: IDynamicField[];
+  predefinedFields: IPredefinedField[];
+  offers: IOffer[];
+  hiddenFields: IHiddenField[];
+  
+  // ✅ Fixed: Added missing allowQuantity field
+  allowQuantity: boolean;
+  allowMultipleQuantities: boolean;
+  maxQuantityPerInquiry: number;
+  
+  // Virtual properties from backend
+  isOnSale?: boolean;
+  
   createdBy: string;
+  reference?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ✅ Order inquiry configuration interface
+export interface IOrderInquiryConfig {
+  allowQuantity: boolean;
+  allowMultipleQuantities: boolean;
+  maxQuantityPerInquiry: number;
+  hasActiveOffers: boolean;
+  activeOffers: IOffer[];
+}
+
+// ✅ Fixed offer with calculated pricing
+export interface IOfferWithPrice extends IOffer {
+  calculatedSavings?: number;
+  finalPrice?: number;
+  isCurrentlyValid?: boolean;
+}
+
+export interface IQuantityValidationResult {
+  isValid: boolean;
+  message: string;
+  requestedQuantity: number;
+  maxAllowedQuantity: number;
+  allowsMultipleQuantities: boolean;
+}
+
+// ✅ Order inquiry interfaces
+export interface IOrderInquiry {
+  _id: string;
+  productId: string;
+  productName: string;
+  customerData: Record<string, any>;
+  
+  // Either offerId OR quantity (mutually exclusive)
+  offerId?: string;
+  quantity?: number;
+  
+  selectedVariants?: Record<string, string>;
+  totalPrice: number;
+  status: 'pending' | 'contacted' | 'converted' | 'cancelled';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICreateOrderInquiry {
+  productId: string;
+  customerData: Record<string, any>;
+  
+  // Either offerId OR quantity
+  offerId?: string;
+  quantity?: number;
+  
+  selectedVariants?: Record<string, string>;
+  notes?: string;
 }
 
 export interface IColorStats {
@@ -64,15 +131,31 @@ export interface IColorStats {
   availableProducts: number;
 }
 
+// ✅ Enhanced product stats with order inquiry metrics
 export interface IProductStats {
   totalProducts: number;
   onSaleCount: number;
   withActiveOffers: number;
+  allowingMultipleQuantities: number;
+  singleItemOnly: number;
   withColorsCount: number;
   popularColors: IColorStats[];
   categoryStats: Array<{
     _id: string;
     totalProducts: number;
+  }>;
+  offerStats: {
+    totalActiveOffers: number;
+    avgOriginalPrice: number;
+    maxDiscount: number;
+    minDiscount: number;
+  };
+  quantityConfigStats: Array<{
+    _id: {
+      allowMultiple: boolean;
+      maxQuantity: number;
+    };
+    count: number;
   }>;
   recentProducts: IProduct[];
 }
@@ -92,6 +175,7 @@ export interface ProductsResponse {
   pagination?: PaginationData;
 }
 
+// ✅ Enhanced product filters with order inquiry options
 export interface ProductFilters {
   page?: number;
   limit?: number;
@@ -102,7 +186,19 @@ export interface ProductFilters {
   maxPrice?: number;
   onSale?: boolean;
   hasOffers?: boolean;
+  allowsMultipleQuantities?: boolean;
+  singleItemOnly?: boolean;
   q?: string;
+}
+
+export interface BulkOrderFilters extends ProductFilters {
+  minQuantity?: number;
+}
+
+export interface OfferFilters extends ProductFilters {
+  minOriginalPrice?: number;
+  maxOriginalPrice?: number;
+  hasDiscountedPrice?: boolean;
 }
 
 export interface ColorFilters {
@@ -114,9 +210,12 @@ export interface ColorFilters {
 export interface CloneProductRequest {
   id: string;
   reference?: string;
+  allowQuantity: boolean;
+  allowMultipleQuantities?: boolean;
+  maxQuantityPerInquiry?: number;
 }
 
-// Form interfaces for creating/updating products
+// ✅ Fixed form interfaces to match backend validation
 export interface CreateProductRequest {
   name: string;
   price: number;
@@ -129,6 +228,11 @@ export interface CreateProductRequest {
   offers?: Omit<IOffer, '_id'>[];
   hiddenFields?: Omit<IHiddenField, '_id'>[];
   reference?: string;
+  
+  // ✅ Fixed: Added allowQuantity field and made all quantity fields required with proper defaults
+  allowQuantity: boolean;
+  allowMultipleQuantities: boolean;
+  maxQuantityPerInquiry: number;
 }
 
 export interface UpdateProductRequest {
@@ -143,6 +247,11 @@ export interface UpdateProductRequest {
   offers?: Omit<IOffer, '_id'>[];
   hiddenFields?: Omit<IHiddenField, '_id'>[];
   reference?: string;
+  
+  // ✅ Fixed: Added allowQuantity field for updates
+  allowQuantity?: boolean;
+  allowMultipleQuantities?: boolean;
+  maxQuantityPerInquiry?: number;
 }
 
 export interface BulkUpdateRequest {
@@ -150,17 +259,48 @@ export interface BulkUpdateRequest {
   updateData: UpdateProductRequest;
 }
 
-// Color picker component props
-export interface ColorPickerProps {
-  colors: IProductColor[];
-  selectedColor?: string;
-  onColorSelect: (color: IProductColor) => void;
-  showAvailabilityBadge?: boolean;
-  size?: 'small' | 'medium' | 'large';
-  className?: string;
+// ✅ API response interfaces for order inquiry endpoints
+export interface ProductWithConfigResponse {
+  success: boolean;
+  message: string;
+  data: {
+    product: IProduct;
+    orderInquiryConfig: IOrderInquiryConfig;
+  };
+  timestamp: string;
 }
 
-// Color form component props
+export interface ProductOffersResponse {
+  success: boolean;
+  message: string;
+  data: {
+    productName: string;
+    basePrice: number;
+    discountPrice?: number;
+    offers: IOfferWithPrice[];
+    totalActiveOffers: number;
+  };
+  timestamp: string;
+}
+
+export interface OfferDetailsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    productName: string;
+    productId: string;
+    offer: IOfferWithPrice;
+  };
+  timestamp: string;
+}
+
+export interface QuantityValidationResponse {
+  success: boolean;
+  message: string;
+  data: IQuantityValidationResult;
+  timestamp: string;
+}
+
 export interface ColorFormProps {
   colors: IProductColor[];
   onChange: (colors: IProductColor[]) => void;
@@ -169,7 +309,6 @@ export interface ColorFormProps {
   className?: string;
 }
 
-// Product card component props with colors
 export interface ProductCardProps {
   product: IProduct;
   onColorSelect?: (color: IProductColor) => void;
@@ -177,79 +316,72 @@ export interface ProductCardProps {
   showColors?: boolean;
   showPricing?: boolean;
   showOffers?: boolean;
+  showQuantityConfig?: boolean;
+  showOrderInquiryButton?: boolean;
   className?: string;
 }
 
-// Product details component props
 export interface ProductDetailsProps {
   product: IProduct;
   selectedColor?: IProductColor;
   onColorChange?: (color: IProductColor) => void;
   showColorPicker?: boolean;
   showDynamicFields?: boolean;
+  showOrderInquiryForm?: boolean;
+  orderInquiryConfig?: IOrderInquiryConfig;
   className?: string;
 }
 
-// Color validation utilities
+export interface OrderInquiryFormProps {
+  product: IProduct;
+  orderInquiryConfig: IOrderInquiryConfig;
+  onSubmit: (inquiry: ICreateOrderInquiry) => void;
+  selectedColor?: IProductColor;
+  customerData?: Record<string, any>;
+  className?: string;
+}
+
+export interface QuantityPickerProps {
+  product: IProduct;
+  quantity: number;
+  onQuantityChange: (quantity: number) => void;
+  maxQuantity?: number;
+  disabled?: boolean;
+  showValidation?: boolean;
+  className?: string;
+}
+
+export interface OfferSelectorProps {
+  offers: IOfferWithPrice[];
+  selectedOfferId?: string;
+  onOfferSelect: (offerId: string) => void;
+  showPrices?: boolean;
+  className?: string;
+}
+
+// Validation interfaces
 export interface ColorValidationResult {
   isValid: boolean;
   errors: string[];
 }
 
-// Predefined color palettes
-export interface ColorPalette {
-  name: string;
-  colors: Array<{
-    name: string;
-    hexCode: string;
-  }>;
-}
-
-// Default color palettes
-export const DEFAULT_COLOR_PALETTES: ColorPalette[] = [
-  {
-    name: 'Basic Colors',
-    colors: [
-      { name: 'Black', hexCode: '#000000' },
-      { name: 'White', hexCode: '#FFFFFF' },
-      { name: 'Red', hexCode: '#FF0000' },
-      { name: 'Blue', hexCode: '#0000FF' },
-      { name: 'Green', hexCode: '#008000' },
-      { name: 'Yellow', hexCode: '#FFFF00' },
-    ]
-  },
-  {
-    name: 'Fashion Colors',
-    colors: [
-      { name: 'Navy Blue', hexCode: '#001f3f' },
-      { name: 'Burgundy', hexCode: '#800020' },
-      { name: 'Forest Green', hexCode: '#228B22' },
-      { name: 'Charcoal', hexCode: '#36454F' },
-      { name: 'Cream', hexCode: '#FFFDD0' },
-      { name: 'Rose Gold', hexCode: '#E8B4B8' },
-    ]
-  },
-  {
-    name: 'Modern Colors',
-    colors: [
-      { name: 'Slate Gray', hexCode: '#708090' },
-      { name: 'Coral', hexCode: '#FF7F50' },
-      { name: 'Teal', hexCode: '#008080' },
-      { name: 'Lavender', hexCode: '#E6E6FA' },
-      { name: 'Mustard', hexCode: '#FFDB58' },
-      { name: 'Sage Green', hexCode: '#9CAF88' },
-    ]
-  }
-];
-
-// Helper type for color selection state
 export type ColorSelectionState = {
   selectedColorId?: string;
   availableColors: IProductColor[];
   unavailableColors: IProductColor[];
 };
 
-// Search and filter response for colors
+export type OrderInquiryType = 'offer' | 'quantity';
+
+export type OrderInquiryFormState = {
+  type: OrderInquiryType;
+  selectedOfferId?: string;
+  quantity: number;
+  customerData: Record<string, any>;
+  selectedVariants: Record<string, string>;
+  notes?: string;
+};
+
 export interface ColorSearchResponse {
   success: boolean;
   message: string;
@@ -266,7 +398,6 @@ export interface ColorSearchResponse {
   timestamp: string;
 }
 
-// Product analytics with color insights
 export interface ProductAnalytics extends IProductStats {
   colorInsights: {
     mostPopularColor: IColorStats | null;
@@ -277,5 +408,76 @@ export interface ProductAnalytics extends IProductStats {
     }>;
     availabilityRate: number;
   };
+  orderInquiryInsights: {
+    bulkOrderProductsPercentage: number;
+    averageMaxQuantity: number;
+    offerUtilizationRate: number;
+    mostPopularOffers: Array<{
+      title: string;
+      originalPrice?: number;
+      discountedPrice?: number;
+      usageCount: number;
+    }>;
+  };
 }
 
+// ✅ New interfaces for quantity configuration validation
+export interface QuantityConfiguration {
+  allowQuantity: boolean;
+  allowMultipleQuantities: boolean;
+  maxQuantityPerInquiry: number;
+}
+
+export interface QuantityValidationResponse {
+  isValid: boolean;
+  error?: string;
+  finalQuantity?: number;
+}
+/*
+// ✅ Helper functions for quantity validation
+export const validateQuantityConfiguration = (
+  allowQuantity: boolean, 
+  allowMultipleQuantities: boolean, 
+  maxQuantityPerInquiry?: number
+): QuantityValidationResponse => {
+  if (!allowQuantity && allowMultipleQuantities) {
+    return { isValid: false, error: 'Cannot allow multiple quantities when quantity is disabled' };
+  }
+  
+  if (allowMultipleQuantities && (!maxQuantityPerInquiry || maxQuantityPerInquiry < 2)) {
+    return { isValid: false, error: 'maxQuantityPerInquiry must be at least 2 when multiple quantities are allowed' };
+  }
+  
+  if (!allowMultipleQuantities && maxQuantityPerInquiry && maxQuantityPerInquiry > 1) {
+    return { isValid: false, error: 'maxQuantityPerInquiry should not exceed 1 in single quantity mode' };
+  }
+  
+  return { isValid: true };
+};
+
+export const validateInquiryQuantity = (
+  productConfig: QuantityConfiguration, 
+  requestedQuantity: number
+): QuantityValidationResponse => {
+  if (!productConfig.allowQuantity) {
+    return { isValid: true, finalQuantity: null };
+  }
+  
+  if (!productConfig.allowMultipleQuantities) {
+    return { isValid: true, finalQuantity: 1 };
+  }
+  
+  if (requestedQuantity < 2) {
+    return { isValid: false, error: 'Quantity must be at least 2 in multiple quantities mode' };
+  }
+  
+  if (requestedQuantity > productConfig.maxQuantityPerInquiry) {
+    return { 
+      isValid: false, 
+      error: `Quantity cannot exceed ${productConfig.maxQuantityPerInquiry}` 
+    };
+  }
+  
+  return { isValid: true, finalQuantity: requestedQuantity };
+};
+*/
