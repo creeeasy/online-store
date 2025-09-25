@@ -3,6 +3,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import type { IDynamicField, IOffer, IProduct } from '../types/product';
 import { formatAlgerianPhone, validateAlgerianPhone, type CreateOrderInquiry } from '../types/orderInquiry';
 import type { ValidationError } from '../hooks/useOrderInquiry';
+import { AlgerianPhoneInput } from './AlgerianPhoneInput';
+import { WilayaSelect } from './WilayaInput';
 
 interface ProductFormProps {
   product: IProduct;
@@ -500,23 +502,46 @@ const OrderForm: React.FC<ProductFormProps> = ({
                     {field.isRequired && <span style={{color: theme.colors.error}}> *</span>}
                   </label>
                   
-                  <input
-                    type={getInputType(field.key)}
-                    required={field.isRequired}
-                    value={dynamicFields[field.key] || ''}
-                    onChange={(e) => handleDynamicFieldChange(field.key, e.target.value)}
-                    placeholder={`أدخل ${field.placeholder}`}
-                    style={{
-                      width: '100%',
-                      padding: theme.spacing.md,
-                      border: `1px solid ${validationErrors[field.key] ? theme.colors.error : theme.colors.border}`,
-                      borderRadius: theme.borderRadius.md,
-                      backgroundColor: theme.colors.backgroundSecondary,
-                      color: theme.colors.text,
-                      fontSize: theme.fonts.size.md,
-                      direction: 'rtl'
-                    }}
-                  />
+                  {/* Special handling for phone field */}
+                  {field.key === 'phoneNumber' ? (
+                    <AlgerianPhoneInput
+                      value={dynamicFields[field.key] || ''}
+                      onChange={(value) => handleDynamicFieldChange(field.key, value)}
+                      error={validationErrors[field.key]?.[0]}
+                      required={field.isRequired}
+                      placeholder={`أدخل ${field.placeholder}`}
+                    />
+                  ) : field.key === 'wilaya' ? (
+                    <WilayaSelect
+                      fieldName={field.key}
+                      errors={validationErrors}
+                      required={field.isRequired}
+                      value={dynamicFields[field.key] || ''}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                        handleDynamicFieldChange(field.key, e.target.value)
+                      }
+                    />
+                  ) : (
+                    <input
+                      type={getInputType(field.key)}
+                      required={field.isRequired}
+                      value={dynamicFields[field.key] || ''}
+                      onChange={(e) => handleDynamicFieldChange(field.key, e.target.value)}
+                      placeholder={`أدخل ${field.placeholder}`}
+                      style={{
+                        width: '100%',
+                        padding: theme.spacing.md,
+                        border: `1px solid ${
+                          validationErrors[field.key] ? theme.colors.error : theme.colors.border
+                        }`,
+                        borderRadius: theme.borderRadius.md,
+                        backgroundColor: theme.colors.backgroundSecondary,
+                        color: theme.colors.text,
+                        fontSize: theme.fonts.size.md,
+                        direction: field.key === 'email' ? 'ltr' : 'rtl'
+                      }}
+                    />
+                  )}
                   {renderFieldError(field.key)}
                 </div>
               ))}

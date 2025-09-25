@@ -36,16 +36,6 @@ const validateCreateInquiry = [
     .isInt({ min: 1 })
     .withMessage('Quantity must be a positive integer'),
 
-  body('selectedVariants')
-    .optional()
-    .isObject()
-    .withMessage('Selected variants must be an object'),
-
-  body('notes')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes cannot exceed 1000 characters')
 ];
 
 // ✅ Update inquiry validation
@@ -64,16 +54,6 @@ const validateUpdateInquiry = [
     .matches(/^[\+]?[1-9][\d]{0,15}$/)
     .withMessage('Valid phone number is required'),
 
-  body('status')
-    .optional()
-    .isIn(['pending', 'contacted', 'converted', 'cancelled'])
-    .withMessage('Status must be one of: pending, contacted, converted, cancelled'),
-
-  body('notes')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes cannot exceed 1000 characters')
 ];
 
 // ✅ Status update validation
