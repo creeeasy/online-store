@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { FiTrash2, FiPlus, FiAlertTriangle } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IOffer } from '../types/product';
+import { getFieldErrors, hasFieldError } from '../utils/validation';
 
 interface OffersTabProps {
   formData: Partial<IProduct>;
   setFormData: React.Dispatch<React.SetStateAction<Partial<IProduct>>>;
-  validationErrors: any[];
+  validationErrors?: any; 
   hasAttemptedSubmit: boolean;
 }
 
@@ -14,7 +15,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
   formData, 
   setFormData, 
   validationErrors,
-  hasAttemptedSubmit 
 }) => {
   const { theme } = useTheme();
   const [newOffer, setNewOffer] = useState<Partial<IOffer>>({
@@ -26,21 +26,13 @@ const OffersTab: React.FC<OffersTabProps> = ({
     validUntil: undefined
   });
 
-  // Simple error checking - no complex extraction needed
-  const hasFieldError = (fieldName: string): boolean => {
-    return validationErrors?.some((error: any) => 
-      error.field === fieldName || error.field?.startsWith(`${fieldName}.`)
-    ) || false;
+  // Fixed: Properly handle both array and object validation error structures
+  const getErrorsForField = (fieldName: string): string[] => {
+    return getFieldErrors(fieldName, validationErrors);
   };
 
-  const getFieldErrors = (fieldName: string): string[] => {
-    if (!validationErrors) return [];
-    
-    return validationErrors
-      .filter((error: any) => 
-        error.field === fieldName || error.field?.startsWith(`${fieldName}.`)
-      )
-      .map((error: any) => error.message);
+  const hasErrorForField = (fieldName: string): boolean => {
+    return hasFieldError(fieldName, validationErrors);
   };
 
   // Simple offer stats
@@ -73,13 +65,18 @@ const OffersTab: React.FC<OffersTabProps> = ({
     return offer.validUntil ? new Date(offer.validUntil) <= new Date() : false;
   };
 
-  // Add new offer
+  // Add new offer with validation
   const addOffer = () => {
     if (!newOffer.title?.trim()) return;
     
-    // Basic validation
+    // Validate prices
     if (newOffer.originalPrice && newOffer.discountedPrice && 
         newOffer.discountedPrice >= newOffer.originalPrice) {
+      return;
+    }
+    
+    // Validate required fields
+    if (!newOffer.title.trim()) {
       return;
     }
     
@@ -128,7 +125,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         offers: [...(prev.offers || []), {
           ...offerToCopy,
           title: `${offerToCopy.title} (Copy)`,
-          _id: undefined // Remove ID for new duplicate
+          _id: undefined
         }]
       }));
     }
@@ -174,7 +171,17 @@ const OffersTab: React.FC<OffersTabProps> = ({
 
   const errorInputStyle: React.CSSProperties = {
     ...inputStyle,
-    borderColor: theme.colors.error
+    borderColor: theme.colors.error,
+    boxShadow: `0 0 0 2px ${theme.colors.error}20`
+  };
+
+  const errorTextStyle: React.CSSProperties = {
+    color: theme.colors.error,
+    fontSize: '0.8rem',
+    marginTop: '0.25rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem'
   };
 
   const addButtonStyle: React.CSSProperties = {
@@ -183,17 +190,33 @@ const OffersTab: React.FC<OffersTabProps> = ({
     color: theme.colors.textOnPrimary,
     border: 'none',
     borderRadius: '8px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: '500'
   };
 
   const disabledButtonStyle: React.CSSProperties = {
     ...addButtonStyle,
     backgroundColor: theme.colors.disabled,
-    cursor: 'not-allowed'
+    cursor: 'not-allowed',
+    opacity: 0.6
   };
 
   // Check if add button should be disabled
   const isAddDisabled = !newOffer.title?.trim();
+
+  // Render error messages for a field
+  const renderFieldErrors = (fieldName: string) => {
+    const errors = getErrorsForField(fieldName);
+    if (errors.length === 0) return null;
+
+    return (
+      <div style={errorTextStyle}>
+        <FiAlertTriangle size={12} />
+        {errors[0]} {/* Show first error only for simplicity */}
+      </div>
+    );
+  };
 
   return (
     <div style={containerStyle}>
@@ -206,6 +229,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         {(formData.offers || []).map((offer, index) => {
           const expired = isOfferExpired(offer);
           const savings = getOfferSavings(offer);
+          const fieldPrefix = `offers.${index}`;
           
           return (
             <div key={index} style={offerCardStyle}>
@@ -214,13 +238,15 @@ const OffersTab: React.FC<OffersTabProps> = ({
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button 
                     onClick={() => duplicateOffer(index)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.colors.textSecondary }}
+                    title="Duplicate offer"
                   >
                     <FiPlus />
                   </button>
                   <button 
                     onClick={() => removeOffer(index)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.colors.error }}
+                    title="Remove offer"
                   >
                     <FiTrash2 />
                   </button>
@@ -237,13 +263,9 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   value={offer.title}
                   onChange={(e) => updateOffer(index, 'title', e.target.value)}
                   placeholder="e.g., Black Friday Sale"
-                  style={hasFieldError(`offers.${index}.title`) ? errorInputStyle : inputStyle}
+                  style={hasErrorForField(`${fieldPrefix}.title`) ? errorInputStyle : inputStyle}
                 />
-                {hasFieldError(`offers.${index}.title`) && (
-                  <div style={{ color: theme.colors.error, fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                    {getFieldErrors(`offers.${index}.title`)[0]}
-                  </div>
-                )}
+                {renderFieldErrors(`${fieldPrefix}.title`)}
               </div>
 
               {/* Prices */}
@@ -255,11 +277,13 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={offer.originalPrice || ''}
                     onChange={(e) => updateOffer(index, 'originalPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder={`Base: $${formData.price || 0}`}
-                    style={hasFieldError(`offers.${index}.originalPrice`) ? errorInputStyle : inputStyle}
+                    style={hasErrorForField(`${fieldPrefix}.originalPrice`) ? errorInputStyle : inputStyle}
                   />
+                  {renderFieldErrors(`${fieldPrefix}.originalPrice`)}
                 </div>
                 
                 <div>
@@ -269,25 +293,28 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={offer.discountedPrice || ''}
                     onChange={(e) => updateOffer(index, 'discountedPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="Sale price"
-                    style={hasFieldError(`offers.${index}.discountedPrice`) ? errorInputStyle : inputStyle}
+                    style={hasErrorForField(`${fieldPrefix}.discountedPrice`) ? errorInputStyle : inputStyle}
                   />
+                  {renderFieldErrors(`${fieldPrefix}.discountedPrice`)}
                 </div>
               </div>
 
               {/* Price Display */}
-              {(offer.originalPrice || offer.discountedPrice) && (
+              {(offer.originalPrice || offer.discountedPrice || formData.price) && (
                 <div style={{ 
                   padding: '0.75rem', 
                   backgroundColor: theme.colors.backgroundSecondary, 
                   borderRadius: '8px',
-                  marginBottom: '1rem'
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
                 }}>
                   Customer pays: <strong>${getOfferFinalPrice(offer).toFixed(2)}</strong>
                   {savings.amount > 0 && (
-                    <span style={{ color: theme.colors.success, marginLeft: '1rem' }}>
+                    <span style={{ color: theme.colors.success, marginLeft: '1rem', fontWeight: '500' }}>
                       Save ${savings.amount.toFixed(2)} ({savings.percentage}%)
                     </span>
                   )}
@@ -305,11 +332,13 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   placeholder="Offer details..."
                   rows={3}
                   style={{
-                    ...(hasFieldError(`offers.${index}.description`) ? errorInputStyle : inputStyle),
+                    ...(hasErrorForField(`${fieldPrefix}.description`) ? errorInputStyle : inputStyle),
                     width: '100%',
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    fontFamily: 'inherit'
                   }}
                 />
+                {renderFieldErrors(`${fieldPrefix}.description`)}
               </div>
 
               {/* Valid Until & Active Status */}
@@ -322,11 +351,12 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     type="datetime-local"
                     value={formatDateForInput(offer.validUntil)}
                     onChange={(e) => updateOffer(index, 'validUntil', e.target.value ? new Date(e.target.value) : undefined)}
-                    style={hasFieldError(`offers.${index}.validUntil`) ? errorInputStyle : inputStyle}
+                    style={hasErrorForField(`${fieldPrefix}.validUntil`) ? errorInputStyle : inputStyle}
                   />
+                  {renderFieldErrors(`${fieldPrefix}.validUntil`)}
                 </div>
                 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={offer.isActive}
@@ -351,11 +381,24 @@ const OffersTab: React.FC<OffersTabProps> = ({
             </div>
           );
         })}
+
+        {(formData.offers || []).length === 0 && (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '2rem', 
+            color: theme.colors.textSecondary,
+            backgroundColor: theme.colors.backgroundSecondary,
+            borderRadius: '8px',
+            border: `2px dashed ${theme.colors.border}`
+          }}>
+            No offers created yet. Add your first offer below.
+          </div>
+        )}
       </div>
 
       {/* Add New Offer */}
       <div style={{ ...offerCardStyle, backgroundColor: theme.colors.backgroundSecondary }}>
-        <h4 style={{ margin: '0 0 1rem 0' }}>Add New Offer</h4>
+        <h4 style={{ margin: '0 0 1rem 0', color: theme.colors.text }}>Add New Offer</h4>
         
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -366,8 +409,9 @@ const OffersTab: React.FC<OffersTabProps> = ({
             value={newOffer.title || ''}
             onChange={(e) => setNewOffer({ ...newOffer, title: e.target.value })}
             placeholder="e.g., Summer Sale"
-            style={hasFieldError('newOffer.title') ? errorInputStyle : inputStyle}
+            style={hasErrorForField('newOffer.title') ? errorInputStyle : inputStyle}
           />
+          {renderFieldErrors('newOffer.title')}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -378,6 +422,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
             <input
               type="number"
               step="0.01"
+              min="0"
               value={newOffer.originalPrice || ''}
               onChange={(e) => setNewOffer({ ...newOffer, originalPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
               placeholder={`Base: $${formData.price || 0}`}
@@ -392,6 +437,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
             <input
               type="number"
               step="0.01"
+              min="0"
               value={newOffer.discountedPrice || ''}
               onChange={(e) => setNewOffer({ ...newOffer, discountedPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
               placeholder="Sale price"
@@ -426,7 +472,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
             />
           </div>
           
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={newOffer.isActive !== false}

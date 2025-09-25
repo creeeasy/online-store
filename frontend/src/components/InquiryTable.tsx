@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import InquiryActions from './InquiryActions';
 import type { OrderInquiry } from '../types/orderInquiry';
-import { SERVER_URL } from '../utils/apiClient';
 import { useDeleteConfirmation, useDeleteOrderInquiry } from '../hooks/useOrderInquiry';
 
-// Utility functions for formatting
 const InquiryUtils = {
   formatPrice: (price?: number) => {
     if (!price) return '0 DZD';
@@ -43,6 +41,29 @@ const InquiryUtils = {
     return text.substring(0, maxLength) + '...';
   },
 
+  getCustomerName: (customerData: any) => {
+    if (!customerData || typeof customerData !== 'object') return 'N/A';
+    
+    // Look for common name fields
+    const nameFields = ['fullName', 'name', 'Name', 'full_name', 'firstName', 'lastName', 'customer_name'];
+    
+    for (const field of nameFields) {
+      if (customerData[field] && String(customerData[field]).trim()) {
+        return String(customerData[field]);
+      }
+    }
+    
+    // Try to combine firstName and lastName if they exist
+    const firstName = customerData['firstName'] || customerData['first_name'] || '';
+    const lastName = customerData['lastName'] || customerData['last_name'] || '';
+    
+    if (firstName || lastName) {
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    return 'N/A';
+  },
+
   getWilaya: (customerData: any) => {
     if (!customerData || typeof customerData !== 'object') return 'N/A';
     
@@ -55,6 +76,54 @@ const InquiryUtils = {
     }
     
     return 'N/A';
+  },
+
+  getPhoneNumber: (customerData: any) => {
+    if (!customerData || typeof customerData !== 'object') return 'N/A';
+    
+    const phoneFields = ['phone', 'phoneNumber', 'phone_number', 'mobile', 'telephone', 'contact'];
+    
+    for (const field of phoneFields) {
+      if (customerData[field] && String(customerData[field]).trim()) {
+        return String(customerData[field]);
+      }
+    }
+    
+    return 'N/A';
+  },
+
+  // FIXED: Use the correct properties from OrderInquiry interface
+  getOrderType: (inquiry: OrderInquiry) => {
+    // Use the typeOfOrder property that exists in your interface
+    return inquiry.typeOfOrder || 'quantity'; // Default to 'quantity' if undefined
+  },
+
+  // FIXED: Use the correct properties from OrderInquiry interface
+  getSelectedOffer: (inquiry: OrderInquiry) => {
+    // Use offerId to get the offer ID, then you can look up the offer title
+    if (inquiry.offerId) {
+      return inquiry.offerId;
+    }
+    
+    // If you have access to the offer object with title, use that
+    if (inquiry.offer?.title) {
+      return inquiry.offer.title;
+    }
+    
+    return null;
+  },
+
+  // NEW: Helper method to get offer title for display
+  getOfferTitle: (inquiry: OrderInquiry) => {
+    if (inquiry.offer?.title) {
+      return inquiry.offer.title;
+    }
+    
+    if (inquiry.offerId) {
+      return `Offer #${inquiry.offerId.slice(-4)}`; // Show last 4 chars of ID
+    }
+    
+    return null;
   }
 };
 
@@ -86,10 +155,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     }
   };
 
-  const handleViewInquiry = (inquiry: OrderInquiry) => {
-    console.log('View inquiry:', inquiry._id);
-  };
-
   // Handle single delete with confirmation
   const handleDeleteSingle = (inquiryId: string) => {
     confirmDelete(() => {
@@ -97,11 +162,11 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     });
   };
 
-  // Enhanced theme-based styles with delete button
-  const actionButtonStyle: React.CSSProperties = {
-    color: theme.colors.primary,
-    backgroundColor: `${theme.colors.primary}10`,
-    border: `1px solid ${theme.colors.primary}30`,
+  // Enhanced theme-based styles
+  const deleteButtonStyle: React.CSSProperties = {
+    color: '#ef4444',
+    backgroundColor: '#ef444410',
+    border: `1px solid #ef444430`,
     borderRadius: theme.borderRadius.md,
     padding: `${theme.spacing.sm} ${theme.spacing.md}`,
     cursor: 'pointer',
@@ -111,21 +176,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     display: 'inline-flex',
     alignItems: 'center',
     gap: theme.spacing.xs,
-    marginRight: theme.spacing.xs,
-  };
-
-  const deleteButtonStyle: React.CSSProperties = {
-    ...actionButtonStyle,
-    color: '#ef4444',
-    backgroundColor: '#ef444410',
-    border: '1px solid #ef444430',
-  };
-
-  const actionsContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    justifyContent: 'center',
   };
 
   // All existing styles from your original component
@@ -172,7 +222,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
   };
 
   const tableContainerStyle: React.CSSProperties = {
-    overflow: 'scroll',
+    overflow: 'auto',
     boxShadow: theme.shadows.lg,
     borderRadius: theme.borderRadius.lg,
     border: `1px solid ${theme.colors.border}`,
@@ -268,11 +318,6 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     transition: theme.transitions.fast,
   };
 
-  const customerDataStyle: React.CSSProperties = {
-    paddingLeft: theme.spacing.lg,
-    paddingRight: theme.spacing.md,
-  };
-
   const customerInfoStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -298,10 +343,10 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     minWidth: 0,
   };
 
-  const customerPhoneStyle: React.CSSProperties = {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fonts.size.xs,
-    fontFamily: theme.fonts.family.monospace,
+  const customerNameStyle: React.CSSProperties = {
+    color: theme.colors.text,
+    fontWeight: theme.fonts.weight.medium,
+    fontSize: theme.fonts.size.sm,
   };
 
   const wilayaStyle: React.CSSProperties = {
@@ -321,61 +366,44 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     fontSize: theme.fonts.size.sm,
   };
 
-  const productContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-    minWidth: 0,
-  };
-
-  const productImageStyle: React.CSSProperties = {
-    height: '2.5rem',
-    width: '2.5rem',
-    flexShrink: 0,
-    borderRadius: theme.borderRadius.md,
-    objectFit: 'cover',
-    border: `2px solid ${theme.colors.border}`,
-    transition: theme.transitions.fast,
-  };
-
-  const productDetailsStyle: React.CSSProperties = {
-    minWidth: 0,
-    flex: 1,
-  };
-
-  const productNameStyle: React.CSSProperties = {
+  const phoneStyle: React.CSSProperties = {
     color: theme.colors.text,
-    fontWeight: theme.fonts.weight.medium,
     fontSize: theme.fonts.size.sm,
-    lineHeight: theme.fonts.lineHeight.snug,
-    marginBottom: theme.spacing.xs,
+    fontFamily: theme.fonts.family.monospace,
   };
 
-  const variantStyle: React.CSSProperties = {
-    fontSize: theme.fonts.size.xs,
-    color: theme.colors.textSecondary,
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
+  const phoneNAStyle: React.CSSProperties = {
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    fontSize: theme.fonts.size.sm,
   };
 
-  const variantTagStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.gray100,
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
-    borderRadius: theme.borderRadius.sm,
-    fontSize: theme.fonts.size.xs,
-    fontWeight: theme.fonts.weight.medium,
-  };
-
-  const quantityBadgeStyle: React.CSSProperties = {
-    backgroundColor: theme.colors.secondary,
-    color: theme.colors.textOnSecondary,
+  const orderTypeBadgeStyle = (type: string): React.CSSProperties => ({
+    backgroundColor: type === 'offer' ? theme.colors.secondary : theme.colors.primary,
+    color: type === 'offer' ? theme.colors.textOnSecondary : theme.colors.textOnPrimary,
     padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
     borderRadius: theme.borderRadius.full,
     fontSize: theme.fonts.size.sm,
     fontWeight: theme.fonts.weight.semiBold,
-    minWidth: '2rem',
-    textAlign: 'center',
+    textTransform: 'capitalize',
+    display: 'inline-block',
+  });
+
+  const offerStyle: React.CSSProperties = {
+    color: theme.colors.text,
+    fontWeight: theme.fonts.weight.medium,
+    fontSize: theme.fonts.size.sm,
+    backgroundColor: theme.colors.backgroundSecondary,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.borderRadius.md,
+    border: `1px solid ${theme.colors.border}`,
+    display: 'inline-block',
+  };
+
+  const offerEmptyStyle: React.CSSProperties = {
+    color: theme.colors.textMuted,
+    fontStyle: 'italic',
+    fontSize: theme.fonts.size.sm,
   };
 
   const priceStyle: React.CSSProperties = {
@@ -503,12 +531,12 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                   onChange={toggleSelectAll}
                 />
               </th>
-              <th scope="col" style={thStyle}>Customer</th>
+              <th scope="col" style={thStyle}>Full Name</th>
               <th scope="col" style={thStyle}>Wilaya</th>
-              <th scope="col" style={thStyle}>Product</th>
-              <th scope="col" style={thStyle}>Qty</th>
-              <th scope="col" style={thStyle}>Total</th>
-              <th scope="col" style={thStyle}>Status</th>
+              <th scope="col" style={thStyle}>Phone Number</th>
+              <th scope="col" style={thStyle}>Order Type</th>
+              <th scope="col" style={thStyle}>Selected Offer</th>
+              <th scope="col" style={thStyle}>Total Price</th>
               <th scope="col" style={thStyle}>Date</th>
               <th scope="col" style={thActionsStyle}>Actions</th>
             </tr>
@@ -530,8 +558,8 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                   />
                 </td>
                 
-                {/* Customer Column */}
-                <td style={{ ...tdStyle, ...customerDataStyle }}>
+                {/* Full Name Column */}
+                <td style={tdStyle}>
                   <div style={customerInfoStyle}>
                     <div style={customerBadgeStyle}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -539,19 +567,9 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                       </svg>
                     </div>
                     <div style={customerDetailsStyle}>
-                      {inquiry.customerData && Object.keys(inquiry.customerData).length > 0 ? (
-                        (() => {
-                          const firstKey = Object.keys(inquiry.customerData)[0];
-                          const firstValue = inquiry.customerData[firstKey];
-                          return (
-                            <div style={customerPhoneStyle}>
-                              <strong>{firstKey}:</strong> {String(firstValue)}
-                            </div>
-                          );
-                        })()
-                      ) : (
-                        <div style={customerPhoneStyle}>No customer data</div>
-                      )}
+                      <div style={customerNameStyle}>
+                        {InquiryUtils.getCustomerName(inquiry.customerData)}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -570,50 +588,44 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                   })()}
                 </td>
 
-                {/* Product Column */}
+                {/* Phone Number Column */}
                 <td style={tdStyle}>
-                  <div style={productContainerStyle}>
-                    {inquiry.product?.images?.[0] && (
-                      <img 
-                        src={
-                          inquiry.product.images?.[0]
-                            ? `${SERVER_URL}${inquiry.product.images[0]}`
-                            : 'https://picsum.photos/300/300?random=default'
-                        }
-                        alt={inquiry.productName}
-                        style={productImageStyle}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'scale(1.05)';
-                          e.currentTarget.style.boxShadow = theme.shadows.md;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'scale(1)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                      />
-                    )}
-                    <div style={productDetailsStyle}>
-                      <div style={productNameStyle} title={inquiry.productName}>
-                        {InquiryUtils.truncateText(inquiry.productName, 25)}
-                      </div>
-                      {inquiry.selectedVariants && Object.keys(inquiry.selectedVariants).length > 0 && (
-                        <div style={variantStyle}>
-                          {Object.entries(inquiry.selectedVariants).map(([key, value]) => (
-                            <span key={key} style={variantTagStyle}>
-                              {key}: {value}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {(() => {
+                    const phone = InquiryUtils.getPhoneNumber(inquiry.customerData);
+                    return phone === 'N/A' ? (
+                      <span style={phoneNAStyle}>N/A</span>
+                    ) : (
+                      <span style={phoneStyle}>
+                        {phone}
+                      </span>
+                    );
+                  })()}
                 </td>
 
-                {/* Quantity Column */}
+                {/* Order Type Column */}
                 <td style={tdStyle}>
-                  <span style={quantityBadgeStyle}>
-                    {inquiry.quantity || 1}
-                  </span>
+                  {(() => {
+                    const orderType = InquiryUtils.getOrderType(inquiry);
+                    return (
+                      <span style={orderTypeBadgeStyle(orderType)}>
+                        {orderType}
+                      </span>
+                    );
+                  })()}
+                </td>
+
+                {/* Selected Offer Column */}
+                <td style={tdStyle}>
+                  {(() => {
+                    const offerTitle = InquiryUtils.getOfferTitle(inquiry);
+                    return offerTitle ? (
+                      <span style={offerStyle}>
+                        {InquiryUtils.truncateText(offerTitle, 20)}
+                      </span>
+                    ) : (
+                      <span style={offerEmptyStyle}>-</span>
+                    );
+                  })()}
                 </td>
 
                 {/* Total Price Column */}
@@ -631,66 +643,41 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                   </div>
                 </td>
 
-                {/* Enhanced Actions Column with Delete */}
+                {/* Actions Column - Only Delete */}
                 <td style={{ ...tdStyle, textAlign: 'center', paddingRight: theme.spacing.xl }}>
-                  <div style={actionsContainerStyle}>
-                    <button 
-                      onClick={() => handleViewInquiry(inquiry)}
-                      style={actionButtonStyle}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = theme.colors.primary;
-                        e.currentTarget.style.color = theme.colors.textOnPrimary;
+                  <button 
+                    onClick={() => handleDeleteSingle(inquiry._id)}
+                    disabled={deleteInquiry.isPending}
+                    style={{
+                      ...deleteButtonStyle,
+                      opacity: deleteInquiry.isPending ? 0.5 : 1,
+                      cursor: deleteInquiry.isPending ? 'not-allowed' : 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deleteInquiry.isPending) {
+                        e.currentTarget.style.backgroundColor = '#ef4444';
+                        e.currentTarget.style.color = 'white';
                         e.currentTarget.style.transform = 'translateY(-1px)';
                         e.currentTarget.style.boxShadow = theme.shadows.md;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
-                        e.currentTarget.style.color = theme.colors.primary;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!deleteInquiry.isPending) {
+                        e.currentTarget.style.backgroundColor = '#ef444410';
+                        e.currentTarget.style.color = '#ef4444';
                         e.currentTarget.style.transform = 'translateY(0)';
                         e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
-                      View
-                    </button>
-
-                    <button 
-                      onClick={() => handleDeleteSingle(inquiry._id)}
-                      disabled={deleteInquiry.isPending}
-                      style={{
-                        ...deleteButtonStyle,
-                        opacity: deleteInquiry.isPending ? 0.5 : 1,
-                        cursor: deleteInquiry.isPending ? 'not-allowed' : 'pointer',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!deleteInquiry.isPending) {
-                          e.currentTarget.style.backgroundColor = '#ef4444';
-                          e.currentTarget.style.color = 'white';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = theme.shadows.md;
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!deleteInquiry.isPending) {
-                          e.currentTarget.style.backgroundColor = '#ef444410';
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                        <line x1="10" y1="11" x2="10" y2="17"/>
-                        <line x1="14" y1="11" x2="14" y2="17"/>
-                      </svg>
-                      {deleteInquiry.isPending ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
+                      }
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3,6 5,6 21,6"/>
+                      <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                      <line x1="10" y1="11" x2="10" y2="17"/>
+                      <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                    {deleteInquiry.isPending ? 'Deleting...' : 'Delete'}
+                  </button>
                 </td>
               </tr>
             ))}

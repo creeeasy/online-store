@@ -4,9 +4,8 @@ import { useState } from 'react';
 import type { 
   OrderInquiry,
   OrderInquiryFilters, 
-  CreateOrderInquiryRequest, 
-  UpdateOrderInquiryRequest,
-  OrderInquiryStats
+  OrderInquiryStats,
+  CreateOrderInquiry
 } from '../types/orderInquiry';
 
 // API Response interfaces matching your backend
@@ -95,7 +94,7 @@ const orderInquiryAPI = {
     return result.data.inquiry;
   },
 
-  async createInquiry(inquiryData: CreateOrderInquiryRequest): Promise<OrderInquiry> {
+  async createInquiry(inquiryData: CreateOrderInquiry): Promise<OrderInquiry> {
     const response = await fetch(`${API_BASE_URL}/order-inquiries/create`, {
       method: 'POST',
       headers: {
@@ -119,29 +118,6 @@ const orderInquiryAPI = {
     return (result as SuccessResponse<{ inquiry: OrderInquiry }>).data.inquiry;
   },
 
-  async updateInquiry(id: string, data: UpdateOrderInquiryRequest): Promise<OrderInquiry> {
-    const response = await fetch(`${API_BASE_URL}/order-inquiries/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result: SuccessResponse<{ inquiry: OrderInquiry }> | ErrorResponse = await response.json();
-    
-    if (!response.ok || !result.success) {
-      const errorResult = result as ErrorResponse;
-      const error: any = new Error(errorResult.message || 'Failed to update inquiry');
-      error.response = {
-        status: response.status,
-        data: errorResult
-      };
-      throw error;
-    }
-
-    return (result as SuccessResponse<{ inquiry: OrderInquiry }>).data.inquiry;
-  },
 
   async updateInquiryStatus(id: string, status: string, notes?: string): Promise<OrderInquiry> {
     const response = await fetch(`${API_BASE_URL}/order-inquiries/${id}/status`, {
@@ -324,9 +300,9 @@ export const useCreateOrderInquiry = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (inquiryData: CreateOrderInquiryRequest) => 
+    mutationFn: (inquiryData: CreateOrderInquiry) => 
       orderInquiryAPI.createInquiry(inquiryData),
-    onSuccess: (data) => {
+    onSuccess: (_) => {
       queryClient.invalidateQueries({ queryKey: ['order-inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
       toast.success('Inquiry submitted successfully! We will contact you soon.');
@@ -345,47 +321,6 @@ export const useCreateOrderInquiry = () => {
   });
 };
 
-export const useUpdateOrderInquiry = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateOrderInquiryRequest }) => 
-      orderInquiryAPI.updateInquiry(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['order-inquiries'] });
-      queryClient.invalidateQueries({ queryKey: ['order-inquiry', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
-      toast.success('Inquiry updated successfully!');
-    },
-    onError: (error: any) => {
-      const apiError = handleApiError(error);
-      
-      // Only show toast for non-validation errors
-      if (!apiError.validationErrors || apiError.validationErrors.length === 0) {
-        toast.error(apiError.message);
-      }
-    },
-  });
-};
-
-export const useUpdateOrderInquiryStatus = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, status, notes }: { id: string; status: string; notes?: string }) => 
-      orderInquiryAPI.updateInquiryStatus(id, status, notes),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['order-inquiries'] });
-      queryClient.invalidateQueries({ queryKey: ['order-inquiry', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['order-inquiry-stats'] });
-      toast.success('Status updated successfully!');
-    },
-    onError: (error: any) => {
-      const apiError = handleApiError(error);
-      toast.error(apiError.message);
-    },
-  });
-};
 
 // Enhanced delete single inquiry hook
 export const useDeleteOrderInquiry = () => {
@@ -516,29 +451,11 @@ export const useDeleteConfirmation = () => {
 export const useProductInquiry = (productId?: string) => {
   const createInquiryMutation = useCreateOrderInquiry();
 
-  const submitInquiry = async (inquiryData: {
-    customerData: Record<string, any>;
-    selectedVariants?: Record<string, string>;
-    typeOfOrder: 'offer' | 'quantity';
-    data: string | number;
-  }) => {
+  const submitInquiry = async (inquiryData: CreateOrderInquiry) => {
     if (!productId) {
       throw new Error('Product ID is required');
     }
-
-    const payload: CreateOrderInquiryRequest = {
-      productId,
-      customerData: inquiryData.customerData,
-      selectedVariants: inquiryData.selectedVariants && Object.keys(inquiryData.selectedVariants).length > 0
-        ? inquiryData.selectedVariants
-        : undefined,
-      typeOfOrder: inquiryData.typeOfOrder,
-      ...(inquiryData.typeOfOrder === 'offer'
-        ? { offerId: inquiryData.data as string }
-        : { quantity: inquiryData.data as number }),
-    };
-
-    return createInquiryMutation.mutateAsync(payload);
+    return createInquiryMutation.mutateAsync(inquiryData);
   };
 
   return {

@@ -1,24 +1,25 @@
-// Phone validation utility
+import type { Offer, Product } from "./types";
+
 export const validateAlgerianPhone = (phone: string): boolean => {
+  if (!phone) return false;
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
   return /^0[567]\d{8}$/.test(cleanPhone);
 };
 
-// Phone formatting utility
 export const formatAlgerianPhone = (phone: string): string => {
+  if (!phone) return '';
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  if (cleanPhone.length === 10 && validateAlgerianPhone(cleanPhone)) {
+  if (validateAlgerianPhone(cleanPhone)) {
     return `${cleanPhone.slice(0, 4)} ${cleanPhone.slice(4, 6)} ${cleanPhone.slice(6, 8)} ${cleanPhone.slice(8)}`;
   }
   return cleanPhone;
 };
 
-// Core OrderInquiry interface
+
 export interface OrderInquiry {
   _id: string;
   productId: string;
-  productName: string;
-  customerData: Record<string, any>;
+  customerData: object;
   quantity?: number;
   selectedVariants?: Record<string, string>;
   totalPrice?: number;
@@ -27,9 +28,23 @@ export interface OrderInquiry {
   offerId?: string;
   createdAt: string;
   updatedAt: string;
+  product?: Product;
+  offer?: Offer;
 }
 
-// Filters for querying inquiries
+export interface CreateOrderInquiry {
+  _id?: string;
+  productId: string;
+  customerData: object;
+  quantity?: number;
+  selectedVariants?: Record<string, string>;
+  totalPrice?: number;
+  typeOfOrder: 'offer' | 'quantity';
+  offerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface OrderInquiryFilters {
   page?: number;
   limit?: number;
@@ -39,10 +54,10 @@ export interface OrderInquiryFilters {
   name?: string;
   startDate?: string;
   endDate?: string;
-  [key: string]: any; // Allow dynamic customerData filtering
+  [key: string]: any;
 }
 
-// Statistics returned by the system
+
 export interface OrderInquiryStats {
   statusStats: Array<{
     _id: string;
@@ -59,25 +74,22 @@ export interface OrderInquiryStats {
   }>;
 }
 
-// Payload for creating a new inquiry
 export interface CreateOrderInquiryRequest {
   productId: string;
-  customerData: Record<string, any>;
+  customerData: {
+    name?: string;
+    phone?: string;
+    reference?: string;
+    [key: string]: any;
+  };
   quantity?: number;
   typeOfOrder: 'offer' | 'quantity';
   offerId?: string;
   selectedVariants?: Record<string, string>;
-  notes?: string;
 }
 
-// Payload for updating an existing inquiry
-export interface UpdateOrderInquiryRequest {
-  customerData?: Partial<Record<string, any>>;
-  status?: 'pending' | 'contacted' | 'converted' | 'cancelled';
-  notes?: string;
-}
 
-// Validation schemas for customer data
+
 export const customerDataValidation = {
   name: {
     required: true,
@@ -99,8 +111,12 @@ export const customerDataValidation = {
   }
 };
 
-// Type guard for CustomerData validation
-export const isValidCustomerData = (data: any): data is Record<string, any> => {
+export const isValidCustomerData = (data: any): data is {
+  name: string;
+  phone: string;
+  reference?: string;
+  [key: string]: any;
+} => {
   if (!data || typeof data !== 'object') return false;
 
   const { name, phone, reference } = data;
@@ -112,7 +128,6 @@ export const isValidCustomerData = (data: any): data is Record<string, any> => {
   return true;
 };
 
-// Centralized validation error messages
 export const ValidationErrors = {
   PHONE_INVALID: 'Phone number must be 10 digits starting with 05, 06, or 07',
   PHONE_REQUIRED: 'Phone number is required',

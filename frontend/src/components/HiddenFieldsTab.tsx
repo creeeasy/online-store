@@ -1,33 +1,78 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FiTrash2, FiPlus, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IHiddenField } from '../types/product';
 import { ValidatedInput } from './ValidationErrorDisplay';
-
+import type { ValidationError } from '../utils/validation';
 interface HiddenFieldsTabProps {
   formData: Partial<IProduct>;
   setFormData: React.Dispatch<React.SetStateAction<Partial<IProduct>>>;
-  validationErrors: Record<string, string[]>;
+  validationErrors?: ValidationError[]; 
 }
 
-const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({ 
-  formData, 
-  setFormData, 
-  validationErrors 
+const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
+  formData,
+  setFormData,
+  validationErrors
 }) => {
   const { theme } = useTheme();
-  const [newHiddenField, setNewHiddenField] = useState<Partial<IHiddenField>>({ 
-    key: '', 
+  const [newHiddenField, setNewHiddenField] = useState<Partial<IHiddenField>>({
+    key: '',
     value: '',
     description: ''
   });
+
+  // Normalize different error shapes into Record<string, string[]>
+  const buildErrorMap = (errs: any): Record<string, string[]> => {
+    const map: Record<string, string[]> = {};
+    if (!errs) return map;
+
+    // If it's already a map of string -> string[]
+    if (typeof errs === 'object' && !Array.isArray(errs)) {
+      const keys = Object.keys(errs);
+      const allArraysOfStrings = keys.length > 0 && keys.every(k =>
+        Array.isArray((errs as any)[k]) && (errs as any)[k].every((v: any) => typeof v === 'string')
+      );
+      if (allArraysOfStrings) {
+        return errs as Record<string, string[]>;
+      }
+      // Look for keys like 'hidden' that contain arrays of { field, message }
+      for (const k of keys) {
+        const val = (errs as any)[k];
+        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && 'field' in val[0]) {
+          val.forEach((e: any) => {
+            if (!e.field) return;
+            map[e.field] = map[e.field] || [];
+            if (e.message) map[e.field].push(e.message);
+          });
+          return map;
+        }
+      }
+    }
+
+    // If it's a plain array of { field, message }
+    if (Array.isArray(errs)) {
+      errs.forEach((e: any) => {
+        if (!e || !e.field) return;
+        map[e.field] = map[e.field] || [];
+        if (e.message) map[e.field].push(e.message);
+      });
+      return map;
+    }
+
+    return map;
+  };
+
+  const normalizedErrors = useMemo(() => buildErrorMap(validationErrors), [validationErrors]);
+
+
 
   const addHiddenField = () => {
     if (!newHiddenField.key?.trim()) return;
 
     setFormData(prev => ({
       ...prev,
-      hiddenFields: [...(prev.hiddenFields || []), { 
+      hiddenFields: [...(prev.hiddenFields || []), {
         key: newHiddenField.key || '',
         value: newHiddenField.value || '',
         description: newHiddenField.description || ''
@@ -47,7 +92,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
     setFormData(prev => ({ ...prev, hiddenFields: newHiddenFields }));
   };
 
-  // Theme-based styles using your theme structure
+  // Theme-based styles (kept your original styles)
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
@@ -214,7 +259,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
                 <ValidatedInput
                   label="Field Key"
                   fieldName={`hiddenFields.${index}.key`}
-                  errors={validationErrors}
+                  errors={normalizedErrors}
                   required
                   type="text"
                   value={field.key}
@@ -225,22 +270,22 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
                 <ValidatedInput
                   label="Default Value"
                   fieldName={`hiddenFields.${index}.value`}
-                  errors={validationErrors}
+                  errors={normalizedErrors}
                   type="text"
                   value={field.value || ''}
                   onChange={(e) => updateHiddenField(index, 'value', e.target.value)}
-                  placeholder="Default value (optional)"
+                  placeholder="Default value (required )"
                 />
 
                 <div style={fullWidthInputStyle}>
                   <ValidatedInput
                     label="Description"
                     fieldName={`hiddenFields.${index}.description`}
-                    errors={validationErrors}
+                    errors={normalizedErrors}
                     type="text"
                     value={field.description || ''}
                     onChange={(e) => updateHiddenField(index, 'description', e.target.value)}
-                    placeholder="Description of what this field tracks (optional)"
+                    placeholder="Description of what this field tracks (required )"
                   />
                 </div>
               </div>
@@ -252,12 +297,12 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
       {/* Add New Hidden Field */}
       <div style={addSectionStyle}>
         <h4 style={addHeaderStyle}>Add Hidden Field</h4>
-        
+
         <div style={gridStyle}>
           <ValidatedInput
             label="Field Key"
             fieldName="newHiddenField.key"
-            errors={validationErrors}
+            errors={normalizedErrors}
             required
             type="text"
             value={newHiddenField.key || ''}
@@ -268,7 +313,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
           <ValidatedInput
             label="Default Value"
             fieldName="newHiddenField.value"
-            errors={validationErrors}
+            errors={normalizedErrors}
             type="text"
             value={newHiddenField.value || ''}
             onChange={(e) => setNewHiddenField({ ...newHiddenField, value: e.target.value })}
@@ -279,7 +324,7 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
             <ValidatedInput
               label="Description"
               fieldName="newHiddenField.description"
-              errors={validationErrors}
+              errors={normalizedErrors}
               type="text"
               value={newHiddenField.description || ''}
               onChange={(e) => setNewHiddenField({ ...newHiddenField, description: e.target.value })}
@@ -307,33 +352,6 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
           <FiPlus size={16} />
           Add Hidden Field
         </button>
-      </div>
-
-      {/* Common Use Cases Help */}
-      <div style={{
-        padding: '1rem',
-        backgroundColor: theme.colors.surface,
-        borderRadius: '12px',
-        border: `1px solid ${theme.colors.border}`,
-        borderLeft: `4px solid ${theme.colors.primary}`
-      }}>
-        <h5 style={{
-          fontSize: '0.875rem',
-          fontWeight: '600',
-          color: theme.colors.text,
-          margin: 0,
-          marginBottom: '0.5rem'
-        }}>
-          Common Hidden Fields:
-        </h5>
-        <p style={{
-          fontSize: '0.75rem',
-          color: theme.colors.textSecondary,
-          margin: 0,
-          lineHeight: '1.4'
-        }}>
-          utm_source, utm_medium, utm_campaign, referrer, landing_page, device_type, user_agent
-        </p>
       </div>
     </div>
   );

@@ -14,13 +14,8 @@ const InquiryList: React.FC = () => {
     limit: 10,
   });
 
-  const { data, isLoading, error, refetch } = useOrderInquiries(filters);
-/*
-  const handleFilterChange = (newFilters: OrderInquiryFilters) => {
-    setFilters({ ...newFilters, page: 1 }); // Reset to page 1 when filters change
-  };
+  const { data, isLoading, error, refetch, isFetching } = useOrderInquiries(filters);
 
-  */
   const handlePageChange = (page: number) => {
     setFilters({ ...filters, page });
   };
@@ -232,6 +227,21 @@ const InquiryList: React.FC = () => {
     margin: `0 -${theme.spacing.xl}`,
     padding: theme.spacing.xl,
     minHeight: '200px',
+    position: 'relative',
+  };
+
+  const loadingOverlayStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    borderRadius: theme.borderRadius.lg,
   };
 
   const tableContainerStyle: React.CSSProperties = {
@@ -248,6 +258,9 @@ const InquiryList: React.FC = () => {
     justifyContent: 'center',
     padding: theme.spacing.lg,
   };
+
+  // Check if it's refreshing (fetching while data exists)
+  const isRefreshing = isFetching && !isLoading;
 
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -304,10 +317,10 @@ const InquiryList: React.FC = () => {
           </div>
           <button
             onClick={handleRefresh}
-            disabled={isLoading}
-            style={refreshButtonStyle(isLoading)}
+            disabled={isFetching}
+            style={refreshButtonStyle(isFetching)}
             onMouseEnter={(e) => {
-              if (!isLoading) {
+              if (!isFetching) {
                 e.currentTarget.style.backgroundColor = theme.colors.hover;
                 e.currentTarget.style.borderColor = theme.colors.primaryDark;
                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -315,7 +328,7 @@ const InquiryList: React.FC = () => {
               }
             }}
             onMouseLeave={(e) => {
-              if (!isLoading) {
+              if (!isFetching) {
                 e.currentTarget.style.backgroundColor = theme.colors.surface;
                 e.currentTarget.style.borderColor = theme.colors.primary;
                 e.currentTarget.style.transform = 'translateY(0)';
@@ -326,15 +339,27 @@ const InquiryList: React.FC = () => {
             <FiRefreshCw 
               size={16}
               style={{
-                animation: isLoading ? 'spin 1s linear infinite' : 'none',
+                animation: isFetching ? 'spin 1s linear infinite' : 'none',
                 transition: theme.transitions.fast
               }}
             />
-            {isLoading ? 'Refreshing...' : 'Refresh'}
+            {isFetching ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
 
         <div style={contentSectionStyle}>
+          {/* Loading overlay for refresh */}
+          {isRefreshing && (
+            <div style={loadingOverlayStyle}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <LoadingSpinner size="lg" />
+                <p style={{ ...loadingTextStyle, marginTop: theme.spacing.md }}>
+                  Refreshing inquiries...
+                </p>
+              </div>
+            </div>
+          )}
+          
           {isLoading ? (
             <div style={loadingContainerStyle}>
               <LoadingSpinner size="lg" />
