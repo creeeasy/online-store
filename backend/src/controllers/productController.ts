@@ -180,6 +180,7 @@ export const createProduct = [
         'VALIDATION_ERROR'
       );
     }
+    console.log("here")
 
     // Validate quantity configuration
     const quantityValidation = validateQuantityConfiguration(
@@ -266,6 +267,7 @@ export const updateProduct = [
   ...productValidationRules.update,
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
+    console.log("validation")
     // Validate unique colors if colors are being updated
     if (req.body.colors && !validateUniqueColors(req.body.colors)) {
       return ResponseHandler.error(
@@ -292,7 +294,7 @@ export const updateProduct = [
     if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
       return ResponseHandler.forbidden(res, 'Not authorized to update this product');
     }
-
+    console.log("here")
     // Validate quantity configuration if any fields are being updated
     const quantityFieldsBeingUpdated = ['allowQuantity', 'allowMultipleQuantities', 'maxQuantityPerInquiry']
       .some(field => req.body.hasOwnProperty(field));

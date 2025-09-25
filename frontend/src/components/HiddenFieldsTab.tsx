@@ -18,7 +18,8 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
   const { theme } = useTheme();
   const [newHiddenField, setNewHiddenField] = useState<Partial<IHiddenField>>({ 
     key: '', 
-    value: '' 
+    value: '',
+    description: ''
   });
 
   const addHiddenField = () => {
@@ -26,9 +27,13 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
 
     setFormData(prev => ({
       ...prev,
-      hiddenFields: [...(prev.hiddenFields || []), { ...newHiddenField } as IHiddenField]
+      hiddenFields: [...(prev.hiddenFields || []), { 
+        key: newHiddenField.key || '',
+        value: newHiddenField.value || '',
+        description: newHiddenField.description || ''
+      } as IHiddenField]
     }));
-    setNewHiddenField({ key: '', value: '' });
+    setNewHiddenField({ key: '', value: '', description: '' });
   };
 
   const updateHiddenField = (index: number, field: string, value: string) => {
@@ -104,6 +109,10 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: '1rem'
+  };
+
+  const fullWidthInputStyle: React.CSSProperties = {
+    gridColumn: '1 / -1'
   };
 
   const addSectionStyle: React.CSSProperties = {
@@ -222,6 +231,18 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
                   onChange={(e) => updateHiddenField(index, 'value', e.target.value)}
                   placeholder="Default value (optional)"
                 />
+
+                <div style={fullWidthInputStyle}>
+                  <ValidatedInput
+                    label="Description"
+                    fieldName={`hiddenFields.${index}.description`}
+                    errors={validationErrors}
+                    type="text"
+                    value={field.description || ''}
+                    onChange={(e) => updateHiddenField(index, 'description', e.target.value)}
+                    placeholder="Description of what this field tracks (optional)"
+                  />
+                </div>
               </div>
             </div>
           ))
@@ -253,6 +274,18 @@ const HiddenFieldsTab: React.FC<HiddenFieldsTabProps> = ({
             onChange={(e) => setNewHiddenField({ ...newHiddenField, value: e.target.value })}
             placeholder="Default value (optional)"
           />
+
+          <div style={fullWidthInputStyle}>
+            <ValidatedInput
+              label="Description"
+              fieldName="newHiddenField.description"
+              errors={validationErrors}
+              type="text"
+              value={newHiddenField.description || ''}
+              onChange={(e) => setNewHiddenField({ ...newHiddenField, description: e.target.value })}
+              placeholder="Description of what this field tracks (optional)"
+            />
+          </div>
         </div>
 
         <button

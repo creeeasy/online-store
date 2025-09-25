@@ -37,8 +37,12 @@ export const productValidationRules = {
     // Quantity configuration
     body('allowQuantity').optional().isBoolean().withMessage('allowQuantity must be boolean').toBoolean(),
     body('allowMultipleQuantities').optional().isBoolean().withMessage('allowMultipleQuantities must be boolean').toBoolean(),
-    body('maxQuantityPerInquiry').optional().isInt({ min: 2, max: 100 }).withMessage('Max quantity must be 2-100').toInt(),
-
+body('maxQuantityPerInquiry')
+  .if((value, { req }) => req.body.allowMultipleQuantities === true)
+  .optional()
+  .isInt({ min: 2, max: 100 })
+  .withMessage('Max quantity must be between 2 and 100')
+  .toInt(),
     // Colors
     body('colors').optional().isArray({ max: 3 }).withMessage('Max 3 colors allowed'),
     body('colors.*.name').if(body('colors').exists()).trim().notEmpty().withMessage('Color name is required').isLength({ min: 1, max: 30 }),
@@ -115,80 +119,26 @@ export const productValidationRules = {
       .isArray({ min: 0 })
       .withMessage('At least one image is required if images are provided'),
     
-    body('allowQuantity')
-      .optional()
-      .isBoolean()
-      .withMessage('allowQuantity must be a boolean value')
-      .toBoolean(),
+    body('allowQuantity').optional().isBoolean().withMessage('allowQuantity must be boolean').toBoolean(),
+    body('allowMultipleQuantities').optional().isBoolean().withMessage('allowMultipleQuantities must be boolean').toBoolean(),
+body('maxQuantityPerInquiry')
+  .if((value, { req }) => req.body.allowMultipleQuantities === true)
+  .optional()
+  .isInt({ min: 2, max: 100 })
+  .withMessage('Max quantity must be between 2 and 100')
+  .toInt(),    // Colors validation for updates
+    body('colors').optional().isArray({ max: 3 }).withMessage('Max 3 colors allowed'),
+    body('colors.*.name').if(body('colors').exists()).trim().notEmpty().withMessage('Color name is required').isLength({ min: 1, max: 30 }),
+    body('colors.*.hexCode').if(body('colors').exists()).trim().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Hex code must be valid'),
+    body('colors.*.isAvailable').if(body('colors').exists()).optional().isBoolean().withMessage('isAvailable must be boolean'),
     
-    body('allowMultipleQuantities')
-      .optional()
-      .isBoolean()
-      .withMessage('allowMultipleQuantities must be a boolean value')
-      .toBoolean()
-,    
-    body('maxQuantityPerInquiry')
-      .optional()
-      .toInt()
-,    
-    // Colors validation for updates
-    body('colors')
-      .optional()
-      .isArray({ max: 3 })
-      .withMessage('Maximum 3 colors allowed'),
-    
-    body('colors.*.name')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Color name cannot be empty if provided')
-      .isLength({ min: 1, max: 30 })
-      .withMessage('Color name must be between 1 and 30 characters'),
-    
-    body('colors.*.hexCode')
-      .if(body('colors').exists())
-      .optional()
-      .trim()
-      .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-      .withMessage('Hex code must be a valid format (e.g., #FF0000 or #fff)'),
-    
-    body('colors.*.isAvailable')
-      .if(body('colors').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isAvailable must be a boolean value'),
-    
-    body('dynamicFields.*.key')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field key cannot be empty')
-      .isLength({ max: 50 })
-      .withMessage('Dynamic field key cannot exceed 50 characters'),
-    
-    body('dynamicFields.*.placeholder')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .trim()
-      .notEmpty()
-      .withMessage('Dynamic field placeholder cannot be empty')
-      .isLength({ max: 100 })
-      .withMessage('Dynamic field placeholder cannot exceed 100 characters'),
-    
-    body('dynamicFields.*.isRequired')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isRequired must be a boolean value'),
-    
-    body('dynamicFields.*.isDefault')
-      .if(body('dynamicFields').exists())
-      .optional()
-      .isBoolean()
-      .withMessage('isDefault must be a boolean value'),
-    
+    body('dynamicFields').optional().isArray().withMessage('Dynamic fields must be array'),
+    body('dynamicFields.*.key').if(body('dynamicFields').exists()).trim().notEmpty().isLength({ max: 50 }),
+    body('dynamicFields.*.placeholder').if(body('dynamicFields').exists()).trim().notEmpty().isLength({ max: 100 }),
+    body('dynamicFields.*.isRequired').if(body('dynamicFields').exists()).optional().isBoolean(),
+    body('dynamicFields.*.isDefault').if(body('dynamicFields').exists()).optional().isBoolean(),
+
+     
     // ✅ Enhanced offers validation for updates
     body('offers.*.title')
       .if(body('offers').exists())

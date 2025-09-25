@@ -1,13 +1,14 @@
-// components/ProductForm.tsx - Enhanced UI with Quantity Tab
-import React, { useState, useEffect } from 'react';
-import { FiSave } from 'react-icons/fi';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { FiSave, FiAlertTriangle } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
 import { PREDEFINED_CATEGORIES } from '../data/predefinedFields';
+import { validateProductForm, type ValidationResult, type ValidationError, FIELD_TO_TAB_MAPPING } from '../utils/validation';
 import BasicInfoTab from './BasicInfoTab';
 import ProductFormTabs from './ProductFormTabs';
 import OffersTab from './OffersTab';
-import QuantityTab from './QuantityTab.tsx'; // ✅ New import
+import QuantityTab from './QuantityTab';
 import PredefinedTab from './PredefinedTab';
 import DynamicFieldsTab from './DynamicFieldsTab';
 import HiddenFieldsTab from './HiddenFieldsTab';
@@ -18,7 +19,7 @@ interface ProductFormProps {
   onSubmit: (productData: Partial<IProduct>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
-  validationErrors?: Record<string, string[]>;
+  validationErrors?: Record<string, string[]>; // Backend validation errors
   isEditing?: boolean;
 }
 
@@ -30,9 +31,15 @@ const ProductForm: React.FC<ProductFormProps> = ({
   validationErrors = {},
   isEditing = false,
 }) => {
-  console.log(validationErrors)
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('basic');
+  const [frontendValidation, setFrontendValidation] = useState<ValidationResult>({
+    isValid: true,
+    errors: [],
+    errorsByTab: {},
+  });
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  
   const [formData, setFormData] = useState<Partial<IProduct>>({
     name: '',
     price: 0,
@@ -50,11 +57,25 @@ const ProductForm: React.FC<ProductFormProps> = ({
     offers: [],
     hiddenFields: [],
     reference: '',
-    // ✅ Add default quantity configuration
+    allowQuantity: true, // Default to true
     allowMultipleQuantities: false,
     maxQuantityPerInquiry: 1,
     ...product,
   });
+
+  // Validate form data whenever it changes (after first submit attempt)
+  const validateFormData = useCallback(() => {
+    const validation = validateProductForm(formData);
+    setFrontendValidation(validation);
+    return validation;
+  }, [formData]);
+
+  // Validate on form data change if user has attempted to submit
+  useEffect(() => {
+    if (hasAttemptedSubmit) {
+      validateFormData();
+    }
+  }, [formData, hasAttemptedSubmit, validateFormData]);
 
   // Reset form when product changes
   useEffect(() => {
@@ -75,19 +96,49 @@ const ProductForm: React.FC<ProductFormProps> = ({
       offers: [],
       hiddenFields: [],
       reference: '',
-      // ✅ Add default quantity configuration
+      allowQuantity: true,
       allowMultipleQuantities: false,
       maxQuantityPerInquiry: 1,
       ...product,
+    });
+    // Reset validation state when product changes
+    setHasAttemptedSubmit(false);
+    setFrontendValidation({
+      isValid: true,
+      errors: [],
+      errorsByTab: {},
     });
   }, [product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setHasAttemptedSubmit(true);
+    
+    // Perform frontend validation
+    const validation = validateFormData();
+    
+    // If frontend validation fails, switch to the first tab with errors
+    if (!validation.isValid) {
+      const firstErrorTab = Object.keys(validation.errorsByTab)[0];
+      if (firstErrorTab) {
+        setActiveTab(firstErrorTab);
+      }
+      return;
+    }
+    
+    // If frontend validation passes, try to submit to backend
     try {
       await onSubmit(formData);
+      // Reset validation state on successful submission
+      setHasAttemptedSubmit(false);
+      setFrontendValidation({
+        isValid: true,
+        errors: [],
+        errorsByTab: {},
+      });
     } catch {
-      // error handled in parent
+      // Backend errors are handled in parent component
+      // and passed back via validationErrors prop
     }
   };
 
@@ -95,14 +146,53 @@ const ProductForm: React.FC<ProductFormProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Combine frontend and backend errors
+  const getAllErrors = (): ValidationError[] => {
+    const frontendErrors = frontendValidation.errors;
+    const backendErrors: ValidationError[] = [];
+    
+    // Convert backend validation errors to our format
+    Object.entries(validationErrors).forEach(([field, messages]) => {
+      messages.forEach(message => {
+        // Map field to tab based on FIELD_TO_TAB_MAPPING
+        const tab = FIELD_TO_TAB_MAPPING[field] || 'basic';
+        backendErrors.push({
+          field,
+          message,
+          tab,
+        });
+      });
+    });
+    
+    return [...frontendErrors, ...backendErrors];
+  };
+
+  const getAllErrorsByTab = (): Record<string, ValidationError[]> => {
+    const allErrors = getAllErrors();
+    return allErrors.reduce((acc, error) => {
+      if (!acc[error.tab]) {
+        acc[error.tab] = [];
+      }
+      acc[error.tab].push(error);
+      return acc;
+    }, {} as Record<string, ValidationError[]>);
+  };
+
+  const hasTabErrors = (tabName: string): boolean => {
+    const errorsByTab = getAllErrorsByTab();
+    return (errorsByTab[tabName] && errorsByTab[tabName].length > 0);
+  };
+
   const commonProps = {
     formData,
     setFormData,
-    validationErrors,
+    validationErrors: getAllErrorsByTab(),
     handleInputChange,
+    hasAttemptedSubmit,
+    allErrors: getAllErrors(),
   };
 
-  // --- Theme-based styles using your theme structure ---
+  // Theme-based styles
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
     borderRadius: '16px',
@@ -182,7 +272,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
     animation: 'spin 1s linear infinite',
   };
 
-  // --- Keyframes ---
   const keyframes = `
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -198,10 +287,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
     <>
       <style>{keyframes}</style>
       <div style={containerStyle}>
-        <ProductFormTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <ProductFormTabs 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab}
+          hasTabErrors={hasTabErrors}
+        />
         <form onSubmit={handleSubmit} style={formStyle}>
           {activeTab === 'basic' && <BasicInfoTab {...commonProps} />}
-          {activeTab === 'quantity' && <QuantityTab {...commonProps} />} {/* ✅ New tab */}
+          {activeTab === 'quantity' && <QuantityTab {...commonProps} />}
           {activeTab === 'predefined' && <PredefinedTab {...commonProps} />}
           {activeTab === 'offers' && <OffersTab {...commonProps} />}
           {activeTab === 'hidden' && <HiddenFieldsTab {...commonProps} />}

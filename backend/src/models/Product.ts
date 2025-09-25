@@ -61,7 +61,7 @@ export interface IProduct extends Document {
   colors?: IProductColor[]; // Optional array of up to 3 colors
   dynamicFields: IDynamicField[];
   predefinedFields: IPredefinedField[];
-offers?: mongoose.Types.ObjectId[]; 
+  offers?: mongoose.Types.ObjectId[]; 
   hiddenFields: IHiddenField[];
   
   // ✅ New order inquiry configuration
