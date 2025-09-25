@@ -1,11 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { IProduct } from './Product';
+import { IOffer } from './Offer';
 
 /* =====================
    Order Inquiry Interface
 ===================== */
 export interface IOrderInquiry extends Document {
   productId: mongoose.Types.ObjectId;
-  productName: string;
   customerData: Record<string, any>;
   offerId?: mongoose.Types.ObjectId;
   quantity?: number;
@@ -14,12 +15,13 @@ export interface IOrderInquiry extends Document {
   createdAt: Date;
   updatedAt: Date;
   typeOfOrder: 'offer' | 'quantity';
+  product?: IProduct;
+  offer?: IOffer;
 }
 
 const OrderInquirySchema = new Schema<IOrderInquiry>(
   {
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-    productName: { type: String, required: true, trim: true },
     customerData: { type: Schema.Types.Mixed, required: true, default: {} },
 
     typeOfOrder: { type: String, enum: ['offer', 'quantity'], required: true },
@@ -69,8 +71,6 @@ OrderInquirySchema.pre<IOrderInquiry>('save', async function(next) {
     const Product = mongoose.model('Product');
     const product = await Product.findById(this.productId);
     if (!product) return next(new Error('Product not found') as mongoose.CallbackError);
-
-    this.productName = product.name;
 
     if (this.typeOfOrder === 'offer') {
       const Offer = mongoose.model('Offer');

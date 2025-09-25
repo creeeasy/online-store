@@ -4,7 +4,7 @@ import Product, { IProduct, WILAYAS } from '../models/Product';
 import { AuthRequest } from '../types';
 import { ResponseHandler, asyncHandler, validateRequest } from '../utils/responseHandler';
 import { PREDEFINED_CATEGORIES } from '../constants';
-import { productValidationRules, validateUniqueColors, validateQuantityConfiguration } from '../validators';
+import { productValidationRules, validateUniqueColors, validateQuantityConfiguration } from '../validators/product';
 import mongoose from 'mongoose';
 import Offer from '../models/Offer';
 
@@ -60,7 +60,6 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   if (req.query.onSale === 'true') {
     filter.discountPrice = { $exists: true, $lt: filter.price?.$gte || 0 };
   }
-  
   // Active offers filter
   if (req.query.hasOffers === 'true') {
     filter['offers.isActive'] = true;
@@ -91,11 +90,14 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
     ];
   }
 
-  const products = await Product.find(filter)
-    .populate('createdBy', 'username email')
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+const products = await Product.find(filter)
+  .populate('createdBy', 'username email')
+  .populate({
+    path: 'offers'  })
+  .skip(skip)
+  .limit(limit)
+  .sort({ createdAt: -1 });
+  const nonFilteredProducts = await Product.find();
 
   const total = await Product.countDocuments(filter);
 
@@ -148,7 +150,6 @@ export const getProduct = asyncHandler(async (req: Request, res: Response) => {
     hasActiveOffers: (product.offers?.length ?? 0) > 0,
     activeOffers: product.offers ?? []
   };
-
   ResponseHandler.success(
     res,
     { product, orderInquiryConfig },
@@ -180,8 +181,6 @@ export const createProduct = [
         'VALIDATION_ERROR'
       );
     }
-    console.log("here")
-
     // Validate quantity configuration
     const quantityValidation = validateQuantityConfiguration(
       req.body.allowQuantity ?? true,
@@ -267,7 +266,6 @@ export const updateProduct = [
   ...productValidationRules.update,
   validateRequest,
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    console.log("validation")
     // Validate unique colors if colors are being updated
     if (req.body.colors && !validateUniqueColors(req.body.colors)) {
       return ResponseHandler.error(
@@ -294,7 +292,6 @@ export const updateProduct = [
     if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
       return ResponseHandler.forbidden(res, 'Not authorized to update this product');
     }
-    console.log("here")
     // Validate quantity configuration if any fields are being updated
     const quantityFieldsBeingUpdated = ['allowQuantity', 'allowMultipleQuantities', 'maxQuantityPerInquiry']
       .some(field => req.body.hasOwnProperty(field));
@@ -340,35 +337,61 @@ export const updateProduct = [
     }
 
 
+    // FIXED: Proper offer handling
+    if (req.body.offers !== undefined) {
+      const offerIds: mongoose.Types.ObjectId[] = [];
+      const existingOfferIds = new Set();
 
-// When updating offers
-if (Array.isArray(req.body.offers)) {
-  const offerIds: mongoose.Types.ObjectId[] = [];
+      // Process each offer in the request
+      for (const offer of req.body.offers) {
+        if (offer._id) {
+          // Update existing offer
+          const offerId = typeof offer._id === 'string'
+            ? new mongoose.Types.ObjectId(offer._id)
+            : offer._id as mongoose.Types.ObjectId;
 
-  for (const offer of req.body.offers) {
-    if (offer._id) {
-      // Explicitly cast _id as ObjectId
-      const offerId = typeof offer._id === 'string'
-        ? new mongoose.Types.ObjectId(offer._id)
-        : offer._id as mongoose.Types.ObjectId;
+          const updatedOffer = await Offer.findByIdAndUpdate(
+            offerId,
+            { 
+              title: offer.title,
+              description: offer.description,
+              originalPrice: offer.originalPrice,
+              discountedPrice: offer.discountedPrice,
+              validUntil: offer.validUntil,
+              isActive: offer.isActive !== false // Default to true if not specified
+            },
+            { new: true, runValidators: true }
+          );
+          
+          if (updatedOffer) {
+            offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);
+            existingOfferIds.add(offerId.toString());
+          }
+        } else {
+          // Create new offer
+          const newOffer = await Offer.create({ 
+            ...offer, 
+            isActive: offer.isActive !== false 
+          });
+          offerIds.push(newOffer._id as mongoose.Types.ObjectId);
+        }
+      }
 
-      const updatedOffer = await Offer.findByIdAndUpdate(
-        offerId,
-        { ...offer },
-        { new: true, runValidators: true }
-      );
-      if (updatedOffer) offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);
+      // Preserve existing offers that weren't included in the request
+      // This is the key fix - don't delete offers that aren't in the request
+      const currentOffers = product.offers || [];
+      for (const existingOffer of currentOffers) {
+        const existingOfferId = existingOffer._id.toString();
+        if (!existingOfferIds.has(existingOfferId)) {
+          offerIds.push(existingOffer._id as mongoose.Types.ObjectId);
+        }
+      }
+
+      updateData.offers = offerIds;
     } else {
-      // Create new offer if _id not present
-      const newOffer = await Offer.create({ ...offer, isActive: offer.isActive ?? true });
-      offerIds.push(newOffer._id as mongoose.Types.ObjectId);
+      // If offers field is not provided in request, preserve existing offers
+      updateData.offers = product.offers;
     }
-  }
-
-  updateData.offers = offerIds;
-}
-
-
 
     product = await Product.findByIdAndUpdate(
       req.params.id,
