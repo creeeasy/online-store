@@ -457,13 +457,9 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
   };
 
   return (
-    <FieldWrapper
-      label={label}
-      fieldName={fieldName}
-      errors={errors}
-      required={required}
-    >
+
       <select
+      required={required}
         {...props}
         style={selectStyle}
         className={className}
@@ -493,7 +489,6 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
           </option>
         ))}
       </select>
-    </FieldWrapper>
   );
 };
 

@@ -97,6 +97,11 @@ const InquiryUtils = {
     // Use the typeOfOrder property that exists in your interface
     return inquiry.typeOfOrder || 'quantity'; // Default to 'quantity' if undefined
   },
+    getQuantity: (inquiry: OrderInquiry) => {
+
+    return (inquiry.typeOfOrder == "quantity" && inquiry.quantity) ? inquiry.quantity : 'N/A'; 
+  },
+
 
   // FIXED: Use the correct properties from OrderInquiry interface
   getSelectedOffer: (inquiry: OrderInquiry) => {
@@ -388,6 +393,19 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     textTransform: 'capitalize',
     display: 'inline-block',
   });
+const quantityBadgeStyle = (hasQuantity: boolean): React.CSSProperties => ({
+  backgroundColor: hasQuantity ? theme.colors.warning : theme.colors.disabled,
+  color: hasQuantity ? theme.colors.background : theme.colors.primary,
+  padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+  borderRadius: theme.borderRadius.full,
+  fontSize: theme.fonts.size.sm,
+  fontWeight: theme.fonts.weight.semiBold,
+  textTransform: 'capitalize',
+  display: 'inline-block',
+  opacity: hasQuantity ? 1 : 0.6, // make it look disabled
+  cursor: hasQuantity ? 'default' : 'not-allowed',
+});
+
 
   const offerStyle: React.CSSProperties = {
     color: theme.colors.text,
@@ -535,6 +553,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
               <th scope="col" style={thStyle}>Wilaya</th>
               <th scope="col" style={thStyle}>Phone Number</th>
               <th scope="col" style={thStyle}>Order Type</th>
+              <th scope="col" style={thStyle}>Quantity</th>
               <th scope="col" style={thStyle}>Selected Offer</th>
               <th scope="col" style={thStyle}>Total Price</th>
               <th scope="col" style={thStyle}>Date</th>
@@ -613,6 +632,21 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
                     );
                   })()}
                 </td>
+
+                {/* Quantity Column */}
+                  <td style={tdStyle}>
+                    {(() => {
+                      const orderType = InquiryUtils.getQuantity(inquiry); // number | 'N/A'
+                      const hasQuantity = inquiry.typeOfOrder === 'quantity' && !!inquiry.quantity;
+
+                      return (
+                        <span style={quantityBadgeStyle(hasQuantity)}>
+                          {orderType}
+                        </span>
+                      );
+                    })()}
+                  </td>
+
 
                 {/* Selected Offer Column */}
                 <td style={tdStyle}>

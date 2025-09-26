@@ -16,24 +16,24 @@ const ClientNavbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const getNavLinkStyle = (path: string) => {
+  const getNavLinkStyle = (path: string): React.CSSProperties => {
     const isActive = location.pathname === path;
     return {
-      padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+      padding: `${theme.spacing.sm} ${theme.spacing.md}`,
       borderRadius: theme.borderRadius.lg,
       fontWeight: isActive ? theme.fonts.weight.semiBold : theme.fonts.weight.medium,
       color: isActive ? theme.colors.primary : theme.colors.textSecondary,
-      backgroundColor: isActive ? `${theme.colors.primary}10` : 'transparent',
+      backgroundColor: isActive ? `${theme.colors.primary}15` : 'transparent',
       transition: theme.transitions.fast,
       textDecoration: 'none',
-      fontSize: theme.fonts.size.md,
+      fontSize: theme.fonts.size.sm,
       fontFamily: theme.fonts.family.body,
       letterSpacing: theme.fonts.letterSpacing.wide,
       position: 'relative' as const,
       display: 'inline-flex',
       alignItems: 'center',
       border: `1px solid ${isActive ? `${theme.colors.primary}30` : 'transparent'}`,
-      boxShadow: isActive ? theme.shadows.sm : 'none',
+      boxShadow: isActive ? theme.shadows.xs : 'none',
     };
   };
 
@@ -45,33 +45,33 @@ const ClientNavbar: React.FC = () => {
     zIndex: theme.zIndex.sticky,
     transition: theme.transitions.normal,
     background: isScrolled
-      ? `linear-gradient(135deg, ${theme.colors.surface}F8 0%, ${theme.colors.backgroundSecondary}F8 100%)`
-      : `linear-gradient(135deg, ${theme.colors.surface} 0%, ${theme.colors.backgroundSecondary} 100%)`,
-    backdropFilter: isScrolled ? 'blur(20px) saturate(1.2)' : 'blur(8px)',
-    WebkitBackdropFilter: isScrolled ? 'blur(20px) saturate(1.2)' : 'blur(8px)',
-    boxShadow: isScrolled ? theme.shadows.xl : theme.shadows.lg,
-    borderBottom: `1px solid ${isScrolled ? `${theme.colors.primary}20` : `${theme.colors.border}50`}`,
+      ? `linear-gradient(135deg, ${theme.colors.backgroundSecondary}E6 0%, ${theme.colors.surface}E6 100%)`
+      : `linear-gradient(135deg, ${theme.colors.backgroundSecondary} 0%, ${theme.colors.surface} 100%)`,
+    backdropFilter: isScrolled ? 'blur(16px) saturate(1.8)' : 'blur(8px)',
+    WebkitBackdropFilter: isScrolled ? 'blur(16px) saturate(1.8)' : 'blur(8px)',
+    boxShadow: isScrolled ? theme.shadows.lg : theme.shadows.sm,
+    borderBottom: `1px solid ${isScrolled ? `${theme.colors.primary}20` : `${theme.colors.border}30`}`,
   };
 
   const containerStyle: React.CSSProperties = {
     maxWidth: '1280px',
     margin: '0 auto',
-    padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
   };
 
   const logoWrapperStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
     textDecoration: 'none',
     transition: theme.transitions.fast,
   };
 
   const logoIconStyle: React.CSSProperties = {
-    width: '3rem',
-    height: '3rem',
+    width: '2.5rem',
+    height: '2.5rem',
     background: theme.colors.gradientPrimary,
-    borderRadius: theme.borderRadius.xl,
+    borderRadius: theme.borderRadius.lg,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -88,7 +88,7 @@ const ClientNavbar: React.FC = () => {
   };
 
   const logoTextStyle: React.CSSProperties = {
-    fontSize: theme.fonts.size['2xl'],
+    fontSize: theme.fonts.size.xl,
     fontWeight: theme.fonts.weight.bold,
     fontFamily: theme.fonts.family.heading,
     background: theme.colors.gradientPrimary,
@@ -112,17 +112,18 @@ const ClientNavbar: React.FC = () => {
 
   const desktopNavStyle: React.CSSProperties = {
     display: 'none',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
     alignItems: 'center',
-    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    padding: theme.spacing.xs,
     backgroundColor: `${theme.colors.surface}80`,
     borderRadius: theme.borderRadius.xl,
     border: `1px solid ${theme.colors.border}`,
     backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
   };
 
   const menuButtonStyle: React.CSSProperties = {
-    padding: theme.spacing.md,
+    padding: theme.spacing.sm,
     color: theme.colors.textSecondary,
     borderRadius: theme.borderRadius.lg,
     transition: theme.transitions.fast,
@@ -132,30 +133,29 @@ const ClientNavbar: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: theme.shadows.sm,
+    boxShadow: theme.shadows.xs,
   };
 
   const mobileMenuStyle: React.CSSProperties = {
     maxHeight: isMobileMenuOpen ? '300px' : '0',
     overflow: 'hidden',
-    transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-    background: `linear-gradient(135deg, ${theme.colors.surface} 0%, ${theme.colors.backgroundSecondary} 100%)`,
-    borderTop: isMobileMenuOpen ? `1px solid ${theme.colors.border}` : 'none',
+    transition: 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    background: `linear-gradient(135deg, ${theme.colors.backgroundSecondary} 0%, ${theme.colors.surface} 100%)`,
+    borderTop: `1px solid ${theme.colors.border}30`,
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
   };
 
   const mobileMenuContentStyle: React.CSSProperties = {
-    padding: isMobileMenuOpen ? `${theme.spacing.lg} ${theme.spacing.xl}` : '0',
+    padding: isMobileMenuOpen ? `${theme.spacing.md} ${theme.spacing.lg}` : '0',
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
     opacity: isMobileMenuOpen ? 1 : 0,
-    transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(-10px)',
-    transition: 'opacity 0.3s ease, transform 0.3s ease',
+    transform: isMobileMenuOpen ? 'translateY(0)' : 'translateY(-8px)',
+    transition: 'opacity 0.2s ease, transform 0.2s ease',
     transitionDelay: isMobileMenuOpen ? '0.1s' : '0s',
   };
-
   return (
     <>
       <nav style={navStyle}>
@@ -176,8 +176,6 @@ const ClientNavbar: React.FC = () => {
                 }
                 if (text) {
                   text.style.background = theme.colors.gradientSecondary;
-                  text.style.WebkitBackgroundClip = 'text';
-                  text.style.backgroundClip = 'text';
                 }
                 if (tagline) {
                   tagline.style.color = theme.colors.secondary;
@@ -194,8 +192,6 @@ const ClientNavbar: React.FC = () => {
                 }
                 if (text) {
                   text.style.background = theme.colors.gradientPrimary;
-                  text.style.WebkitBackgroundClip = 'text';
-                  text.style.backgroundClip = 'text';
                 }
                 if (tagline) {
                   tagline.style.color = theme.colors.textMuted;
@@ -216,10 +212,10 @@ const ClientNavbar: React.FC = () => {
                   right: 0,
                   bottom: 0,
                   background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 70%)',
-                  borderRadius: theme.borderRadius.xl,
+                  borderRadius: theme.borderRadius.lg,
                 }}></div>
               </div>
-              <div style={logoTextContainerStyle}>
+              <div className="logo-text-container" style={logoTextContainerStyle}>
                 <span className="logo-text" style={logoTextStyle}>
                   Cheerful Shop
                 </span>
@@ -230,10 +226,7 @@ const ClientNavbar: React.FC = () => {
             </Link>
 
             {/* Enhanced Desktop Navigation */}
-            <div 
-              style={desktopNavStyle}
-              className="desktop-nav"
-            >
+            <div className="desktop-nav" style={desktopNavStyle}>
               {[
                 { path: '/', label: 'Home' },
                 { path: '/products', label: 'Products' },
@@ -246,11 +239,11 @@ const ClientNavbar: React.FC = () => {
                   style={getNavLinkStyle(path)}
                   onMouseEnter={(e) => {
                     if (location.pathname !== path) {
-                      e.currentTarget.style.backgroundColor = `${theme.colors.primary}15`;
+                      e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
                       e.currentTarget.style.color = theme.colors.primary;
-                      e.currentTarget.style.borderColor = `${theme.colors.primary}40`;
+                      e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
                       e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = theme.shadows.sm;
+                      e.currentTarget.style.boxShadow = theme.shadows.xs;
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -324,17 +317,17 @@ const ClientNavbar: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 onMouseEnter={(e) => {
                   if (location.pathname !== path) {
-                    e.currentTarget.style.backgroundColor = `${theme.colors.primary}15`;
+                    e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
                     e.currentTarget.style.color = theme.colors.primary;
-                    e.currentTarget.style.borderColor = `${theme.colors.primary}40`;
-                    e.currentTarget.style.transform = 'translateX(8px)';
+                    e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
+                    e.currentTarget.style.transform = 'translateX(4px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (location.pathname !== path) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = theme.colors.textSecondary;
-                    e.currentTarget.style.borderColor = 'transparent';
+                    e.currentTarget.style.backgroundColor = location.pathname === path ? `${theme.colors.primary}15` : 'transparent';
+                    e.currentTarget.style.color = location.pathname === path ? theme.colors.primary : theme.colors.textSecondary;
+                    e.currentTarget.style.borderColor = location.pathname === path ? `${theme.colors.primary}30` : 'transparent';
                     e.currentTarget.style.transform = 'translateX(0)';
                   }
                 }}
@@ -345,27 +338,8 @@ const ClientNavbar: React.FC = () => {
           </div>
         </div>
       </nav>
-
-      <style jsx>{`
-        .desktop-nav {
-          display: none;
-        }
-        .mobile-menu-button {
-          display: flex;
-        }
-        
-        @media (min-width: 768px) {
-          .desktop-nav {
-            display: flex;
-          }
-          .mobile-menu-button {
-            display: none;
-          }
-        }
-      `}</style>
-
       {/* Spacer */}
-      <div style={{ height: '90px' }} />
+      <div style={{ height: '80px' }} />
     </>
   );
 };

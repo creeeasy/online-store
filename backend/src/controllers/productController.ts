@@ -444,24 +444,95 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
   // Count total products
   const totalProducts = await Product.countDocuments();
 
-  // Products on sale (discountPrice < price)
+  // Products on sale - simplified approach
   const onSaleCount = await Product.countDocuments({
-    discountPrice: { $exists: true, $ne: null },
-    $expr: { $lt: ["$discountPrice", "$price"] }
+    $or: [
+      // Direct product discount
+      {
+        discountPrice: { $exists: true, $ne: null },
+        price: { $exists: true, $ne: null },
+        $expr: { $lt: ["$discountPrice", "$price"] }
+      },
+      // Has active offers with discounted price
+      {
+        "offers": {
+          $elemMatch: {
+            isActive: true,
+            $or: [
+              { validUntil: { $exists: false } },
+              { validUntil: { $gt: new Date() } }
+            ],
+            discountedPrice: { $exists: true, $ne: null },
+            originalPrice: { $exists: true, $ne: null }
+          }
+        }
+      }
+    ]
   });
 
   // Products with at least one active offer
   const withActiveOffers = await Product.countDocuments({
-    offers: { 
-      $elemMatch: { 
-        isActive: true, 
+    "offers": {
+      $elemMatch: {
+        isActive: true,
         $or: [
           { validUntil: { $exists: false } },
           { validUntil: { $gt: new Date() } }
         ]
-      } 
+      }
     }
   });
+
+  // Products with active offers that have discounted prices (actual discounts)
+  const withActualDiscountOffers = await Product.aggregate([
+    {
+      $match: {
+        "offers": {
+          $elemMatch: {
+            isActive: true,
+            $or: [
+              { validUntil: { $exists: false } },
+              { validUntil: { $gt: new Date() } }
+            ],
+            discountedPrice: { $exists: true, $ne: null },
+            originalPrice: { $exists: true, $ne: null }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        discountedOffers: {
+          $filter: {
+            input: "$offers",
+            as: "offer",
+            cond: {
+              $and: [
+                { $eq: ["$$offer.isActive", true] },
+                { 
+                  $or: [
+                    { $not: { $ifNull: ["$$offer.validUntil", false] } },
+                    { $gt: ["$$offer.validUntil", new Date()] }
+                  ]
+                },
+                { $ne: ["$$offer.discountedPrice", null] },
+                { $ne: ["$$offer.originalPrice", null] },
+                { $lt: ["$$offer.discountedPrice", "$$offer.originalPrice"] }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      $match: {
+        discountedOffers: { $ne: [], $not: { $size: 0 } }
+      }
+    },
+    {
+      $count: "count"
+    }
+  ]);
 
   // ✅ Enhanced quantity statistics
   const quantityDisabled = await Product.countDocuments({
@@ -486,13 +557,13 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
 
   // Products with colors
   const withColorsCount = await Product.countDocuments({
-    colors: { $exists: true, $ne: [], $size: { $gte: 1 } }
+    colors: { $exists: true, $ne: [], $not: { $size: 0 } }
   });
 
   // Most popular colors
   const popularColors = await Product.aggregate([
     { $unwind: "$colors" },
-    { 
+    {
       $group: {
         _id: {
           name: "$colors.name",
@@ -500,7 +571,13 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
         },
         count: { $sum: 1 },
         availableCount: {
-          $sum: { $cond: ["$colors.isAvailable", 1, 0] }
+          $sum: {
+            $cond: [
+              { $ifNull: ["$colors.isAvailable", true] },
+              1,
+              0
+            ]
+          }
         }
       }
     },
@@ -521,26 +598,28 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
   const categoryStats = await Product.aggregate([
     { $unwind: "$predefinedFields" },
     { $match: { "predefinedFields.isActive": true } },
-    { 
+    {
       $group: {
         _id: "$predefinedFields.category",
         totalProducts: { $sum: 1 }
-      } 
+      }
     },
     { $sort: { totalProducts: -1 } }
   ]);
 
-  // Offer statistics - using originalPrice/discountedPrice structure
+  // Offer statistics
   const offerStats = await Product.aggregate([
     { $unwind: "$offers" },
-    { 
-      $match: { 
-        "offers.isActive": true, 
+    {
+      $match: {
+        "offers.isActive": true,
         $or: [
           { "offers.validUntil": { $exists: false } },
           { "offers.validUntil": { $gt: new Date() } }
-        ]
-      } 
+        ],
+        "offers.originalPrice": { $exists: true, $ne: null },
+        "offers.discountedPrice": { $exists: true, $ne: null }
+      }
     },
     {
       $group: {
@@ -549,7 +628,12 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
         avgOriginalPrice: { $avg: "$offers.originalPrice" },
         avgDiscountedPrice: { $avg: "$offers.discountedPrice" },
         maxOriginalPrice: { $max: "$offers.originalPrice" },
-        minDiscountedPrice: { $min: "$offers.discountedPrice" }
+        minDiscountedPrice: { $min: "$offers.discountedPrice" },
+        totalSavings: {
+          $sum: {
+            $subtract: ["$offers.originalPrice", "$offers.discountedPrice"]
+          }
+        }
       }
     }
   ]);
@@ -559,37 +643,50 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     {
       $addFields: {
         quantityMode: {
-          $cond: {
-            if: { $eq: ["$allowQuantity", false] },
-            then: "disabled",
-            else: {
-              $cond: {
-                if: { $eq: ["$allowMultipleQuantities", true] },
-                then: "multiple",
-                else: "single"
+          $switch: {
+            branches: [
+              {
+                case: {
+                  $or: [
+                    { $eq: ["$allowQuantity", false] },
+                    { $eq: ["$allowQuantity", null] }
+                  ]
+                },
+                then: "disabled"
+              },
+              {
+                case: { $eq: ["$allowMultipleQuantities", true] },
+                then: "multiple"
               }
-            }
+            ],
+            default: "single"
           }
         }
       }
     },
     {
       $group: {
-        _id: {
-          mode: "$quantityMode",
-          maxQuantity: "$maxQuantityPerInquiry"
-        },
+        _id: "$quantityMode",
         count: { $sum: 1 }
       }
     },
     { $sort: { count: -1 } }
   ]);
 
-  // Recently created products (e.g., last 5)
+  // Recently created products
   const recentProducts = await Product.find()
     .sort({ createdAt: -1 })
     .limit(5)
     .select("name price discountPrice images colors allowQuantity allowMultipleQuantities maxQuantityPerInquiry createdAt");
+
+  // Additional stats
+  const productsWithDynamicFields = await Product.countDocuments({
+    dynamicFields: { $exists: true, $ne: [], $not: { $size: 0 } }
+  });
+
+  const productsWithHiddenFields = await Product.countDocuments({
+    hiddenFields: { $exists: true, $ne: [], $not: { $size: 0 } }
+  });
 
   ResponseHandler.success(
     res,
@@ -597,6 +694,7 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
       totalProducts,
       onSaleCount,
       withActiveOffers,
+      withActualDiscountOffers: withActualDiscountOffers[0]?.count || 0,
       quantityStats: {
         disabled: quantityDisabled,
         singleOnly: quantitySingleOnly,
@@ -610,10 +708,15 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
         avgOriginalPrice: 0,
         avgDiscountedPrice: 0,
         maxOriginalPrice: 0,
-        minDiscountedPrice: 0
+        minDiscountedPrice: 0,
+        totalSavings: 0
       },
       quantityConfigStats,
-      recentProducts
+      recentProducts,
+      additionalStats: {
+        withDynamicFields: productsWithDynamicFields,
+        withHiddenFields: productsWithHiddenFields
+      }
     },
     'Product statistics retrieved successfully'
   );

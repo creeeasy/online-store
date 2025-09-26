@@ -13,20 +13,20 @@ export class OrderInquiryController {
 
 
 static createInquiry = asyncHandler(async (req: Request, res: Response) => {
-  const { 
-    productId, 
-    customerData = {}, 
-    quantity = 1, 
+  const {
+    productId,
+    customerData = {},
+    quantity = 1,
     typeOfOrder,       // 'offer' | 'quantity'
     offerId,           // optional
     selectedVariants = {},
-    notes 
+    notes
   } = req.body;
 
   // Verify product exists
   const product = await Product.findById(productId);
   if (!product) {
-    return ResponseHandler.notFound(res, 'Product');
+    return ResponseHandler.notFound(res, 'المنتج غير موجود');
   }
 
   // Validate required dynamic fields
@@ -38,7 +38,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
         if (!fieldValue || fieldValue.trim() === '') {
           validationErrors.push({
             field: `customerData.${field.key}`,
-            message: `${field.placeholder || field.key} is required`,
+            message: `${field.placeholder || field.key} مطلوب`,
             value: fieldValue,
             location: 'body'
           });
@@ -49,7 +49,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           if (!validateAlgerianPhone(fieldValue)) {
             validationErrors.push({
               field: `customerData.${field.key}`,
-              message: 'Invalid phone format. Must be 10 digits: 0[567]XXXXXXXX',
+              message: 'رقم الهاتف غير صالح. يجب أن يكون 10 أرقام: 0[567]XXXXXXXX',
               value: fieldValue,
               location: 'body'
             });
@@ -62,7 +62,46 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           if (!nameRegex.test(fieldValue.trim())) {
             validationErrors.push({
               field: `customerData.${field.key}`,
-              message: 'Name must contain only letters and spaces, and be between 2-100 characters',
+              message: 'الاسم يجب أن يحتوي على أحرف ومسافات فقط، ويكون بين 2-100 حرف',
+              value: fieldValue,
+              location: 'body'
+            });
+          }
+        }
+
+        // Email validation
+        if (field.key.toLowerCase().includes('email') && fieldValue) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(fieldValue)) {
+            validationErrors.push({
+              field: `customerData.${field.key}`,
+              message: 'البريد الإلكتروني غير صالح',
+              value: fieldValue,
+              location: 'body'
+            });
+          }
+        }
+
+        // Age validation
+        if (field.key.toLowerCase().includes('age') && fieldValue) {
+          const age = parseInt(fieldValue);
+          if (isNaN(age) || age < 1 || age > 120) {
+            validationErrors.push({
+              field: `customerData.${field.key}`,
+              message: 'العمر غير صالح',
+              value: fieldValue,
+              location: 'body'
+            });
+          }
+        }
+
+        // Wilaya validation
+        if (field.key.toLowerCase().includes('wilaya') && fieldValue) {
+          // Add your wilaya validation logic here if needed
+          if (fieldValue.trim().length < 2) {
+            validationErrors.push({
+              field: `customerData.${field.key}`,
+              message: 'الولاية غير صالحة',
               value: fieldValue,
               location: 'body'
             });
@@ -75,7 +114,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
   if (validationErrors.length > 0) {
     return ResponseHandler.error(
       res,
-      'Validation failed for customer data',
+      'فشل في التحقق من بيانات العميل',
       400,
       validationErrors,
       'VALIDATION_ERROR'
@@ -86,42 +125,55 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
 
   if (typeOfOrder === 'offer') {
     if (!offerId) {
-      return ResponseHandler.error(res, 'Offer ID is required for offer inquiries', 400);
+      return ResponseHandler.error(res, 'معرف العرض مطلوب للطلبات بالعرض', 400);
     }
 
     const offer: IOffer | null = await Offer.findById(offerId);
     if (!offer || !offer.isActive || (offer.validUntil && new Date(offer.validUntil) < new Date())) {
-      return ResponseHandler.error(res, 'Selected offer is not valid or has expired', 400);
+      return ResponseHandler.error(res, 'العرض المحدد غير صالح أو منتهي الصلاحية', 400);
     }
 
     totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
 
   } else if (typeOfOrder === 'quantity') {
+    if (quantity < 1) {
+      return ResponseHandler.error(res, 'الكمية يجب أن تكون أكبر من صفر', 400);
+    }
+
+    // Check max quantity if product has limits
+    if (product.allowMultipleQuantities && product.maxQuantityPerInquiry && quantity > product.maxQuantityPerInquiry) {
+      return ResponseHandler.error(res, `الحد الأقصى للكمية هو ${product.maxQuantityPerInquiry}`, 400);
+    }
+
     totalPrice = (product.discountPrice ?? product.price) * quantity;
   } else {
-    return ResponseHandler.error(res, 'Invalid typeOfOrder', 400);
+    return ResponseHandler.error(res, 'نوع الطلب غير صالح', 400);
   }
 
-  const inquiry = new OrderInquiry({
-    productId,
-    customerData,
-    quantity: typeOfOrder === 'quantity' ? quantity : 1,
-    offerId: typeOfOrder === 'offer' ? offerId : undefined,
-    selectedVariants,
-    totalPrice,
-    notes,
-    typeOfOrder
-  });
+  try {
+    const inquiry = new OrderInquiry({
+      productId,
+      customerData,
+      quantity: typeOfOrder === 'quantity' ? quantity : 1,
+      offerId: typeOfOrder === 'offer' ? offerId : undefined,
+      selectedVariants,
+      totalPrice,
+      notes,
+      typeOfOrder
+    });
 
-  await inquiry.save();
-  await inquiry.populate('product');
+    await inquiry.save();
+    await inquiry.populate('product');
 
-  ResponseHandler.success(
-    res,
-    { inquiry },
-    'Order inquiry created successfully',
-    201
-  );
+    ResponseHandler.success(
+      res,
+      { inquiry },
+      'تم إنشاء طلب الاستفسار بنجاح',
+      201
+    );
+  } catch (error) {
+    return ResponseHandler.error(res, 'حدث خطأ أثناء إنشاء الطلب', 500);
+  }
 });
 
 

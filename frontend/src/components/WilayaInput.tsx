@@ -25,7 +25,7 @@ export const WilayaSelect: React.FC<WilayaSelectProps> = ({
   return (
     <ValidatedSelect
       label="Wilaya"
-      fieldName={fieldName}
+      fieldName={'fieldName'}
       errors={errors}
       required={required}
       value={value}

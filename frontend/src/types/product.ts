@@ -106,7 +106,6 @@ export interface IOrderInquiry {
   
   selectedVariants?: Record<string, string>;
   totalPrice: number;
-  status: 'pending' | 'contacted' | 'converted' | 'cancelled';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

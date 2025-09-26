@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { useImageUpload } from '../hooks/useUpload';
 import { getFieldErrors, hasFieldError, type ValidationError } from '../utils/validation';
 import ErrorDisplay from './ErrorDisplay';
+import { SERVER_URL } from '../utils/apiClient';
 
 interface BasicInfoTabProps {
   formData: Partial<IProduct>;
@@ -456,123 +457,158 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
           )}
 
-          {(formData.images || []).map((image, index) => {
-            const fieldName = `images.${index}`;
-            const fieldHasError = hasFieldError(fieldName, allErrors) || (index === 0 && hasFieldError('images', allErrors));
-            
-            return (
-              <div
-                key={index}
-                style={{
-                  ...getFieldContainerStyle(fieldHasError),
-                  padding: '1rem',
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: '12px',
-                  border: `1px solid ${fieldHasError ? theme.colors.error : theme.colors.border}`,
-                }}
-              >
-                <label style={getLabelStyle(fieldHasError)}>
-                  Image {index + 1}
-                  {index === 0 && <span style={{ color: theme.colors.error }}>*</span>}
-                  {fieldHasError && <FiAlertTriangle size={14} />}
-                </label>
-                
-                <div style={imageRowStyle}>
-                  {image && <div style={imagePreviewStyle(image)} />}
-                  
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <input
-                      type="text"
-                      value={image}
-                      onChange={(e) => handleImageUrlChange(index, e.target.value)}
-                      placeholder="Image URL or upload a file"
-                      style={getInputStyle(fieldName, fieldHasError)}
-                      onFocus={(e) => {
-                        if (!fieldHasError) {
-                          e.target.style.borderColor = theme.colors.primary;
-                          e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (!fieldHasError) {
-                          e.target.style.borderColor = theme.colors.border;
-                          e.target.style.boxShadow = 'none';
-                        }
-                      }}
-                    />
-                    
-                    {image && (
-                      <div style={{ fontSize: '0.75rem', color: theme.colors.textSecondary }}>
-                        {image.startsWith('http') ? 'URL: ' : 'Uploaded: '}
-                        {image.length > 50 ? `${image.substring(0, 50)}...` : image}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <input
-                    type="file"
-                    ref={(el) => fileInputRefs.current[index] = el}
-                    accept="image/*"
-                    onChange={(e) => handleFileSelect(index, e)}
-                    style={{ display: 'none' }}
-                  />
-                  
-                  <button
-                    type="button"
-                    onClick={() => triggerFileInput(index)}
-                    disabled={isUploading}
-                    style={uploadButtonStyle(isUploading)}
-                    onMouseEnter={(e) => {
-                      if (!isUploading) {
-                        e.currentTarget.style.backgroundColor = theme.colors.hover || theme.colors.backgroundSecondary;
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isUploading) {
-                        e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }
-                    }}
-                  >
-                    {isUploading ? (
-                      <>
-                        <FiLoader className="animate-spin" size={14} />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <FiUpload size={14} />
-                        Upload
-                      </>
-                    )}
-                  </button>
+        {(formData.images || []).map((image, index) => {
+  const fieldName = `images.${index}`;
+  const fieldHasError =
+    hasFieldError(fieldName, allErrors) ||
+    (index === 0 && hasFieldError("images", allErrors));
 
-                  {(formData.images?.length || 0) > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      style={removeButtonStyle}
-                      title="Remove image"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  )}
-                </div>
-                
-                {renderFieldErrors(fieldName)}
-                {index === 0 && renderFieldErrors('images')}
-              </div>
-            );
-          })}
+  return (
+    <div
+      key={index}
+      style={{
+        ...getFieldContainerStyle(fieldHasError),
+        padding: "1rem",
+        backgroundColor: theme.colors.surface,
+        borderRadius: "12px",
+        border: `1px solid ${
+          fieldHasError ? theme.colors.error : theme.colors.border
+        }`,
+      }}
+    >
+      <label style={getLabelStyle(fieldHasError)}>
+        Image {index + 1}
+        {index === 0 && (
+          <span style={{ color: theme.colors.error }}>*</span>
+        )}
+        {fieldHasError && <FiAlertTriangle size={14} />}
+      </label>
+
+      <div style={imageRowStyle}>
+        {image && (
+          <img
+            src={SERVER_URL + image}
+            alt={`Preview ${index + 1}`}
+            style={{
+              width: "80px",
+              height: "80px",
+              objectFit: "cover",
+              borderRadius: "8px",
+              border: `1px solid ${theme.colors.border}`,
+            }}
+          />
+        )}
+
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <input
+            type="text"
+            value={image}
+            onChange={(e) => handleImageUrlChange(index, e.target.value)}
+            placeholder="Image URL or upload a file"
+            style={getInputStyle(fieldName, fieldHasError)}
+            onFocus={(e) => {
+              if (!fieldHasError) {
+                e.target.style.borderColor = theme.colors.primary;
+                e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
+              }
+            }}
+            onBlur={(e) => {
+              if (!fieldHasError) {
+                e.target.style.borderColor = theme.colors.border;
+                e.target.style.boxShadow = "none";
+              }
+            }}
+          />
+
+          {image && (
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: theme.colors.textSecondary,
+              }}
+            >
+              {image.startsWith("http") ? "URL: " : "Uploaded: "}
+              {image.length > 50
+                ? `${image.substring(0, 50)}...`
+                : image}
+            </div>
+          )}
+        </div>
+
+        <input
+          type="file"
+          ref={(el) => (fileInputRefs.current[index] = el)}
+          accept="image/*"
+          onChange={(e) => handleFileSelect(index, e)}
+          style={{ display: "none" }}
+        />
+
+        <button
+          type="button"
+          onClick={() => triggerFileInput(index)}
+          disabled={isUploading}
+          style={uploadButtonStyle(isUploading)}
+          onMouseEnter={(e) => {
+            if (!isUploading) {
+              e.currentTarget.style.backgroundColor =
+                theme.colors.hover || theme.colors.backgroundSecondary;
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isUploading) {
+              e.currentTarget.style.backgroundColor =
+                theme.colors.backgroundSecondary;
+              e.currentTarget.style.transform = "translateY(0)";
+            }
+          }}
+        >
+          {isUploading ? (
+            <>
+              <FiLoader className="animate-spin" size={14} />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <FiUpload size={14} />
+              Upload
+            </>
+          )}
+        </button>
+
+          {(formData.images?.length || 0) > 1 && (
+            <button
+              type="button"
+              onClick={() => removeImage(index)}
+              style={removeButtonStyle}
+              title="Remove image"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              <FiTrash2 size={16} />
+            </button>
+          )}
+        </div>
+
+        {renderFieldErrors(fieldName)}
+        {index === 0 && renderFieldErrors("images")}
+      </div>
+    );
+  })}
+
         </div>
 
         {/* Display consolidated errors for this tab */}
