@@ -1,0 +1,18 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <defs>
+    <style>
+      .shield { fill: #0A2342; }
+      .monogram { fill: #ffffff; font: bold 140px 'Arial', sans-serif; text-anchor: middle; }
+      .brand { fill: #0A2342; font: bold 48px 'Arial', sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+  <!-- Shield Shape -->
+  <path class="shield" d="M250 20 L430 100 L390 350 L250 460 L110 350 L70 100 Z"/>
+  
+  <!-- SG Monogram -->
+  <text x="250" y="280" class="monogram">SG</text>
+  
+  <!-- Brand Text -->
+  <text x="250" y="490" class="brand">StoreGuard</text>
+</svg>

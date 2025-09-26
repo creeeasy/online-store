@@ -349,6 +349,35 @@ const AdminNavbar: React.FC = () => {
                     animation: 'pulse 2s infinite',
                   }} />
                 </Link>
+                <Link
+                  to="/admin/GoogleSheet"
+                  style={{
+                    ...getNavLinkStyle(isActivePath('/admin/GoogleSheet')),
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin/GoogleSheet')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin/GoogleSheet')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
+                >
+                  <FiMail size={16} />
+                  GoogleSheet
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: theme.colors.error,
+                    animation: 'pulse 2s infinite',
+                  }} />
+                </Link>
               </div>
             </div>
 

@@ -20,6 +20,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import InquiryDashboard from './pages/InquiryDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThankYou from './pages/ThankYou';
+import IntegrateSheet from './pages/IntegrateSheet';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -148,6 +149,17 @@ const AppContent: React.FC = () => {
                 <>
                   <AdminNavbar />
                   <InquiryDashboard />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/GoogleSheet"
+            element={
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <IntegrateSheet />
                 </>
               </ProtectedRoute>
             }
