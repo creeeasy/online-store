@@ -87,7 +87,7 @@ export default function IntegrateSheet() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pt-8">
       <AnimatePresence>
         {selectedImage && (
           <motion.div
@@ -136,7 +136,7 @@ export default function IntegrateSheet() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="flex grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Form Section */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -157,7 +157,7 @@ export default function IntegrateSheet() {
                 value={sheetId}
                 onChange={(e) => setSheetId(e.target.value)}
                 placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">

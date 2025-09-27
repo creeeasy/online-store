@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^4.6.2",
     "@reduxjs/toolkit": "^2.8.2",
     "@tanstack/react-query": "^5.87.1",
     "@types/jsonwebtoken": "^9.0.10",
@@ -17,11 +18,13 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/react-toastify": "^4.0.2",
     "axios": "^1.11.0",
+    "bowser": "^2.12.1",
     "framer-motion": "^12.23.22",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-facebook-pixel": "^1.0.4",
     "react-icons": "^5.5.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.8.0",

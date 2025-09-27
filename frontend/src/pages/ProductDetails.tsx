@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductGallery from '../components/ProductGallery';
 import { useProduct } from '../hooks/useProducts';
@@ -12,6 +12,9 @@ import OrderForm from '../components/OrderForm';
 import { useProductInquiry } from '../hooks/useOrderInquiry';
 import type { CreateOrderInquiry } from '../types/orderInquiry';
 import type { IProduct, IProductColor } from '../types/product';
+
+// CORRECT IMPORT for react-meta-pixel
+import ReactPixel from 'react-facebook-pixel'; // or the correct package name
 
 const SERVER_URL = 'http://localhost:5001';
 
@@ -32,8 +35,46 @@ const ProductDetailsPage: React.FC = () => {
   const { data: productResponse, isLoading, error: productError } = useProduct(id || '');
   const { submitInquiry, isLoading: isSubmitting, validationErrors } = useProductInquiry(id);
 
-  const product = productResponse as IProduct;
+  const product = productResponse?.product as IProduct;
 
+  // Fixed Facebook Pixel initialization
+  useEffect(() => {
+    // Only run if productResponse is available and has pixel data
+    if (!productResponse?.pixel) {
+      console.log('Pixel data not available yet');
+      return;
+    }
+
+    const { pixel } = productResponse;
+    
+    // Check if Facebook Pixel is enabled and has required data
+    if (!pixel.facebookPixel || !pixel.pixelId || !pixel.eventTypes?.PageView) {
+      console.log('Facebook Pixel not configured or PageView event not enabled');
+      return;
+    }
+
+    try {
+      // Initialize pixel only once
+      if (!window.fbq) {
+        const options = {
+          autoConfig: true,
+          debug: false,
+        };
+
+        ReactPixel.init(pixel.pixelId, undefined, options);
+        console.log("✅ Facebook Pixel initialized with ID:", pixel.pixelId);
+      }
+
+      // Track page view
+      ReactPixel.pageView();
+      console.log("✅ Facebook PageView tracked");
+
+    } catch (error) {
+      console.error("❌ Error with Facebook Pixel:", error);
+    }
+  }, [productResponse]); // Only depend on productResponse
+
+  // Rest of your component code remains the same...
   /**
    * Utility function to lighten a color
    */
@@ -142,6 +183,13 @@ const ProductDetailsPage: React.FC = () => {
   const handleFormSubmit = async (data: CreateOrderInquiry) => {
     try {
       await submitInquiry(data);
+      
+      // Track Lead event on successful form submission
+      if (productResponse?.pixel?.facebookPixel && productResponse.pixel.eventTypes.Lead) {
+        ReactPixel.track('Lead');
+        console.log("✅ Facebook Lead event tracked");
+      }
+      
       toast.success('تم إرسال طلبك بنجاح!', {
         style: {
           background: productColorScheme.hasCustomColors 

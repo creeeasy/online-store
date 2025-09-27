@@ -5,6 +5,27 @@ import { OrderInquiry } from '../models/OrderInquiry';
 import Product from '../models/Product';
 import Offer, { IOffer } from '../models/Offer';
 import { validateAlgerianPhone } from '../types/orderInquiry';
+import path from 'path';
+import fs from 'fs';
+import { google } from "googleapis";
+import Sheet from "../models/sheet"
+import requestIp from "request-ip"
+import mongoose from 'mongoose';
+// Load credentials from a JSON file
+const credentialsPath = path.join(__dirname, "../../apiGoogleSheet.json");
+const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+// Create Google Auth instance with proper scopes
+const auth = new google.auth.GoogleAuth({
+  credentials,
+  scopes: [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/spreadsheets.readonly", 
+      "https://www.googleapis.com/auth/drive"
+  ],
+});
+
+// Initialize Sheets API client
+const sheets = google.sheets({ version: "v4", auth });
 
 // Phone validation utility
 
@@ -12,6 +33,8 @@ import { validateAlgerianPhone } from '../types/orderInquiry';
 export class OrderInquiryController {
 
 
+
+  
 static createInquiry = asyncHandler(async (req: Request, res: Response) => {
   const {
     productId,
@@ -22,7 +45,39 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
     selectedVariants = {},
     notes
   } = req.body;
+  
+const sheetData=await Sheet.findOne({});
+let SPREADSHEET_ID ;
+if (sheetData) {
+  SPREADSHEET_ID=sheetData.sheetID || ""
+  console.log(SPREADSHEET_ID)
+} else {
+  console.log("No sheet found");
+}
+// Restrict orders to one every 24 hours per phone number
+const twentyFourHoursAgo = new Date();
+twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
+const ipClient = requestIp.getClientIp(req);
+console.log(ipClient);
+
+const existingOrder = await OrderInquiry.findOne({
+  ipClient,
+  productId: new mongoose.Types.ObjectId(req.body.productId),
+  timeEnter: { $gte: twentyFourHoursAgo }
+});
+
+if (existingOrder) {
+  return ResponseHandler.error(
+    res,
+    'يمكنك تقديم طلب واحد فقط كل 24 ساعة. يُرجى المحاولة لاحقًا.'
+  );
+}
+
+const sheetMetadata = await sheets.spreadsheets.get({
+  spreadsheetId: SPREADSHEET_ID,
+});
+ 
   // Verify product exists
   const product = await Product.findById(productId);
   if (!product) {
@@ -34,10 +89,10 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
   if (product.dynamicFields?.length) {
     for (const field of product.dynamicFields) {
       if (field.isRequired) {
-        const fieldValue = customerData[field.key];
+        const fieldValue = selectedVariants[field.key];
         if (!fieldValue || fieldValue.trim() === '') {
           validationErrors.push({
-            field: `customerData.${field.key}`,
+            field: `selectedVariants.${field.key}`,
             message: `${field.placeholder || field.key} مطلوب`,
             value: fieldValue,
             location: 'body'
@@ -48,7 +103,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
         if (field.key.toLowerCase().includes('phone') && fieldValue) {
           if (!validateAlgerianPhone(fieldValue)) {
             validationErrors.push({
-              field: `customerData.${field.key}`,
+              field: `selectedVariants.${field.key}`,
               message: 'رقم الهاتف غير صالح. يجب أن يكون 10 أرقام: 0[567]XXXXXXXX',
               value: fieldValue,
               location: 'body'
@@ -61,7 +116,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
           if (!nameRegex.test(fieldValue.trim())) {
             validationErrors.push({
-              field: `customerData.${field.key}`,
+              field: `selectedVariants.${field.key}`,
               message: 'الاسم يجب أن يحتوي على أحرف ومسافات فقط، ويكون بين 2-100 حرف',
               value: fieldValue,
               location: 'body'
@@ -74,7 +129,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(fieldValue)) {
             validationErrors.push({
-              field: `customerData.${field.key}`,
+              field: `selectedVariants.${field.key}`,
               message: 'البريد الإلكتروني غير صالح',
               value: fieldValue,
               location: 'body'
@@ -87,7 +142,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           const age = parseInt(fieldValue);
           if (isNaN(age) || age < 1 || age > 120) {
             validationErrors.push({
-              field: `customerData.${field.key}`,
+              field: `selectedVariants.${field.key}`,
               message: 'العمر غير صالح',
               value: fieldValue,
               location: 'body'
@@ -100,7 +155,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
           // Add your wilaya validation logic here if needed
           if (fieldValue.trim().length < 2) {
             validationErrors.push({
-              field: `customerData.${field.key}`,
+              field: `selectedVariants.${field.key}`,
               message: 'الولاية غير صالحة',
               value: fieldValue,
               location: 'body'
@@ -122,6 +177,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
   }
 
   let totalPrice = 0;
+  let offerTitle = '';
 
   if (typeOfOrder === 'offer') {
     if (!offerId) {
@@ -134,6 +190,7 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
     }
 
     totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
+    offerTitle = offer.title || '';
 
   } else if (typeOfOrder === 'quantity') {
     if (quantity < 1) {
@@ -149,17 +206,42 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
   } else {
     return ResponseHandler.error(res, 'نوع الطلب غير صالح', 400);
   }
+console.log(req.body)
+
+// Create array with all selectedVariants values first, then the product info
+const selectedVariantsValues = Object.values(selectedVariants);
+const rowData = [
+  ...selectedVariantsValues,
+  product.name, 
+  quantity, 
+  typeOfOrder, 
+  totalPrice, 
+  offerTitle,
+  product.reference
+];
+
+const appendResponse = await sheets.spreadsheets.values.append({
+  spreadsheetId: SPREADSHEET_ID,
+  range: "store!A:F",                    // Target range in "store" sheet
+  valueInputOption: "RAW",               // Insert as raw values (no formulas)
+  requestBody: {
+      values: [rowData],
+  },
+});
 
   try {
+    const timeEnter = new Date();
     const inquiry = new OrderInquiry({
       productId,
-      customerData,
+      customerData: selectedVariants,
       quantity: typeOfOrder === 'quantity' ? quantity : 1,
       offerId: typeOfOrder === 'offer' ? offerId : undefined,
       selectedVariants,
       totalPrice,
       notes,
-      typeOfOrder
+      typeOfOrder,
+      ipClient,
+      timeEnter,
     });
 
     await inquiry.save();

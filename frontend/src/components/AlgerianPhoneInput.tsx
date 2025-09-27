@@ -65,7 +65,7 @@ export const AlgerianPhoneInput: React.FC<AlgerianPhoneInputProps> = ({
 
   return (
     <div>
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'end' }}>
         {/* Flag + country code */}
         <div style={{
           position: 'absolute',
@@ -102,7 +102,6 @@ export const AlgerianPhoneInput: React.FC<AlgerianPhoneInputProps> = ({
             color: theme.colors.text,
             fontSize: theme.fonts.size.md,
             direction: 'ltr',
-            textAlign: 'left',
             border: `2px solid ${
               error
                 ? theme.colors.error

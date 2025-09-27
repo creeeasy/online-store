@@ -19,7 +19,7 @@ export const productAPI = {
   getProduct: async (id: string): Promise<IProduct> => {
     try {
       const response = await apiClient.get<{ product: IProduct }>(`/products/${id}`);
-      return response.data.product;
+      return response.data;
     } catch (error) {
       throw error as ApiError;
     }

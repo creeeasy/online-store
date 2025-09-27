@@ -21,6 +21,7 @@ import InquiryDashboard from './pages/InquiryDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThankYou from './pages/ThankYou';
 import IntegrateSheet from './pages/IntegrateSheet';
+import ParameterPixel from './pages/ParameterPixel';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -160,6 +161,17 @@ const AppContent: React.FC = () => {
                 <>
                   <AdminNavbar />
                   <IntegrateSheet />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/Pixel"
+            element={
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <ParameterPixel />
                 </>
               </ProtectedRoute>
             }

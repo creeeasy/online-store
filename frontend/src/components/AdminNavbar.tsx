@@ -8,6 +8,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { FiUser, FiLogOut, FiMenu, FiX, FiHome, FiPackage, FiMail, FiShield } from 'react-icons/fi';
 import { authAPI } from '../utils/authAPI';
 import { clearAuthToken, type ApiError } from '../utils/apiClient';
+import { LuSheet } from 'react-icons/lu';
+import { RiPixelfedFill } from 'react-icons/ri';
 
 const AdminNavbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -368,15 +370,31 @@ const AdminNavbar: React.FC = () => {
                     }
                   }}
                 >
-                  <FiMail size={16} />
+                  <LuSheet  size={16} />
                   GoogleSheet
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: theme.colors.error,
-                    animation: 'pulse 2s infinite',
-                  }} />
+                </Link>
+                <Link
+                  to="/admin/pixel"
+                  style={{
+                    ...getNavLinkStyle(isActivePath('/admin/pixel')),
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin/pixel')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin/pixel')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
+                >
+                  <RiPixelfedFill size={16} />
+                  pixel
+                 
                 </Link>
               </div>
             </div>

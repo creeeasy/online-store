@@ -31,7 +31,7 @@ export const WilayaSelect: React.FC<WilayaSelectProps> = ({
       value={value}
       onChange={onChange}
       options={options}
-      placeholder="Select your wilaya"
+      placeholder={fieldName}
     />
   );
 };

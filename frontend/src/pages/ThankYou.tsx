@@ -1,10 +1,135 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from "react-redux";
+import { DEFAULT_BASE_URL } from "../utils/apiClient";
+import ReactPixel from 'react-facebook-pixel';
 
 const ThankYou: React.FC = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const order = useSelector((state) => state.order);
+
+  // Track renders
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log(`🔄 Render #${renderCount.current}`, {
+    hasOrder: !!order?.order,
+    orderId: order?.order
+  });
+
+  // Facebook Pixel Implementation with Cleanup
+  useEffect(() => {
+    let isMounted = true;
+    
+    const initializeAndTrackPixel = async () => {
+      try {
+        // Check if component is still mounted
+        if (!isMounted) {
+          console.log('🛑 Component unmounted, skipping pixel tracking');
+          return;
+        }
+
+        // Only run if we have an order
+        if (!order || !order.order) {
+          console.log('📭 No order data available for pixel tracking');
+          return;
+        }
+
+        console.log('🎯 Starting pixel tracking for order:', order.order);
+
+        const response = await fetch(`${DEFAULT_BASE_URL}/pixel-parameters`, {
+          method: 'GET',
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch pixel parameters');
+        }
+
+        if (data.data) {
+          console.log('📊 Pixel parameters:', data.data);
+          const pixelConfig = data.data;
+
+          // Check if Facebook Pixel is enabled and configured
+          if (!pixelConfig.facebookPixel || !pixelConfig.pixelId) {
+            console.log('🚫 Facebook Pixel not enabled or missing pixelId');
+            return;
+          }
+
+          // Check mount status again before async operations
+          if (!isMounted) return;
+
+          // Initialize pixel only once
+          if (!window.fbq) {
+            try {
+              ReactPixel.init(pixelConfig.pixelId);
+              console.log("✅ Facebook Pixel initialized with ID:", pixelConfig.pixelId);
+            } catch (initError) {
+              console.error("❌ Error initializing Facebook Pixel:", initError);
+              return;
+            }
+          }
+
+          // Check mount status before each tracking operation
+          if (!isMounted) return;
+
+          // Track PageView for thank you page
+          if (pixelConfig.eventTypes?.PageView) {
+            ReactPixel.pageView();
+            console.log("✅ Thank You PageView tracked");
+          }
+
+          // Check mount status
+          if (!isMounted) return;
+
+          // Track Purchase event if order exists and Purchase event is enabled
+          if (order.order && pixelConfig.eventTypes?.Purchase) {
+            ReactPixel.track("Purchase", {
+              value: +order.prix || 0,
+              currency: "DZ",
+              content_name: order.productName || "Unknown Product",
+              content_ids: [order.productId || order.order],
+              content_type: "product",
+              num_items: order.quantity || 1,
+            });
+            console.log("✅ Purchase event tracked:", {
+              value: +order.prix || 0,
+              productName: order.productName
+            });
+          }
+
+          // Check mount status
+          if (!isMounted) return;
+
+          // Track Lead event if enabled (for inquiry submissions)
+          if (order.order && pixelConfig.eventTypes?.Lead) {
+            ReactPixel.track("Lead", {
+              content_name: order.productName || "Product Inquiry",
+              currency: "DZ",
+              value: +order.prix || 0,
+            });
+            console.log("✅ Lead event tracked");
+          }
+
+          console.log('🎉 Pixel tracking completed successfully');
+        }
+      } catch (error) {
+        // Only log errors if component is still mounted
+        if (isMounted) {
+          console.error('❌ Error in pixel tracking:', error);
+        }
+      }
+    };
+
+    initializeAndTrackPixel();
+
+    // Cleanup function - runs when component unmounts or dependencies change
+    return () => {
+      console.log('🧹 Cleaning up pixel tracking effect');
+      isMounted = false;
+    };
+  }, [order]); // Depend on order object
 
   const containerStyle: React.CSSProperties = {
     minHeight: '100vh',

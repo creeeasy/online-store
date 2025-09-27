@@ -16,6 +16,8 @@ export interface IOrderInquiry extends Document {
   updatedAt: Date;
   typeOfOrder: 'offer' | 'quantity';
   product?: IProduct;
+  ipClient?:string;
+  timeEnter?:Date;
   offer?: IOffer;
 }
 
@@ -23,7 +25,8 @@ const OrderInquirySchema = new Schema<IOrderInquiry>(
   {
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     customerData: { type: Schema.Types.Mixed, required: true, default: {} },
-
+    ipClient:{type:String,required:false},
+    timeEnter :{type:Date,required:false},
     typeOfOrder: { type: String, enum: ['offer', 'quantity'], required: true },
 
     offerId: { type: Schema.Types.ObjectId, ref: 'Offer' },

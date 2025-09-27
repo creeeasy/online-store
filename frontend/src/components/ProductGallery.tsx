@@ -12,6 +12,19 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is typical breakpoint for lg:
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     // Preload images
@@ -45,7 +58,15 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing.lg
+    gap: theme.spacing.lg,
+    width: '100%'
+  };
+
+  const mobileContainerStyle: React.CSSProperties = {
+    ...containerStyle,
+    width: '100vw',
+    marginLeft: 'calc(-50vw + 50%)', // Center align in parent
+    marginRight: 'calc(-50vw + 50%)'
   };
 
   const emptyStateContainerStyle: React.CSSProperties = {
@@ -53,7 +74,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     aspectRatio: '1',
     width: '100%',
     background: `linear-gradient(135deg, ${theme.colors.backgroundSecondary}, ${theme.colors.border})`,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: isMobile ? 0 : theme.borderRadius.lg,
     overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
@@ -82,10 +103,17 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     aspectRatio: '1',
     width: '100%',
     background: `linear-gradient(135deg, ${theme.colors.backgroundSecondary}, ${theme.colors.border})`,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: isMobile ? 0 : theme.borderRadius.lg,
     overflow: 'hidden',
-    boxShadow: theme.shadows.lg,
+    boxShadow: isMobile ? 'none' : theme.shadows.lg,
     cursor: isZoomed ? 'zoom-out' : 'zoom-in'
+  };
+
+  const mobileMainImageContainerStyle: React.CSSProperties = {
+    ...mainImageContainerStyle,
+    width: '100vw',
+    maxWidth: '100vw',
+    borderRadius: 0
   };
 
   const loadingSpinnerStyle: React.CSSProperties = {
@@ -114,6 +142,12 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     userSelect: 'none',
   };
 
+  const mobileMainImageStyle: React.CSSProperties = {
+    ...mainImageStyle,
+    width: '100vw',
+    maxWidth: '100vw'
+  };
+
   const overlayStyle: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
@@ -127,7 +161,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     top: theme.spacing.lg,
     right: theme.spacing.lg,
     opacity: 0,
-    transition: 'opacity 0.3s ease'
+    transition: 'opacity 0.3s ease',
+    display: isMobile ? 'none' : 'block'
   };
 
   const zoomHintContentStyle: React.CSSProperties = {
@@ -162,7 +197,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    opacity: 0
+    opacity: isMobile ? 1 : 0 // Always visible on mobile
   };
 
   const counterStyle: React.CSSProperties = {
@@ -202,7 +237,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   });
 
   const thumbnailGridStyle: React.CSSProperties = {
-    display: 'grid',
+    display: isMobile ? 'none' : 'grid', // Hide thumbnails on mobile
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: theme.spacing.md
   };
@@ -253,7 +288,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   };
 
   const zoomInstructionsStyle: React.CSSProperties = {
-    textAlign: 'center'
+    textAlign: 'center',
+    display: isMobile ? 'none' : 'block' // Hide zoom instructions on mobile
   };
 
   const instructionsTextStyle: React.CSSProperties = {
@@ -269,19 +305,21 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
 
   if (!images.length) {
     return (
-      <div style={emptyStateContainerStyle}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={emptyStateIconContainerStyle}>
-            <svg 
-              style={{ width: '2rem', height: '2rem', color: theme.colors.primary }} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+      <div style={isMobile ? mobileContainerStyle : containerStyle}>
+        <div style={emptyStateContainerStyle}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={emptyStateIconContainerStyle}>
+              <svg 
+                style={{ width: '2rem', height: '2rem', color: theme.colors.primary }} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p style={emptyStateTextStyle}>No images available</p>
           </div>
-          <p style={emptyStateTextStyle}>No images available</p>
         </div>
       </div>
     );
@@ -296,16 +334,16 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
             100% { transform: rotate(360deg); }
           }
           .gallery-group:hover .gallery-overlay {
-            opacity: 1;
+            opacity: ${isMobile ? 0 : 1};
           }
           .gallery-group:hover .gallery-zoom-hint {
-            opacity: 1;
+            opacity: ${isMobile ? 0 : 1};
           }
           .gallery-group:hover .gallery-nav-button {
             opacity: 1;
           }
           .gallery-group:hover .gallery-main-image {
-            transform: scale(1.05);
+            transform: ${isMobile ? 'scale(1)' : 'scale(1.05)'};
           }
           .gallery-thumbnail:hover .gallery-thumbnail-image {
             transform: scale(1.1);
@@ -324,12 +362,12 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           }
         `}
       </style>
-      <div style={containerStyle}>
-        {/* Main Image */}
+      <div style={isMobile ? mobileContainerStyle : containerStyle}>
+        {/* Main Image - Full width on mobile */}
         <div 
           className="gallery-group"
-          style={mainImageContainerStyle}
-          onClick={() => setIsZoomed(!isZoomed)}
+          style={isMobile ? mobileMainImageContainerStyle : mainImageContainerStyle}
+          onClick={() => !isMobile && setIsZoomed(!isZoomed)} // Disable zoom on mobile
           onKeyDown={handleKeyDown}
           tabIndex={0}
         >
@@ -340,20 +378,20 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           )}
           
           <img
-           src={
-                          images?.[currentIndex]
-                            ? `${images[currentIndex]}`
-                            : 'https://picsum.photos/300/300?random=default'
-                        }
+            src={
+              images?.[currentIndex]
+                ? `${images[currentIndex]}`
+                : 'https://picsum.photos/300/300?random=default'
+            }
             alt={`Product view ${currentIndex + 1}`}
             className="gallery-main-image"
             style={{
-              ...mainImageStyle,
+              ...(isMobile ? mobileMainImageStyle : mainImageStyle),
               opacity: loadedImages.has(currentIndex) ? 1 : 0
             }}
           />
 
-          {/* Overlay for zoom hint */}
+          {/* Overlay for zoom hint - Hidden on mobile */}
           <div className="gallery-overlay" style={overlayStyle}></div>
           <div className="gallery-zoom-hint" style={zoomHintStyle}>
             <div style={zoomHintContentStyle}>
@@ -364,7 +402,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
             </div>
           </div>
 
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows - Always visible on mobile */}
           {images.length > 1 && (
             <>
               <button
@@ -373,7 +411,10 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
                   e.stopPropagation();
                   prevImage();
                 }}
-                style={{ ...navigationButtonStyle, left: theme.spacing.lg }}
+                style={{ 
+                  ...navigationButtonStyle, 
+                  left: isMobile ? '1rem' : theme.spacing.lg 
+                }}
                 aria-label="Previous image"
               >
                 <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +427,10 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
                   e.stopPropagation();
                   nextImage();
                 }}
-                style={{ ...navigationButtonStyle, right: theme.spacing.lg }}
+                style={{ 
+                  ...navigationButtonStyle, 
+                  right: isMobile ? '1rem' : theme.spacing.lg 
+                }}
                 aria-label="Next image"
               >
                 <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,7 +448,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           )}
 
           {/* Dots Indicator */}
-          {images.length > 1 && (
+          {images.length > 1 && isMobile && ( // Only show dots on mobile
             <div style={dotsContainerStyle}>
               {images.map((_, index) => (
                 <button
@@ -423,8 +467,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           )}
         </div>
 
-        {/* Thumbnail Strip */}
-        {images.length > 1 && (
+        {/* Thumbnail Strip - Hidden on mobile */}
+        {images.length > 1 && !isMobile && (
           <div style={thumbnailGridStyle}>
             {images.slice(0, 4).map((image, index) => (
               <button
@@ -457,8 +501,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           </div>
         )}
 
-        {/* Zoom Instructions */}
-        {isZoomed && (
+        {/* Zoom Instructions - Hidden on mobile */}
+        {isZoomed && !isMobile && (
           <div style={zoomInstructionsStyle}>
             <p style={instructionsTextStyle}>
               <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

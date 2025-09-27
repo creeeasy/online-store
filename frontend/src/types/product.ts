@@ -54,20 +54,34 @@ export interface IProduct {
   predefinedFields: IPredefinedField[];
   offers: IOffer[];
   hiddenFields: IHiddenField[];
-  
-  // ✅ Fixed: Added missing allowQuantity field
+
+  // ✅ Quantity controls
   allowQuantity: boolean;
   allowMultipleQuantities: boolean;
   maxQuantityPerInquiry: number;
-  
+
+  // ✅ Pixel tracking
+  pixel: {
+    facebookPixel: boolean;
+    apiConversion: boolean;
+    pixelId: string;
+    accessToken: string;
+    eventTypes: {
+      PageView: boolean;
+      Purchase: boolean;
+      Lead: boolean;
+    };
+  };
+
   // Virtual properties from backend
   isOnSale?: boolean;
-  
+
   createdBy: string;
   reference?: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 // ✅ Order inquiry configuration interface
 export interface IOrderInquiryConfig {

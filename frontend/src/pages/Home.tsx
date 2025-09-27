@@ -303,7 +303,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-     { /*
+     { 
       <section style={{ padding: `${theme.spacing['3xl']} 0` }}>
         <div style={contentWrapperStyle}>
           <div style={sectionHeaderStyle}>
@@ -370,7 +370,7 @@ const Home: React.FC = () => {
             </div>
           )}
         </div>
-      </section> */}
+      </section> }
     </div>
   );
 };

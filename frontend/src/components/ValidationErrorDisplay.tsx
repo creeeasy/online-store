@@ -438,10 +438,14 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
     color: theme.colors.text,
     fontFamily: theme.fonts.family.body,
     cursor: 'pointer',
-    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,${encodeURIComponent(`<svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L7 7L13 1" stroke="${theme.colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`)}")`,
+    backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,${encodeURIComponent(`<svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L7 7L13 1" stroke="${theme.colors.textSecondary.replace('#', '%23')}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`)}")`,
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'right 12px center',
+    backgroundSize: '14px 8px',
     paddingRight: theme.spacing['3xl'],
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
     ...customStyle,
     ...(hasErrors ? {
       borderColor: theme.colors.error,
@@ -453,42 +457,43 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
   const optionStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
-    padding: theme.spacing.sm
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    fontSize: theme.fonts.size.md,
+    fontFamily: theme.fonts.family.body
   };
 
   return (
-
-      <select
+    <select
       required={required}
-        {...props}
-        style={selectStyle}
-        className={className}
-        onFocus={(e) => {
-          if (!hasErrors) {
-            e.target.style.borderColor = theme.colors.primary;
-            e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
-          }
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          if (!hasErrors) {
-            e.target.style.borderColor = theme.colors.border;
-            e.target.style.boxShadow = 'none';
-          }
-          props.onBlur?.(e);
-        }}
-      >
-        {placeholder && (
-          <option value="" disabled style={optionStyle}>
-            {placeholder}
-          </option>
-        )}
-        {options.map(option => (
-          <option key={option.value} value={option.value} style={optionStyle}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      {...props}
+      style={selectStyle}
+      className={className}
+      onFocus={(e) => {
+        if (!hasErrors) {
+          e.target.style.borderColor = theme.colors.primary;
+          e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`;
+        }
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        if (!hasErrors) {
+          e.target.style.borderColor = theme.colors.border;
+          e.target.style.boxShadow = 'none';
+        }
+        props.onBlur?.(e);
+      }}
+    >
+      {placeholder && (
+        <option value="" disabled style={optionStyle}>
+          {placeholder}
+        </option>
+      )}
+      {options.map(option => (
+        <option key={option.value} value={option.value} style={optionStyle}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   );
 };
 
