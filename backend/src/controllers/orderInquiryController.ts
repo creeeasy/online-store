@@ -59,7 +59,6 @@ const twentyFourHoursAgo = new Date();
 twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
 const ipClient = requestIp.getClientIp(req);
-console.log(ipClient);
 
 const existingOrder = await OrderInquiry.findOne({
   ipClient,
@@ -219,7 +218,7 @@ const rowData = [
   offerTitle,
   product.reference
 ];
-
+console.log(req.body)
 const appendResponse = await sheets.spreadsheets.values.append({
   spreadsheetId: SPREADSHEET_ID,
   range: "store!A:F",                    // Target range in "store" sheet
@@ -242,6 +241,7 @@ const appendResponse = await sheets.spreadsheets.values.append({
       typeOfOrder,
       ipClient,
       timeEnter,
+      order:true,
     });
 
     await inquiry.save();

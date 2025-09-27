@@ -7,6 +7,7 @@ import { PREDEFINED_CATEGORIES } from '../constants';
 import { productValidationRules, validateUniqueColors, validateQuantityConfiguration } from '../validators/product';
 import mongoose from 'mongoose';
 import Offer from '../models/Offer';
+import Pixel from '../models/pixel';
 
 // Helper function to initialize predefined fields
 const initializePredefinedFields = () => {
@@ -135,7 +136,7 @@ export const getProduct = asyncHandler(async (req: Request, res: Response) => {
     if (!product.allowMultipleQuantities) return 'single';
     return 'multiple';
   };
-
+  const pixelData=await Pixel.findOne({});
   const orderInquiryConfig = {
     quantityMode: determineQuantityMode(),
     allowQuantity: product.allowQuantity || false,
@@ -150,11 +151,28 @@ export const getProduct = asyncHandler(async (req: Request, res: Response) => {
     hasActiveOffers: (product.offers?.length ?? 0) > 0,
     activeOffers: product.offers ?? []
   };
-  ResponseHandler.success(
-    res,
-    { product, orderInquiryConfig },
-    'Product retrieved successfully'
-  );
+  let pixel = null;
+
+if (pixelData) {
+  pixel = {
+    facebookPixel: pixelData.facebookPixel,
+    apiConversion: pixelData.apiConversion,
+    pixelId: pixelData.pixelId,
+    accessToken: pixelData.accessToken,
+    eventTypes: {
+      PageView: pixelData.eventTypes.PageView,
+      Purchase: pixelData.eventTypes.Purchase,
+      Lead: pixelData.eventTypes.Lead,
+    },
+  };
+}
+
+ResponseHandler.success(
+  res,
+  { product, orderInquiryConfig, pixel },
+  'Product retrieved successfully'
+);
+
 });
 
 

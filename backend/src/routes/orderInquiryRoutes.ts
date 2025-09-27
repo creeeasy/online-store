@@ -1,10 +1,11 @@
 import express from 'express';
 import { OrderInquiryController } from '../controllers/orderInquiryController';
 import { validateBulkDelete, validateCreateInquiry, validateDeleteAll, validateIdParam, validateQueryParams } from '../validators/inquiry';
+import socialInquiryTest from '../middleware/social';
 
 const router = express.Router();
 
-router.post('/create', validateCreateInquiry, OrderInquiryController.createInquiry);
+router.post('/create', validateCreateInquiry,socialInquiryTest, OrderInquiryController.createInquiry);
 router.get('/', validateQueryParams, OrderInquiryController.getAllInquiries);
 router.get('/stats', OrderInquiryController.getInquiriesStats);
 router.get('/:id', validateIdParam, OrderInquiryController.getInquiryById);
