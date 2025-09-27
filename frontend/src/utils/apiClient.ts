@@ -1,7 +1,6 @@
 import type { ApiConfig, ErrorResponse, RequestOptions, SuccessResponse } from "../types/api";
 export const SERVER_URL = "http://localhost:5001";
 
-export const DEFAULT_BASE_URL = "http://localhost:5001/api";
 
 class ApiClient {
   private baseURL: string;
@@ -10,7 +9,7 @@ class ApiClient {
   private authToken: string | null = null;
 
   constructor(config: ApiConfig = {}) {
-    this.baseURL = config.baseURL || DEFAULT_BASE_URL;
+    this.baseURL = config.baseURL || import.meta.env.VITE_APP_API_URL;
 
     // ✅ Ensure Content-Type defaults to JSON if not provided
     this.defaultHeaders = {

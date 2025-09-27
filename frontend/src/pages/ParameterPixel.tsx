@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiFacebook, FiCheck, FiAlertCircle, FiSave, FiRefreshCw, FiEye, FiShoppingCart, FiUserPlus, FiKey } from 'react-icons/fi';
-import { DEFAULT_BASE_URL, getAuthToken } from '../utils/apiClient';
+import { getAuthToken } from '../utils/apiClient';
 
 export default function ParameterPixel() {
   const [pixelData, setPixelData] = useState({
@@ -35,7 +35,7 @@ export default function ParameterPixel() {
       setIsLoading(true);
       try {
         const token = getAuthToken();
-        const response = await fetch(`${DEFAULT_BASE_URL}/pixel-parameters`, {
+        const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/pixel-parameters`, {
           method: 'GET',
           headers: {
             'Authorization': 'Bearer ' + token
@@ -124,8 +124,8 @@ export default function ParameterPixel() {
       const token = getAuthToken();
       const method = isEditing ? 'PUT' : 'POST';
       const endpoint = isEditing 
-        ? `${DEFAULT_BASE_URL}/pixel-parameters` 
-        : `${DEFAULT_BASE_URL}/pixel-parameters`;
+        ? `${import.meta.env.VITE_APP_API_URL}/pixel-parameters` 
+        : `${import.meta.env.VITE_APP_API_URL}/pixel-parameters`;
 
       const response = await fetch(endpoint, {
         method,

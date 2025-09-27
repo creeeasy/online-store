@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from "react-redux";
-import { DEFAULT_BASE_URL } from "../utils/apiClient";
 import ReactPixel from 'react-facebook-pixel';
 
 const ThankYou: React.FC = () => {
@@ -38,7 +37,7 @@ const ThankYou: React.FC = () => {
 
         console.log('🎯 Starting pixel tracking for order:', order.order);
 
-        const response = await fetch(`${DEFAULT_BASE_URL}/pixel-parameters`, {
+        const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/pixel-parameters`, {
           method: 'GET',
         });
 
@@ -73,12 +72,6 @@ const ThankYou: React.FC = () => {
 
           // Check mount status before each tracking operation
           if (!isMounted) return;
-
-          // Track PageView for thank you page
-          if (pixelConfig.eventTypes?.PageView) {
-            ReactPixel.pageView();
-            console.log("✅ Thank You PageView tracked");
-          }
 
           // Check mount status
           if (!isMounted) return;

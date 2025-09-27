@@ -7,7 +7,7 @@ import image3 from '../assets/3.png'
 import image4 from '../assets/4.png'
 import image5 from '../assets/5.png'
 import image6 from '../assets/6.png'
-import { DEFAULT_BASE_URL, getAuthToken } from "../utils/apiClient";
+import { getAuthToken } from "../utils/apiClient";
 // import { getToken } from "../utils/auth";
 
 export default function IntegrateSheet() {
@@ -19,7 +19,7 @@ export default function IntegrateSheet() {
   const fetchData = async () => {
     try {
       const token=getAuthToken()
-      const response = await fetch(`${DEFAULT_BASE_URL}/sheets`,{
+      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/sheets`,{
         method:"GET",
         headers: { 
           "Content-Type": "application/json",
@@ -46,7 +46,7 @@ export default function IntegrateSheet() {
     
     try {
         const token=getAuthToken()
-      const response = await fetch(`${DEFAULT_BASE_URL}/sheets`, {
+      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/sheets`, {
         method: 'PUT',
         headers: { 
             "Content-Type": "application/json",

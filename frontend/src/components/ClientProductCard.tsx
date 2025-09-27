@@ -212,11 +212,11 @@ const ClientProductCard: React.FC<ClientProductCardProps> = ({
         {/* Price Section */}
         <div style={priceWrapperStyle}>
           <span style={currentPriceStyle}>
-            ${product.discountPrice || product.price}
+            {product.discountPrice || product.price}DA
           </span>
           {product.discountPrice && (
             <span style={oldPriceStyle}>
-              ${product.price}
+              {product.price}DA
             </span>
           )}
         </div>

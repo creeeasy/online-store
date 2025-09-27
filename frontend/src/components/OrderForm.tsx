@@ -76,11 +76,16 @@ const OrderForm: React.FC<ProductFormProps> = ({
   // Get dynamic colors based on product colors or theme
   const getColors = () => {
     if (hasCustomColors && productColors) {
+      // Split colors: index 0 for checkout, index 1 for offers, index 2 for buttons
+      const checkoutColor = productColors.availableColors?.[0]?.hexCode || productColors.primary;
+      const offerColor = productColors.availableColors?.[1]?.hexCode || productColors.primaryLight;
+      const buttonColor = productColors.availableColors?.[2]?.hexCode || productColors.primaryDark;
+      
       return {
-        primary: productColors.primary,
-        primaryLight: productColors.primaryLight,
-        primaryDark: productColors.primaryDark,
-        primaryAlpha: (alpha: number) => `${productColors.primary}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`,
+        primary: checkoutColor,
+        primaryLight: offerColor,
+        primaryDark: buttonColor,
+        primaryAlpha: (alpha: number) => `${checkoutColor}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`,
       };
     }
     
@@ -600,15 +605,15 @@ const OrderForm: React.FC<ProductFormProps> = ({
     alignItems: 'flex-start',
     gap: theme.spacing.md,
     padding: "5px",
-    border: `2px solid ${isSelected ? colors.primary : theme.colors.border}`,
+    border: `2px solid ${isSelected ? colors.primaryLight : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     backgroundColor: isSelected 
-      ? colors.primaryAlpha(0.1)
+      ? `${colors.primaryLight}1A`
       : theme.colors.backgroundSecondary,
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     boxShadow: isSelected 
-      ? `0 6px 20px ${colors.primaryAlpha(0.15)}`
+      ? `0 6px 20px ${colors.primaryLight}26`
       : theme.shadows.sm
   });
 
@@ -662,7 +667,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
             display: 'block',
             fontSize: theme.fonts.size.lg,
             fontWeight: theme.fonts.weight.semiBold,
-            color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+            color: "black",
             marginBottom: theme.spacing.md
           }}>
             نوع الطلب
@@ -704,7 +709,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
               display: 'block',
               fontSize: theme.fonts.size.lg,
               fontWeight: theme.fonts.weight.semiBold,
-              color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+              color: "black",
               marginBottom: theme.spacing.md
             }}>
               الكمية
@@ -794,7 +799,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
               display: 'block',
               fontSize: theme.fonts.size.lg,
               fontWeight: theme.fonts.weight.semiBold,
-              color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+              color: hasCustomColors ? colors.primaryLight : theme.colors.text,
               marginBottom: theme.spacing.md
             }}>
               اختر العرض
@@ -823,7 +828,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
                       onChange={(e) => setSelectedOffer(e.target.value)}
                       style={{
                         marginTop: '0.25rem',
-                        accentColor: colors.primary,
+                        accentColor: colors.primaryLight,
                       }}
                     />
 
@@ -833,7 +838,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
                           fontSize: theme.fonts.size.md,
                           fontWeight: theme.fonts.weight.bold,
                           color: hasCustomColors
-                            ? colors.primaryDark
+                            ? colors.primaryLight
                             : theme.colors.text,
                           marginBottom: theme.spacing.xs,
                         }}
@@ -876,7 +881,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
                           <span
                             style={{
                               fontSize: theme.fonts.size.lg,
-                              color: colors.primary,
+                              color: colors.primaryLight,
                               fontWeight: theme.fonts.weight.semiBold,
                             }}
                           >
@@ -916,7 +921,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
               display: 'block',
               fontSize: theme.fonts.size.lg,
               fontWeight: theme.fonts.weight.semiBold,
-              color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+              color: "black",
               marginBottom: theme.spacing.md
             }}>
               المعلومات المطلوبة
@@ -937,7 +942,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
                     display: 'block',
                     fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
                     fontWeight: theme.fonts.weight.medium,
-                    color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+                    color: "black",
                     marginBottom: theme.spacing.xs,
                     wordBreak: 'break-word'
                   }}>
@@ -1145,7 +1150,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
             alignItems: 'center',
             fontSize: theme.fonts.size.xl,
             fontWeight: theme.fonts.weight.bold,
-            color: hasCustomColors ? colors.primaryDark : theme.colors.text
+            color: "black"
           }}>
             <span>المبلغ الإجمالي:</span>
             <span style={{ color: colors.primary }}>{formatPrice(calculateTotalPrice())}</span>
@@ -1161,7 +1166,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
             background: (isFormSubmitting || isSubmitting || isLoadingFingerprint) 
               ? theme.colors.textMuted 
               : (hasCustomColors 
-                ? `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`
+                ? `linear-gradient(135deg, ${colors.primaryDark} 0%, ${colors.primaryDark}80 100%)`
                 : theme.colors.gradientPrimary),
             color: theme.colors.textOnPrimary,
             border: 'none',
@@ -1176,7 +1181,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
             gap: theme.spacing.sm,
             opacity: (isFormSubmitting || isSubmitting || isLoadingFingerprint) ? 0.7 : 1,
             boxShadow: hasCustomColors 
-              ? `0 8px 25px ${colors.primaryAlpha(0.3)}`
+              ? `0 8px 25px ${colors.primaryDark}40`
               : theme.shadows.lg
           }}
           onMouseEnter={(e) => {
@@ -1184,7 +1189,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
               e.currentTarget.style.opacity = '0.9';
               e.currentTarget.style.transform = 'translateY(-2px)';
               e.currentTarget.style.boxShadow = hasCustomColors 
-                ? `0 12px 30px ${colors.primaryAlpha(0.4)}`
+                ? `0 12px 30px ${colors.primaryDark}60`
                 : theme.shadows.xl;
             }
           }}
@@ -1193,7 +1198,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
               e.currentTarget.style.opacity = '1';
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = hasCustomColors 
-                ? `0 8px 25px ${colors.primaryAlpha(0.3)}`
+                ? `0 8px 25px ${colors.primaryDark}40`
                 : theme.shadows.lg;
             }
           }}

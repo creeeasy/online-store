@@ -20,11 +20,11 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   customTheme 
 }) => {
   const { theme: baseTheme } = useTheme();
-  
+   
   // Use custom theme if provided, otherwise fall back to base theme
   const theme = customTheme || baseTheme;
   const hasCustomColors = productColors && customTheme;
-
+ console.log(productColors)
   // Format price in Algerian Dinar
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ar-DZ', {
@@ -83,7 +83,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   const productNameStyle: React.CSSProperties = {
     fontSize: theme.fonts.size['3xl'],
     fontWeight: theme.fonts.weight.bold,
-    color: hasCustomColors ? productColors.primaryDark : theme.colors.text,
+    color: hasCustomColors ? productColors.colorName : theme.colors.text,
     fontFamily: theme.fonts.family.heading,
     marginBottom: theme.spacing.md,
     lineHeight: 1.2,
@@ -92,7 +92,6 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
       ? `linear-gradient(135deg, ${productColors.primaryDark} 0%, ${productColors.primary} 100%)`
       : 'none',
     WebkitBackgroundClip: hasCustomColors ? 'text' : 'unset',
-    WebkitTextFillColor: hasCustomColors ? 'transparent' : 'inherit',
     backgroundClip: hasCustomColors ? 'text' : 'unset'
   };
 
@@ -114,7 +113,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
   const currentPriceStyle: React.CSSProperties = {
     fontSize: theme.fonts.size['2xl'],
     fontWeight: theme.fonts.weight.bold,
-    color: hasCustomColors ? productColors.primary : theme.colors.primary,
+    color: hasCustomColors ? productColors.colorName : theme.colors.primary,
     fontFamily: theme.fonts.family.body,
     textShadow: hasCustomColors ? `0 2px 8px ${productColors.primary}20` : 'none'
   };

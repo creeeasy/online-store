@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 // Load credentials from a JSON file
 const credentialsPath = path.join(__dirname, "../../apiGoogleSheet.json");
 const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+
 // Create Google Auth instance with proper scopes
 const auth = new google.auth.GoogleAuth({
   credentials,
@@ -45,7 +46,8 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
     selectedVariants = {},
     notes
   } = req.body;
-  
+   // Check if file exists
+
 const sheetData=await Sheet.findOne({});
 let SPREADSHEET_ID ;
 if (sheetData) {
@@ -205,28 +207,8 @@ const sheetMetadata = await sheets.spreadsheets.get({
   } else {
     return ResponseHandler.error(res, 'نوع الطلب غير صالح', 400);
   }
-console.log(req.body)
 
-// Create array with all selectedVariants values first, then the product info
-const selectedVariantsValues = Object.values(selectedVariants);
-const rowData = [
-  ...selectedVariantsValues,
-  product.name, 
-  quantity, 
-  typeOfOrder, 
-  totalPrice, 
-  offerTitle,
-  product.reference
-];
-console.log(req.body)
-const appendResponse = await sheets.spreadsheets.values.append({
-  spreadsheetId: SPREADSHEET_ID,
-  range: "store!A:F",                    // Target range in "store" sheet
-  valueInputOption: "RAW",               // Insert as raw values (no formulas)
-  requestBody: {
-      values: [rowData],
-  },
-});
+
 
   try {
     const timeEnter = new Date();
@@ -253,6 +235,25 @@ const appendResponse = await sheets.spreadsheets.values.append({
       'تم إنشاء طلب الاستفسار بنجاح',
       201
     );
+    // Create array with all selectedVariants values first, then the product info
+const selectedVariantsValues = Object.values(selectedVariants);
+const rowData = [
+  ...selectedVariantsValues,
+  product.name, 
+  quantity, 
+  typeOfOrder, 
+  totalPrice, 
+  offerTitle,
+  product.reference
+];
+const appendResponse = await sheets.spreadsheets.values.append({
+  spreadsheetId: SPREADSHEET_ID,
+  range: "store!A:F",                    // Target range in "store" sheet
+  valueInputOption: "RAW",               // Insert as raw values (no formulas)
+  requestBody: {
+      values: [rowData],
+  },
+});
   } catch (error) {
     return ResponseHandler.error(res, 'حدث خطأ أثناء إنشاء الطلب', 500);
   }

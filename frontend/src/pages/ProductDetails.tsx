@@ -233,7 +233,8 @@ const ProductDetailsPage: React.FC = () => {
       : theme.colors.background,
     minHeight: '100vh'
   };
-
+ console.log(productColorScheme)
+ console.log(productColorScheme.availableColors[2].hexCode)
   return (
     <div style={containerStyle}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -254,7 +255,7 @@ const ProductDetailsPage: React.FC = () => {
                 primary: productColorScheme.primary,
                 primaryLight: productColorScheme.primaryLight,
                 primaryDark: productColorScheme.primaryDark,
-                colorName: productColorScheme.colorName
+                colorName: productColorScheme.availableColors[2].hexCode
               }}
               customTheme={dynamicTheme}
             />
