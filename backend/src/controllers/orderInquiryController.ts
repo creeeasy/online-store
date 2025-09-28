@@ -246,14 +246,17 @@ const rowData = [
   offerTitle,
   product.reference
 ];
-const appendResponse = await sheets.spreadsheets.values.append({
-  spreadsheetId: SPREADSHEET_ID,
-  range: "store!A:F",                    // Target range in "store" sheet
-  valueInputOption: "RAW",               // Insert as raw values (no formulas)
-  requestBody: {
-      values: [rowData],
-  },
-});
+if(SPREADSHEET_ID){
+  const appendResponse = await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "store!A:F",                    // Target range in "store" sheet
+    valueInputOption: "RAW",               // Insert as raw values (no formulas)
+    requestBody: {
+        values: [rowData],
+    },
+  });
+}
+
   } catch (error) {
     return ResponseHandler.error(res, 'حدث خطأ أثناء إنشاء الطلب', 500);
   }

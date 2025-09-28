@@ -50,6 +50,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
   const [selectedOffer, setSelectedOffer] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
@@ -189,7 +190,32 @@ const OrderForm: React.FC<ProductFormProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
+  
 
+  // Auto-select first offer when component loads
+useEffect(() => {
+  // Only auto-select if:
+  // 1. We have offers
+  // 2. There are active offers
+  // 3. No offer is currently selected
+  // 4. selectedOrderType is 'offer' or offers are the primary option
+  if (product.offers && 
+      product.offers.length > 0 && 
+      !selectedOffer) {
+    
+    // Find the first active offer
+    const firstActiveOffer = product.offers.find((offer: IOffer) => offer.isActive);
+    
+    if (firstActiveOffer) {
+      setSelectedOffer(firstActiveOffer._id);
+      
+      // Also set order type to 'offer' if offers exist and quantity is not the primary option
+      if (!product.allowQuantity || product.offers.length > 0) {
+        setSelectedOrderType('offer');
+      }
+    }
+  }
+}, [product.offers, selectedOffer, product.allowQuantity]);
   // Helper functions for fingerprinting and bot detection
   const getWebGLVendor = () => {
     try {
@@ -445,7 +471,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
         offerId: selectedOrderType === 'offer' ? selectedOffer : undefined,
         quantity: selectedOrderType === 'quantity' ? quantity : undefined,
         customerData: processedFields,
-        selectedVariants: processedFields,
+        selectedVariants: { ...processedFields, ...selectedVariants },
         totalPrice: calculateTotalPrice()
       };
       
@@ -534,6 +560,14 @@ const OrderForm: React.FC<ProductFormProps> = ({
     }
   };
 
+  // Handle variant selection
+  const handleVariantSelection = (category: string, option: string) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [category]: option
+    }));
+  };
+
   // Render field error
   const renderFieldError = (fieldKey: string) => {
     const error = validationErrors[fieldKey] || errors.find(item => item.field === fieldKey)?.message;
@@ -566,7 +600,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
       ? `2px solid ${colors.primaryAlpha(0.2)}`
       : `1px solid ${theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.xl,
+    padding:"12px",
     direction: 'rtl',
     textAlign: 'right',
     position: 'relative',
@@ -616,12 +650,12 @@ const OrderForm: React.FC<ProductFormProps> = ({
       ? `0 6px 20px ${colors.primaryLight}26`
       : theme.shadows.sm
   });
-
+ console.log(product)
   return (
     <div style={containerStyle}>      
       <form onSubmit={handleSubmit}>
         {/* Honeypot field for bot detection */}
-        <input type="text" name="honeypot" className="hidden" tabIndex={-1} autoComplete="off" style={{ display: 'none' }} />
+        <input type="text" name="honeypot" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         
         {product.hiddenFields?.map((field: IHiddenField) => (
           <input
@@ -834,8 +868,8 @@ const OrderForm: React.FC<ProductFormProps> = ({
 
                     <div style={{ flex: 1 }}>
                       <div
+                      className=' max-sm:text-xl text-xl'
                         style={{
-                          fontSize: theme.fonts.size.md,
                           fontWeight: theme.fonts.weight.bold,
                           color: hasCustomColors
                             ? colors.primaryLight
@@ -864,12 +898,11 @@ const OrderForm: React.FC<ProductFormProps> = ({
                           alignItems: 'center',
                           marginBottom: theme.spacing.xs,
                         }}
-                        className="lg:gap-1"
                       >
                         {offer.originalPrice && (
                           <span
                             style={{
-                              fontSize: theme.fonts.size.sm,
+                              fontSize: "15px",
                               color: theme.colors.textMuted,
                               textDecoration: 'line-through',
                             }}
@@ -879,8 +912,8 @@ const OrderForm: React.FC<ProductFormProps> = ({
                         )}
                         {offer.discountedPrice && (
                           <span
+                          className=' max-sm:text-[15px] text-xl'
                             style={{
-                              fontSize: theme.fonts.size.lg,
                               color: colors.primaryLight,
                               fontWeight: theme.fonts.weight.semiBold,
                             }}
@@ -892,23 +925,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
                     </div>
                   </label>
                 ))}
-              <style>
-                {`
-                  @media (max-width: 600px) {
-                    div[style] {
-                      flex-direction: row !important; /* row on phone */
-                    }
-                    div[style] div {
-                      font-size: 0.875rem !important; /* smaller font for phone */
-                    }
-                    label div span {
-                      font-size: 0.875rem !important;
-                    }
-                  }
-                `}
-              </style>
             </div>
-
 
             {renderFieldError('offer')}
           </div>
@@ -1114,6 +1131,186 @@ const OrderForm: React.FC<ProductFormProps> = ({
           </div>
         )}
 
+        {/* Predefined Fields - Interactive Selection */}
+        {product.predefinedFields?.some((field: any) => field.isActive && field.selectedOptions.length > 0) && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing.lg,
+            marginBottom: theme.spacing.xl,
+            padding: theme.spacing.lg,
+            borderRadius: theme.borderRadius.lg,
+            border: hasCustomColors 
+              ? `1px solid ${colors.primaryAlpha(0.15)}`
+              : `1px solid ${theme.colors.border}`
+          }}>
+            <h3 style={{
+              fontSize: theme.fonts.size.lg,
+              fontWeight: theme.fonts.weight.bold,
+              color: hasCustomColors ? colors.primary : theme.colors.text,
+              margin: 0,
+              textAlign: 'center',
+              paddingBottom: theme.spacing.sm,
+              borderBottom: hasCustomColors 
+                ? `2px solid ${colors.primaryAlpha(0.2)}`
+                : `2px solid ${theme.colors.border}`
+            }}>
+              خيارات المنتج
+            </h3>
+            {product.predefinedFields
+              .filter((field: any) => field.isActive && field.selectedOptions.length > 0)
+              .map((field: any) => (
+                <div key={field.category} style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: theme.spacing.sm
+                }}>
+                  <label style={{
+                    fontSize: theme.fonts.size.md,
+                    fontWeight: theme.fonts.weight.semiBold,
+                    textTransform: 'capitalize',
+                    color: hasCustomColors ? colors.primaryDark : theme.colors.text,
+                    marginBottom: theme.spacing.xs,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.spacing.xs
+                  }}>
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary
+                    }} />
+                    {field.category === 'sizes' ? 'المقاسات' : 
+                     field.category === 'colors' ? 'الألوان' : 
+                     field.category === 'materials' ? 'الخامات' : 
+                     field.category === 'seasons' ? 'المواسم' : 
+                     field.category === 'availability' ? 'التوفر' : field.category}
+                    {selectedVariants[field.category] && (
+                      <span style={{
+                        fontSize: theme.fonts.size.sm,
+                        color: hasCustomColors ? colors.primaryLight : theme.colors.primary,
+                        fontWeight: theme.fonts.weight.medium,
+                        backgroundColor: hasCustomColors ? colors.primaryAlpha(0.1) : `${theme.colors.primary}15`,
+                        padding: `2px ${theme.spacing.xs}`,
+                        borderRadius: theme.borderRadius.sm
+                      }}>
+                        ({selectedVariants[field.category]})
+                      </span>
+                    )}
+                  </label>
+                  <div style={{
+                    display: 'flex',
+                    gap: theme.spacing.sm,
+                    flexWrap: 'wrap',
+                    padding: theme.spacing.sm,
+                    backgroundColor: hasCustomColors ? colors.primaryAlpha(0.03) : theme.colors.surface,
+                    borderRadius: theme.borderRadius.md,
+                    border: `1px solid ${hasCustomColors ? colors.primaryAlpha(0.1) : theme.colors.border}`
+                  }}>
+                    {field.selectedOptions.map((option: string) => {
+                      const isSelected = selectedVariants[field.category] === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => handleVariantSelection(field.category, option)}
+                          style={{
+                            padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                            border: `2px solid ${isSelected 
+                              ? (hasCustomColors ? colors.primary : theme.colors.primary)
+                              : (hasCustomColors ? colors.primaryAlpha(0.3) : theme.colors.border)
+                            }`,
+                            borderRadius: theme.borderRadius.md,
+                            fontSize: theme.fonts.size.sm,
+                            fontWeight: isSelected ? theme.fonts.weight.bold : theme.fonts.weight.medium,
+                            textTransform: 'capitalize',
+                            backgroundColor: isSelected 
+                              ? (hasCustomColors ? colors.primaryAlpha(0.15) : `${theme.colors.primary}15`)
+                              : (hasCustomColors ? colors.primaryAlpha(0.05) : theme.colors.backgroundSecondary),
+                            color: isSelected 
+                              ? (hasCustomColors ? colors.primaryDark : theme.colors.primary)
+                              : theme.colors.text,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            minWidth: '60px',
+                            textAlign: 'center',
+                            boxShadow: isSelected 
+                              ? (hasCustomColors ? `0 4px 12px ${colors.primaryAlpha(0.25)}` : `0 4px 12px ${theme.colors.primary}25`)
+                              : 'none',
+                            transform: isSelected ? 'translateY(-1px)' : 'translateY(0)'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = hasCustomColors ? colors.primaryAlpha(0.08) : `${theme.colors.primary}08`;
+                              e.currentTarget.style.borderColor = hasCustomColors ? colors.primaryAlpha(0.5) : `${theme.colors.primary}80`;
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                              e.currentTarget.style.boxShadow = hasCustomColors ? `0 2px 8px ${colors.primaryAlpha(0.15)}` : `0 2px 8px ${theme.colors.primary}15`;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = hasCustomColors ? colors.primaryAlpha(0.05) : theme.colors.backgroundSecondary;
+                              e.currentTarget.style.borderColor = hasCustomColors ? colors.primaryAlpha(0.3) : theme.colors.border;
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }
+                          }}
+                        >
+                          {isSelected && (
+                            <span style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary,
+                              boxShadow: '0 0 0 2px white'
+                            }} />
+                          )}
+                          {option === 'S' || option === 'M' || option === 'L' || option === 'XL' || option === 'XXL' ? option :
+                           option === 'red' ? 'أحمر' :
+                           option === 'blue' ? 'أزرق' :
+                           option === 'black' ? 'أسود' :
+                           option === 'white' ? 'أبيض' :
+                           option === 'green' ? 'أخضر' :
+                           option === 'summer' ? 'صيف' :
+                           option === 'winter' ? 'شتاء' :
+                           option === 'spring' ? 'ربيع' :
+                           option === 'autumn' ? 'خريف' :
+                           option === 'wool' ? 'صوف' :
+                           option === 'cotton' ? 'قطن' :
+                           option === 'fleece' ? 'فرو' :
+                           option === 'down' ? 'ريش' :
+                           option === 'in stock' ? 'متوفر' :
+                           option === 'out of stock' ? 'غير متوفر' :
+                           option === 'discounted' ? 'مخفض' :
+                           option === 'coming soon' ? 'قريباً' : option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Selection indicator */}
+                  {!selectedVariants[field.category] && (
+                    <div style={{
+                      fontSize: theme.fonts.size.xs,
+                      color: theme.colors.textSecondary,
+                      fontStyle: 'italic',
+                      textAlign: 'center',
+                      padding: theme.spacing.xs
+                    }}>
+                      اختر خياراً واحداً
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+
         {/* Global Error Display */}
         {(validationErrors.submit || errors.length > 0) && (
           <div style={{
@@ -1130,7 +1327,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
             {validationErrors.submit || 'يرجى تصحيح الأخطاء المذكورة أعلاه'}
           </div>
         )}
-
+         
         {/* Total Price and Submit */}
         <div style={{
           padding: theme.spacing.lg,

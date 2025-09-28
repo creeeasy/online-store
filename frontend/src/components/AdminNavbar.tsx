@@ -10,6 +10,7 @@ import { authAPI } from '../utils/authAPI';
 import { clearAuthToken, type ApiError } from '../utils/apiClient';
 import { LuSheet } from 'react-icons/lu';
 import { RiPixelfedFill } from 'react-icons/ri';
+import { FaBots, FaRobot } from 'react-icons/fa6';
 
 const AdminNavbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -283,7 +284,7 @@ const AdminNavbar: React.FC = () => {
               </Link>
 
               {/* Desktop Navigation Links */}
-              <div style={{ display: 'flex', gap: '0.5rem' }} className="hidden md:flex">
+              <div style={{ display: 'flex', gap: '0.5rem' }} className="hidden md:flex px-1.5">
                 <Link
                   to="/admin"
                   style={getNavLinkStyle(isActivePath('/admin'))}
@@ -394,6 +395,29 @@ const AdminNavbar: React.FC = () => {
                 >
                   <RiPixelfedFill size={16} />
                   pixel
+                 
+                </Link>
+                <Link
+                  to="/admin/Bot"
+                  style={{
+                    ...getNavLinkStyle(isActivePath('/admin/Bot')),
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActivePath('/admin/Bot')) {
+                      e.currentTarget.style.backgroundColor = theme.colors.hover;
+                      e.currentTarget.style.color = theme.colors.primary;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActivePath('/admin/Bot')) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = theme.colors.textSecondary;
+                    }
+                  }}
+                >
+                  <FaRobot  size={16} />
+                  Bot
                  
                 </Link>
               </div>

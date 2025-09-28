@@ -22,6 +22,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import ThankYou from './pages/ThankYou';
 import IntegrateSheet from './pages/IntegrateSheet';
 import ParameterPixel from './pages/ParameterPixel';
+import BotDetection from './pages/BotDetection';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -172,6 +173,17 @@ const AppContent: React.FC = () => {
                 <>
                   <AdminNavbar />
                   <ParameterPixel />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bot"
+            element={
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <BotDetection />
                 </>
               </ProtectedRoute>
             }

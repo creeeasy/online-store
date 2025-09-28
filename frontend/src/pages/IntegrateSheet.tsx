@@ -87,7 +87,7 @@ export default function IntegrateSheet() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto pt-8">
+    <div className="max-w-4xl mx-auto pt-16">
       <AnimatePresence>
         {selectedImage && (
           <motion.div
