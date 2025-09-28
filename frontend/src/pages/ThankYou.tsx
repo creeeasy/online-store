@@ -20,7 +20,7 @@ const ThankYou: React.FC = () => {
   // Facebook Pixel Implementation with Cleanup
   useEffect(() => {
     let isMounted = true;
-    
+    console.log(order)
     const initializeAndTrackPixel = async () => {
       try {
         // Check if component is still mounted

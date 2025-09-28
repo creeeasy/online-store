@@ -7,11 +7,13 @@ export interface IOffer extends Document {
   discountedPrice?: number;
   validUntil?: Date;
   isActive: boolean;
+  reference?:string;
 }
 
 export const OfferSchema = new Schema<IOffer>({
   title: { type: String, required: true, trim: true },
   description: { type: String, trim: true },
+  reference: { type: String ,required:false},
   originalPrice: { type: Number, min: [0, 'Original price cannot be negative'] },
   discountedPrice: { 
     type: Number, 

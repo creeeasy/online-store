@@ -479,7 +479,7 @@ useEffect(() => {
       console.log('🟢 About to call API directly');
       
       // Call the API directly instead of going through onSubmit
-      const response = await fetch(`http://localhost:5001/api/order-inquiries/create`, {
+      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/order-inquiries/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -518,7 +518,8 @@ useEffect(() => {
       }
       
       console.log('🟢 API call completed successfully');
-      dispatch(setOrderState({order:result.data.inquiry.order,prix:calculateTotalPrice(),productName:product.name}));
+      console.log(result.data.order)
+      dispatch(setOrderState({order:result.data.order,prix:calculateTotalPrice(),productName:product.name}));
       return navigate("/thank-you");
       
       // Reset form or redirect as needed

@@ -376,6 +376,7 @@ export const updateProduct = [
               originalPrice: offer.originalPrice,
               discountedPrice: offer.discountedPrice,
               validUntil: offer.validUntil,
+              reference:offer.reference,
               isActive: offer.isActive !== false // Default to true if not specified
             },
             { new: true, runValidators: true }

@@ -23,7 +23,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
     originalPrice: undefined,
     discountedPrice: undefined,
     isActive: true,
-    validUntil: undefined
+    validUntil: undefined,
+    reference: ''
   });
 
   // Fixed: Properly handle both array and object validation error structures
@@ -88,7 +89,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
         originalPrice: newOffer.originalPrice,
         discountedPrice: newOffer.discountedPrice,
         validUntil: newOffer.validUntil,
-        isActive: newOffer.isActive !== false
+        isActive: newOffer.isActive !== false,
+        reference: newOffer.reference || ''
       } as IOffer]
     }));
     
@@ -99,7 +101,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
       originalPrice: undefined,
       discountedPrice: undefined,
       isActive: true,
-      validUntil: undefined
+      validUntil: undefined,
+      reference: ''
     });
   };
 
@@ -125,6 +128,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         offers: [...(prev.offers || []), {
           ...offerToCopy,
           title: `${offerToCopy.title} (Copy)`,
+          reference: offerToCopy.reference ? `${offerToCopy.reference}-copy` : '',
           _id: undefined
         }]
       }));
@@ -266,6 +270,21 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   style={hasErrorForField(`${fieldPrefix}.title`) ? errorInputStyle : inputStyle}
                 />
                 {renderFieldErrors(`${fieldPrefix}.title`)}
+              </div>
+
+              {/* Reference Input */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Reference
+                </label>
+                <input
+                  type="text"
+                  value={offer.reference || ''}
+                  onChange={(e) => updateOffer(index, 'reference', e.target.value)}
+                  placeholder="e.g., BF2024, SUMMER50"
+                  style={hasErrorForField(`${fieldPrefix}.reference`) ? errorInputStyle : inputStyle}
+                />
+                {renderFieldErrors(`${fieldPrefix}.reference`)}
               </div>
 
               {/* Prices */}
@@ -412,6 +431,20 @@ const OffersTab: React.FC<OffersTabProps> = ({
             style={hasErrorForField('newOffer.title') ? errorInputStyle : inputStyle}
           />
           {renderFieldErrors('newOffer.title')}
+        </div>
+
+        {/* Reference Input for New Offer */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            Reference
+          </label>
+          <input
+            type="text"
+            value={newOffer.reference || ''}
+            onChange={(e) => setNewOffer({ ...newOffer, reference: e.target.value })}
+            placeholder="e.g., SUMMER2024, SAVE20"
+            style={inputStyle}
+          />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

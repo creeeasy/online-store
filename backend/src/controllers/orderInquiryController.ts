@@ -223,7 +223,6 @@ const sheetMetadata = await sheets.spreadsheets.get({
       typeOfOrder,
       ipClient,
       timeEnter,
-      order:true,
     });
 
     await inquiry.save();
@@ -231,7 +230,7 @@ const sheetMetadata = await sheets.spreadsheets.get({
 
     ResponseHandler.success(
       res,
-      { inquiry },
+      { inquiry ,order:true},
       'تم إنشاء طلب الاستفسار بنجاح',
       201
     );
