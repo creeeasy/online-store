@@ -111,7 +111,8 @@ const botScoreCheck = async (req: Request, res: Response, next: NextFunction) =>
       botScore,
       productName: product.name,
       productReference: product.reference,
-      offerTitle
+      offerTitle,
+      BotScore:botScore,
     });
 
     await fakeOrder.save();

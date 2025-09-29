@@ -19,6 +19,7 @@ export interface IOrderFake extends Document {
   ipClient?:string;
   timeEnter?:Date;
   offer?: IOffer;
+  BotScore?:number;
 }
 
 const OrderFakeSchema = new Schema<IOrderFake>(
@@ -31,7 +32,7 @@ const OrderFakeSchema = new Schema<IOrderFake>(
 
     offerId: { type: Schema.Types.ObjectId, ref: 'Offer' },
     quantity: { type: Number, min: [1, 'Quantity must be at least 1'] },
-
+    BotScore: { type: Number, required:false},
     selectedVariants: { type: Schema.Types.Mixed, default: {} },
     totalPrice: { type: Number, min: 0, required: true },
   },
@@ -120,12 +121,18 @@ export const createOfferInquiry = (data: {
   customerData: Record<string, any>;
   selectedVariants?: Record<string, string>;
   notes?: string;
+  ipClient?: string;
+  timeEnter?: Date;
+  BotScore?: number;
 }) => {
   return new OrderFake({
     ...data,
     typeOfOrder: 'offer',
     productId: typeof data.productId === 'string' ? new mongoose.Types.ObjectId(data.productId) : data.productId,
-    offerId: typeof data.offerId === 'string' ? new mongoose.Types.ObjectId(data.offerId) : data.offerId
+    offerId: typeof data.offerId === 'string' ? new mongoose.Types.ObjectId(data.offerId) : data.offerId,
+    BotScore: data.BotScore,
+    ipClient: data.ipClient,
+    timeEnter: data.timeEnter
   });
 };
 
@@ -135,10 +142,16 @@ export const createQuantityInquiry = (data: {
   customerData: Record<string, any>;
   selectedVariants?: Record<string, string>;
   notes?: string;
+  ipClient?: string;
+  timeEnter?: Date;
+  BotScore?: number;
 }) => {
   return new OrderFake({
     ...data,
     typeOfOrder: 'quantity',
-    productId: typeof data.productId === 'string' ? new mongoose.Types.ObjectId(data.productId) : data.productId
+    productId: typeof data.productId === 'string' ? new mongoose.Types.ObjectId(data.productId) : data.productId,
+    BotScore: data.BotScore,
+    ipClient: data.ipClient,
+    timeEnter: data.timeEnter
   });
 };

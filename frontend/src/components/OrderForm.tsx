@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IDynamicField, IHiddenField, IOffer, IProduct } from '../types/product';
 import { formatAlgerianPhone, validateAlgerianPhone, type CreateOrderInquiry } from '../types/orderInquiry';
@@ -48,6 +49,7 @@ const OrderForm: React.FC<ProductFormProps> = ({
 
   const [selectedOrderType, setSelectedOrderType] = useState<'offer' | 'quantity'>('offer');
   const [selectedOffer, setSelectedOffer] = useState<string>('');
+  const [selectedOfferTitle, setSelectedOfferTitle] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [dynamicFields, setDynamicFields] = useState<Record<string, string>>({});
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
@@ -73,6 +75,62 @@ const OrderForm: React.FC<ProductFormProps> = ({
     languageMismatch: false,
     browserInconsistencies: 0,
   });
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const buttonVariants = {
+    initial: { scale: 1 },
+    hover: { 
+      scale: 1.02,
+      transition: { duration: 0.2 }
+    },
+    tap: { scale: 0.98 }
+  };
+
+  const offerCardVariants = {
+    initial: { scale: 1 },
+    hover: { 
+      scale: 1.02,
+      transition: { duration: 0.2 }
+    },
+    selected: {
+      scale: 1.03,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
+    }
+  };
+
+  const loadingVariants = {
+    animate: {
+      rotate: 360,
+      transition: {
+        duration: 1,
+        repeat: Infinity,
+        ease: "linear"
+      }
+    }
+  };
 
   // Get dynamic colors based on product colors or theme
   const getColors = () => {
@@ -208,6 +266,7 @@ useEffect(() => {
     
     if (firstActiveOffer) {
       setSelectedOffer(firstActiveOffer._id);
+      setSelectedOfferTitle(firstActiveOffer.title);
       
       // Also set order type to 'offer' if offers exist and quantity is not the primary option
       if (!product.allowQuantity || product.offers.length > 0) {
@@ -575,14 +634,19 @@ useEffect(() => {
     if (!error) return null;
     
     return (
-      <div style={{
-        fontSize: theme.fonts.size.sm,
-        color: theme.colors.error,
-        marginTop: theme.spacing.xs,
-        fontWeight: theme.fonts.weight.medium
-      }}>
+      <motion.div 
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        style={{
+          fontSize: theme.fonts.size.sm,
+          color: theme.colors.error,
+          marginTop: theme.spacing.xs,
+          fontWeight: theme.fonts.weight.medium
+        }}
+      >
         {error}
-      </div>
+      </motion.div>
     );
   };
 
@@ -623,7 +687,7 @@ useEffect(() => {
     backgroundColor: isSelected 
       ? colors.primaryAlpha(0.15)
       : 'transparent',
-    color: isSelected ? colors.primaryDark : theme.colors.text,
+    color: "black",
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     fontSize: theme.fonts.size.md,
@@ -639,7 +703,7 @@ useEffect(() => {
     flexDirection:"column",
     alignItems: 'flex-start',
     gap: theme.spacing.md,
-    padding: "5px",
+    padding: "10px 5px",
     border: `2px solid ${isSelected ? colors.primaryLight : theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
     backgroundColor: isSelected 
@@ -653,7 +717,12 @@ useEffect(() => {
   });
  console.log(product)
   return (
-    <div style={containerStyle}>      
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      style={containerStyle}
+    >      
       <form onSubmit={handleSubmit}>
         {/* Honeypot field for bot detection */}
         <input type="text" name="honeypot" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
@@ -668,320 +737,430 @@ useEffect(() => {
         ))}
 
         {/* Fingerprint loading indicator */}
-        {isLoadingFingerprint && (
-          <div style={{
-            padding: theme.spacing.md,
-            backgroundColor: `${colors.primary}15`,
-            border: `1px solid ${colors.primaryAlpha(0.3)}`,
-            borderRadius: theme.borderRadius.md,
-            color: colors.primaryDark,
-            marginBottom: theme.spacing.lg,
-            textAlign: 'center',
-            fontSize: theme.fonts.size.md,
-            fontWeight: theme.fonts.weight.medium,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.sm
-          }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              border: `2px solid ${colors.primary}`,
-              borderTop: '2px solid transparent',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }} />
-            جاري التحقق من المتصفح... الرجاء الانتظار
-          </div>
-        )}
+        <AnimatePresence>
+          {isLoadingFingerprint && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              style={{
+                padding: theme.spacing.md,
+                backgroundColor: `${colors.primary}15`,
+                border: `1px solid ${colors.primaryAlpha(0.3)}`,
+                borderRadius: theme.borderRadius.md,
+                color: colors.primaryDark,
+                marginBottom: theme.spacing.lg,
+                textAlign: 'center',
+                fontSize: theme.fonts.size.md,
+                fontWeight: theme.fonts.weight.medium,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: theme.spacing.sm
+              }}
+            >
+              <motion.div
+                variants={loadingVariants}
+                animate="animate"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  border: `2px solid ${colors.primary}`,
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                }}
+              />
+              جاري التحقق من المتصفح... الرجاء الانتظار
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Order Type Selection */}
-        <div style={{ marginBottom: theme.spacing.xl }}>
+        <motion.div variants={itemVariants} style={{ marginBottom: theme.spacing.xl }}>
           <label style={{
             display: 'block',
             fontSize: theme.fonts.size.lg,
             fontWeight: theme.fonts.weight.semiBold,
             color: "black",
-            marginBottom: theme.spacing.md
+            marginBottom: theme.spacing.md,
+            textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
           }}>
-            نوع الطلب
+           
+            {product.dynamicFields[0].languageField==="fr"?"Type de commande":" نوع الطلب"}
           </label>
           
           <div style={{
             display: 'flex',
             gap: theme.spacing.md,
-            flexDirection: 'row-reverse'
+            flexDirection: product.dynamicFields[0].languageField==="fr"?"row":'row-reverse'
+
           }}>
             {/* Quantity Option */}
             {product.allowQuantity && (
-              <button
+              <motion.button
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
                 type="button"
                 onClick={() => setSelectedOrderType('quantity')}
                 style={getButtonStyle(selectedOrderType === 'quantity')}
               >
-                الطلب بالكمية
-              </button>
+                {product.dynamicFields[0].languageField==="fr"?"Commande par quantité":"الطلب بالكمية"}
+              </motion.button>
             )}
 
             {/* Offer Option */}
             {product.offers && product.offers.length > 0 && (
-              <button
+              <motion.button
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
                 type="button"
                 onClick={() => setSelectedOrderType('offer')}
                 style={getButtonStyle(selectedOrderType === 'offer')}
               >
-                العروض الخاصة
-              </button>
+               {selectedOfferTitle}
+              </motion.button>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Quantity Selection */}
-        {selectedOrderType === 'quantity' && product.allowQuantity && (
-          <div style={{ marginBottom: theme.spacing.xl }}>
-            <label style={{
-              display: 'block',
-              fontSize: theme.fonts.size.lg,
-              fontWeight: theme.fonts.weight.semiBold,
-              color: "black",
-              marginBottom: theme.spacing.md
-            }}>
-              الكمية
-            </label>
-            
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: theme.spacing.md,
-              flexDirection: 'row-reverse'
-            }}>
-              <button
-                type="button"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                style={{
-                  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
-                  border: `2px solid ${colors.primary}`,
-                  borderRadius: theme.borderRadius.md,
-                  backgroundColor: colors.primaryAlpha(0.1),
-                  color: colors.primaryDark,
-                  cursor: 'pointer',
-                  fontSize: theme.fonts.size.lg,
-                  fontWeight: theme.fonts.weight.bold,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                -
-              </button>
-              
-              <span style={{
-                fontSize: theme.fonts.size.xl,
-                fontWeight: theme.fonts.weight.bold,
-                color: colors.primary,
-                minWidth: '3rem',
-                textAlign: 'center',
-                padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                background: colors.primaryAlpha(0.05),
-                borderRadius: theme.borderRadius.md,
-                border: `1px solid ${colors.primaryAlpha(0.2)}`
+        <AnimatePresence>
+          {selectedOrderType === 'quantity' && product.allowQuantity && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginBottom: theme.spacing.xl }}
+            >
+              <label style={{
+                display: 'block',
+                fontSize: theme.fonts.size.lg,
+                fontWeight: theme.fonts.weight.semiBold,
+                color: "black",
+                marginBottom: theme.spacing.md,
+                textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
               }}>
-                {quantity}
-              </span>
+               
+                {product.dynamicFields[0].languageField==="fr"?"Quantité":" الكمية"}
+              </label>
               
-              <button
-                type="button"
-                onClick={() => {
-                  const newQuantity = quantity + 1;
-                  if (!product.allowMultipleQuantities || newQuantity <= product.maxQuantityPerInquiry) {
-                    setQuantity(newQuantity);
-                  }
-                }}
-                disabled={product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry}
-                style={{
-                  padding: `${theme.spacing.md} ${theme.spacing.lg}`,
-                  border: `2px solid ${colors.primary}`,
-                  borderRadius: theme.borderRadius.md,
-                  backgroundColor: colors.primaryAlpha(0.1),
-                  color: colors.primaryDark,
-                  cursor: product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry ? 'not-allowed' : 'pointer',
-                  opacity: product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry ? 0.5 : 1,
-                  fontSize: theme.fonts.size.lg,
-                  fontWeight: theme.fonts.weight.bold,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                +
-              </button>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: theme.spacing.md,
+                flexDirection: 'row-reverse'
+              }}>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  type="button"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  style={{
+                    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                    border: `2px solid ${colors.primary}`,
+                    borderRadius: theme.borderRadius.md,
+                    backgroundColor: colors.primaryAlpha(0.1),
+                    color: "black",
+                    cursor: 'pointer',
+                    fontSize: theme.fonts.size.lg,
+                    fontWeight: theme.fonts.weight.bold,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  -
+                </motion.button>
+                
+                <motion.span
+                  key={quantity}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    fontSize: theme.fonts.size.xl,
+                    fontWeight: theme.fonts.weight.bold,
+                    color: colors.primary,
+                    minWidth: '3rem',
+                    textAlign: 'center',
+                    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                    background: colors.primaryAlpha(0.05),
+                    borderRadius: theme.borderRadius.md,
+                    border: `1px solid ${colors.primaryAlpha(0.2)}`
+                  }}
+                >
+                  {quantity}
+                </motion.span>
+                
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  type="button"
+                  onClick={() => {
+                    const newQuantity = quantity + 1;
+                    if (product.allowMultipleQuantities || newQuantity <= product.maxQuantityPerInquiry) {
+                      setQuantity(newQuantity);
+                    }
+                  }}
+                  disabled={product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry}
+                  style={{
+                    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+                    border: `2px solid ${colors.primary}`,
+                    borderRadius: theme.borderRadius.md,
+                    backgroundColor: colors.primaryAlpha(0.1),
+                    color: "black",
+                    cursor: product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry ? 'not-allowed' : 'pointer',
+                    opacity: product.allowMultipleQuantities && quantity >= product.maxQuantityPerInquiry ? 0.5 : 1,
+                    fontSize: theme.fonts.size.lg,
+                    fontWeight: theme.fonts.weight.bold,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  +
+                </motion.button>
 
-              {product.allowMultipleQuantities && (
-                <span style={{
-                  fontSize: theme.fonts.size.sm,
-                  color: theme.colors.textSecondary,
-                  fontWeight: theme.fonts.weight.medium
-                }}>
-                  الحد الأقصى: {product.maxQuantityPerInquiry}
-                </span>
-              )}
-            </div>
-            {renderFieldError('quantity')}
-          </div>
-        )}
+                {product.allowMultipleQuantities && (
+                  <span style={{
+                    fontSize: theme.fonts.size.sm,
+                    color: theme.colors.textSecondary,
+                    fontWeight: theme.fonts.weight.medium
+                  }}>
+                    الحد الأقصى: {product.maxQuantityPerInquiry}
+                  </span>
+                )}
+              </div>
+              {renderFieldError('quantity')}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Offers Selection */}
-        {selectedOrderType === 'offer' && product.offers && product.offers.length > 0 && (
-          <div style={{ marginBottom: theme.spacing.xl }}>
-            <label style={{
-              display: 'block',
-              fontSize: theme.fonts.size.lg,
-              fontWeight: theme.fonts.weight.semiBold,
-              color: hasCustomColors ? colors.primaryLight : theme.colors.text,
-              marginBottom: theme.spacing.md
-            }}>
-              اختر العرض
-            </label>
-            
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row', // default
-                gap: theme.spacing.md,
-                flexWrap: 'wrap',
-              }}
+        <AnimatePresence>
+          {selectedOrderType === 'offer' && product.offers && product.offers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginBottom: theme.spacing.xl }}
             >
-              {product.offers
-                .filter((offer: IOffer) => offer.isActive)
-                .map((offer: IOffer) => (
-                  <label
-                    key={offer._id}
-                    style={getOfferCardStyle(selectedOffer === offer._id)}
-                  >
-                    <input
-                      type="radio"
-                      name="offer"
-                      value={offer._id}
-                      checked={selectedOffer === offer._id}
-                      onChange={(e) => setSelectedOffer(e.target.value)}
-                      style={{
-                        marginTop: '0.25rem',
-                        accentColor: colors.primaryLight,
-                      }}
-                    />
-
-                    <div style={{ flex: 1 }}>
-                      <div
-                      className=' max-sm:text-xl text-xl'
+              <label style={{
+                display: 'block',
+                fontSize: theme.fonts.size.lg,
+                fontWeight: theme.fonts.weight.semiBold,
+                color: hasCustomColors ? colors.primaryLight : theme.colors.text,
+                marginBottom: theme.spacing.md,
+                textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
+              }}>
+                {product.dynamicFields[0].languageField==="fr"?"Choisir l’offre ":" اختر العرض"}
+              </label>
+              
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row', // default
+                  gap: theme.spacing.md,
+                  flexWrap: 'wrap',
+                  justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right"
+                }}
+              >
+                {product.offers
+                  .filter((offer: IOffer) => offer.isActive)
+                  .map((offer: IOffer) => (
+                    <motion.label
+                      key={offer._id}
+                      variants={offerCardVariants}
+                      initial="initial"
+                      whileHover="hover"
+                      animate={selectedOffer === offer._id ? "selected" : "initial"}
+                      style={getOfferCardStyle(selectedOffer === offer._id)}
+                    >
+                      <input
+                        type="radio"
+                        name="offer"
+                        value={offer._id}
+                        checked={selectedOffer === offer._id}
+                        onChange={(e) => {
+                          setSelectedOffer(e.target.value);
+                          setSelectedOfferTitle(offer.title);
+                        }}  
+                        className=' hidden'                    
                         style={{
-                          fontWeight: theme.fonts.weight.bold,
-                          color: hasCustomColors
-                            ? colors.primaryLight
-                            : theme.colors.text,
-                          marginBottom: theme.spacing.xs,
+                          marginTop: '0.25rem',
+                          accentColor: colors.primaryLight,
                         }}
-                      >
-                        {offer.title}
-                      </div>
+                      />
 
-                      {offer.description && (
+                      <div style={{ flex: 1 }}>
                         <div
+                        className=' max-sm:text-xl text-xl'
                           style={{
-                            fontSize: theme.fonts.size.sm,
-                            color: theme.colors.textSecondary,
+                            fontWeight: theme.fonts.weight.bold,
+                            color: hasCustomColors
+                              ? colors.primaryLight
+                              : theme.colors.text,
                             marginBottom: theme.spacing.xs,
+                            direction:product.dynamicFields[0].languageField==='fr' ? 'ltr' : 'rtl',
                           }}
                         >
-                          {offer.description}
+                          {offer.title}
                         </div>
-                      )}
 
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          marginBottom: theme.spacing.xs,
-                        }}
-                      >
-                        {offer.originalPrice && (
-                          <span
+                        {offer.description && (
+                          <div
                             style={{
-                              fontSize: "15px",
-                              color: theme.colors.textMuted,
-                              textDecoration: 'line-through',
+                              fontSize: theme.fonts.size.sm,
+                              color: theme.colors.textSecondary,
+                              marginBottom: theme.spacing.xs,
                             }}
                           >
-                            {formatPrice(offer.originalPrice)}
-                          </span>
+                            {offer.description}
+                          </div>
                         )}
-                        {offer.discountedPrice && (
-                          <span
-                          className=' max-sm:text-[15px] text-xl'
-                            style={{
-                              color: colors.primaryLight,
-                              fontWeight: theme.fonts.weight.semiBold,
-                            }}
-                          >
-                            {formatPrice(offer.discountedPrice)}
-                          </span>
-                        )}
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: theme.spacing.xs,
+                            justifyContent:product.dynamicFields[0].languageField==="fr"?"center":"right",
+                          }}
+                        >
+                          {offer.originalPrice && (
+                            <span
+                              style={{
+                                fontSize: "15px",
+                                color: theme.colors.textMuted,
+                                textDecoration: 'line-through',
+                              }}
+                            >
+                              {formatPrice(offer.originalPrice)}
+                            </span>
+                          )}
+                          {offer.discountedPrice && (
+                            <span
+                            className=' max-sm:text-[20px] text-xl'
+                              style={{
+                                color: colors.primaryLight,
+                                fontWeight: theme.fonts.weight.semiBold,
+                              }}
+                            >
+                              {formatPrice(offer.discountedPrice)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                ))}
-            </div>
+                    </motion.label>
+                  ))}
+              </div>
 
-            {renderFieldError('offer')}
-          </div>
-        )}
+              {renderFieldError('offer')}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Dynamic Fields - RESPONSIVE FIX */}
-        {product.dynamicFields && product.dynamicFields.length > 0 && (
-          <div style={{ marginBottom: theme.spacing.xl }}>
-            <label style={{
-              display: 'block',
-              fontSize: theme.fonts.size.lg,
-              fontWeight: theme.fonts.weight.semiBold,
-              color: "black",
-              marginBottom: theme.spacing.md
-            }}>
-              المعلومات المطلوبة
-            </label>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: theme.spacing.md,
-              width: '100%'
-            }}>
-              {product.dynamicFields.map((field: IDynamicField) => (
-                <div key={field.key} style={{
-                  minWidth: '0', // Prevent overflow on small screens
-                  width: '100%'
-                }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                    fontWeight: theme.fonts.weight.medium,
-                    color: "black",
-                    marginBottom: theme.spacing.xs,
-                    wordBreak: 'break-word'
-                  }}>
-                    {field.placeholder}
-                    {field.isRequired && <span style={{color: theme.colors.error}}> *</span>}
-                  </label>
-                  
-                  {field.key === 'phoneNumber' ? (
-                    <div style={{
-                      width: '100%',
-                      position: 'relative',
+        <AnimatePresence>
+          {product.dynamicFields && product.dynamicFields.length > 0 && (
+            <motion.div
+              variants={itemVariants}
+              style={{ marginBottom: theme.spacing.xl }}
+            >
+              <label style={{
+                display: 'block',
+                fontSize: theme.fonts.size.lg,
+                fontWeight: theme.fonts.weight.semiBold,
+                color: "black",
+                marginBottom: theme.spacing.md,
+                textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
+              }}>
+              {product.dynamicFields[0].languageField==="fr"?"Informations nécessaires":" المعلومات المطلوبة"} 
+              </label>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: theme.spacing.md,
+                width: '100%'
+              }}>
+                {product.dynamicFields.map((field: IDynamicField, index) => (
+                  <motion.div
+                    key={field.key}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    style={{
+                      minWidth: '0', // Prevent overflow on small screens
+                      width: '100%'
+                    }}
+                  >
+                    <label style={{
+                      display: 'block',
+                      fontSize: field?.fontSize?field.fontSize+"px":'clamp(0.875rem, 2.5vw, 1rem)',
+                      fontFamily:field.fontText,
+                      fontWeight: theme.fonts.weight.medium,
+                      color: "black",
+                      marginBottom: theme.spacing.xs,
+                      wordBreak: 'break-word',
+                      direction: field.languageField === 'fr' ? 'ltr' : 'rtl',
+                      textAlign: field.languageField === 'fr' ? 'left' : 'right',
                     }}>
-                      <AlgerianPhoneInput
-                        value={dynamicFields[field.key] || ''}
-                        onChange={(value) => handleDynamicFieldChange(field.key, value)}
-                        error={validationErrors[field.key]}
+                      {field.placeholder}
+                      {field.isRequired && <span style={{color: theme.colors.error}}> *</span>}
+                    </label>
+                    
+                    {field.key === 'phoneNumber' ? (
+                      <div style={{
+                        width: '100%',
+                        position: 'relative',
+                      }}>
+                        <AlgerianPhoneInput
+                          value={dynamicFields[field.key] || ''}
+                          onChange={(value) => handleDynamicFieldChange(field.key, value)}
+                          error={validationErrors[field.key]}
+                          required={field.isRequired}
+                          placeholder={`${field.placeholder}`}
+                          hasCustomColors={hasCustomColors}
+                          colors={colors}
+                          style={{
+                            width: '100%',
+                            padding: 'clamp(0.75rem, 2vw, 1rem)',
+                            border: `2px solid ${
+                              validationErrors[field.key]
+                                ? theme.colors.error
+                                : hasCustomColors
+                                ? colors.primaryAlpha(0.2)
+                                : theme.colors.border
+                            }`,
+                            borderRadius: theme.borderRadius.md,
+                            backgroundColor: hasCustomColors
+                              ? colors.primaryAlpha(0.02)
+                              : theme.colors.backgroundSecondary,
+                            color: theme.colors.text,
+                            fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+                            direction: field.languageField === 'fr' ? 'ltr' : 'rtl',
+                            transition: 'all 0.2s ease',
+                            boxShadow: hasCustomColors
+                              ? `0 2px 8px ${colors.primaryAlpha(0.05)}`
+                              : 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    ) : field.key === 'wilaya' ? (
+                      <WilayaSelect
+                        fieldName={field.placeholder}
+                        errors={validationErrors}
                         required={field.isRequired}
-                        placeholder={`${field.placeholder}`}
-                        hasCustomColors={hasCustomColors}
-                        colors={colors}
-                        style={{
+                        value={dynamicFields[field.key] || ''}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          handleDynamicFieldChange(field.key, e.target.value)
+                        }
+                        customStyle={{
                           width: '100%',
                           padding: 'clamp(0.75rem, 2vw, 1rem)',
                           border: `2px solid ${
@@ -997,351 +1176,330 @@ useEffect(() => {
                             : theme.colors.backgroundSecondary,
                           color: theme.colors.text,
                           fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                          direction: 'rtl',
+                          direction: field.languageField === 'fr' ? 'ltr' : 'rtl',
                           transition: 'all 0.2s ease',
                           boxShadow: hasCustomColors
                             ? `0 2px 8px ${colors.primaryAlpha(0.05)}`
                             : 'none',
                           boxSizing: 'border-box'
                         }}
+                        onFocus={(e: any) => {
+                          if (hasCustomColors) {
+                            e.target.style.borderColor = colors.primary;
+                            e.target.style.boxShadow = `0 0 0 3px ${colors.primaryAlpha(0.1)}`;
+                          }
+                        }}
+                        onBlur={(e: any) => {
+                          if (hasCustomColors) {
+                            e.target.style.borderColor = colors.primaryAlpha(0.2);
+                            e.target.style.boxShadow = `0 2px 8px ${colors.primaryAlpha(0.05)}`;
+                          }
+                        }}
                       />
-                    </div>
-                  ) : field.key === 'wilaya' ? (
-                    <WilayaSelect
-                      fieldName={field.placeholder}
-                      errors={validationErrors}
-                      required={field.isRequired}
-                      value={dynamicFields[field.key] || ''}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                        handleDynamicFieldChange(field.key, e.target.value)
-                      }
-                      style={{
-                        width: '100%',
-                        padding: 'clamp(0.75rem, 2vw, 1rem)',
-                        border: `2px solid ${
-                          validationErrors[field.key]
-                            ? theme.colors.error
-                            : hasCustomColors
-                            ? colors.primaryAlpha(0.2)
-                            : theme.colors.border
-                        }`,
-                        borderRadius: theme.borderRadius.md,
-                        backgroundColor: hasCustomColors
-                          ? colors.primaryAlpha(0.02)
-                          : theme.colors.backgroundSecondary,
-                        color: theme.colors.text,
-                        fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                        direction: 'rtl',
-                        transition: 'all 0.2s ease',
-                        boxShadow: hasCustomColors
-                          ? `0 2px 8px ${colors.primaryAlpha(0.05)}`
-                          : 'none',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e: any) => {
-                        if (hasCustomColors) {
-                          e.target.style.borderColor = colors.primary;
-                          e.target.style.boxShadow = `0 0 0 3px ${colors.primaryAlpha(0.1)}`;
-                        }
-                      }}
-                      onBlur={(e: any) => {
-                        if (hasCustomColors) {
-                          e.target.style.borderColor = colors.primaryAlpha(0.2);
-                          e.target.style.boxShadow = `0 2px 8px ${colors.primaryAlpha(0.05)}`;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <input
-                      type={getInputType(field.key)}
-                      required={field.isRequired}
-                      value={dynamicFields[field.key] || ''}
-                      onChange={(e) => handleDynamicFieldChange(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      style={{
-                        width: '100%',
-                        padding: 'clamp(0.75rem, 2vw, 1rem)',
-                        border: `2px solid ${
-                          validationErrors[field.key] ? theme.colors.error : (hasCustomColors ? colors.primaryAlpha(0.2) : theme.colors.border)
-                        }`,
-                        borderRadius: theme.borderRadius.md,
-                        backgroundColor: hasCustomColors ? colors.primaryAlpha(0.02) : theme.colors.backgroundSecondary,
-                        color: theme.colors.text,
-                        fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                        direction: field.key === 'email' ? 'ltr' : 'rtl',
-                        transition: 'all 0.2s ease',
-                        boxShadow: hasCustomColors ? `0 2px 8px ${colors.primaryAlpha(0.05)}` : 'none',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => {
-                        if (hasCustomColors) {
-                          e.currentTarget.style.borderColor = colors.primary;
-                          e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primaryAlpha(0.1)}`;
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (hasCustomColors) {
-                          e.currentTarget.style.borderColor = colors.primaryAlpha(0.2);
-                          e.currentTarget.style.boxShadow = `0 2px 8px ${colors.primaryAlpha(0.05)}`;
-                        }
-                      }}
-                    />
-                  )}
-                  {renderFieldError(field.key)}
-                </div>
-              ))}
-            </div>
+                    ) : (
+                      <motion.input
+                        whileFocus={{ 
+                          scale: 1.02,
+                          borderColor: hasCustomColors ? colors.primary : theme.colors.primary
+                        }}
+                        type={getInputType(field.key)}
+                        required={field.isRequired}
+                        value={dynamicFields[field.key] || ''}
+                        onChange={(e) => handleDynamicFieldChange(field.key, e.target.value)}
+                        placeholder={field.placeholder}
+                        style={{
+                          width: '100%',
+                          padding: 'clamp(0.75rem, 2vw, 1rem)',
+                          border: `2px solid ${
+                            validationErrors[field.key] ? theme.colors.error : (hasCustomColors ? colors.primaryAlpha(0.2) : theme.colors.border)
+                          }`,
+                          borderRadius: theme.borderRadius.md,
+                          backgroundColor: hasCustomColors ? colors.primaryAlpha(0.02) : theme.colors.backgroundSecondary,
+                          color: theme.colors.text,
+                          fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
+                          direction: field.languageField === 'fr' ? 'ltr' : 'rtl',
+                          transition: 'all 0.2s ease',
+                          boxShadow: hasCustomColors ? `0 2px 8px ${colors.primaryAlpha(0.05)}` : 'none',
+                          boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => {
+                          if (hasCustomColors) {
+                            e.currentTarget.style.borderColor = colors.primary;
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primaryAlpha(0.1)}`;
+                          }
+                        }}
+                        onBlur={(e) => {
+                          if (hasCustomColors) {
+                            e.currentTarget.style.borderColor = colors.primaryAlpha(0.2);
+                            e.currentTarget.style.boxShadow = `0 2px 8px ${colors.primaryAlpha(0.05)}`;
+                          }
+                        }}
+                      />
+                    )}
+                    {renderFieldError(field.key)}
+                  </motion.div>
+                ))}
+              </div>
 
-            {/* Responsive CSS for mobile devices */}
-            <style>{`
-              @media (max-width: 768px) {
-                div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] {
-                  grid-template-columns: 1fr !important;
-                  gap: 1rem !important;
+              {/* Responsive CSS for mobile devices */}
+              <style>{`
+                @media (max-width: 768px) {
+                  div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] {
+                    grid-template-columns: 1fr !important;
+                    gap: 1rem !important;
+                  }
+                  
+                  div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] > div {
+                    min-width: 100% !important;
+                  }
+                  
+                  label[style*="font-size: clamp"] {
+                    font-size: 0.9rem !important;
+                  }
+                  
+                  input, select {
+                    font-size: 0.9rem !important;
+                    padding: 0.875rem !important;
+                  }
                 }
                 
-                div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] > div {
-                  min-width: 100% !important;
+                @media (max-width: 480px) {
+                  div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] {
+                    gap: 0.75rem !important;
+                  }
+                  
+                  label[style*="font-size: clamp"] {
+                    font-size: 0.85rem !important;
+                  }
+                  
+                  input, select {
+                    font-size: 0.85rem !important;
+                    padding: 0.75rem !important;
+                  }
                 }
-                
-                label[style*="font-size: clamp"] {
-                  font-size: 0.9rem !important;
-                }
-                
-                input, select {
-                  font-size: 0.9rem !important;
-                  padding: 0.875rem !important;
-                }
-              }
-              
-              @media (max-width: 480px) {
-                div[style*="gridTemplateColumns: repeat(auto-fit, minmax(300px, 1fr))"] {
-                  gap: 0.75rem !important;
-                }
-                
-                label[style*="font-size: clamp"] {
-                  font-size: 0.85rem !important;
-                }
-                
-                input, select {
-                  font-size: 0.85rem !important;
-                  padding: 0.75rem !important;
-                }
-              }
-            `}</style>
-          </div>
-        )}
+              `}</style>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Predefined Fields - Interactive Selection */}
-        {product.predefinedFields?.some((field: any) => field.isActive && field.selectedOptions.length > 0) && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: theme.spacing.lg,
-            marginBottom: theme.spacing.xl,
-            padding: theme.spacing.lg,
-            borderRadius: theme.borderRadius.lg,
-            border: hasCustomColors 
-              ? `1px solid ${colors.primaryAlpha(0.15)}`
-              : `1px solid ${theme.colors.border}`
-          }}>
-            <h3 style={{
-              fontSize: theme.fonts.size.lg,
-              fontWeight: theme.fonts.weight.bold,
-              color: hasCustomColors ? colors.primary : theme.colors.text,
-              margin: 0,
-              textAlign: 'center',
-              paddingBottom: theme.spacing.sm,
-              borderBottom: hasCustomColors 
-                ? `2px solid ${colors.primaryAlpha(0.2)}`
-                : `2px solid ${theme.colors.border}`
-            }}>
-              خيارات المنتج
-            </h3>
-            {product.predefinedFields
-              .filter((field: any) => field.isActive && field.selectedOptions.length > 0)
-              .map((field: any) => (
-                <div key={field.category} style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: theme.spacing.sm
-                }}>
-                  <label style={{
-                    fontSize: theme.fonts.size.md,
-                    fontWeight: theme.fonts.weight.semiBold,
-                    textTransform: 'capitalize',
-                    color: hasCustomColors ? colors.primaryDark : theme.colors.text,
-                    marginBottom: theme.spacing.xs,
+        <AnimatePresence>
+          {product.predefinedFields?.some((field: any) => field.isActive && field.selectedOptions.length > 0) && (
+            <motion.div
+              variants={itemVariants}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: theme.spacing.lg,
+                marginBottom: theme.spacing.xl,
+                padding: theme.spacing.lg,
+                borderRadius: theme.borderRadius.lg,
+                border: hasCustomColors 
+                  ? `1px solid ${colors.primaryAlpha(0.15)}`
+                  : `1px solid ${theme.colors.border}`
+              }}
+            >
+              <h3 style={{
+                fontSize: theme.fonts.size.lg,
+                fontWeight: theme.fonts.weight.bold,
+                color: hasCustomColors ? colors.primary : theme.colors.text,
+                margin: 0,
+                textAlign: 'center',
+                paddingBottom: theme.spacing.sm,
+                borderBottom: hasCustomColors 
+                  ? `2px solid ${colors.primaryAlpha(0.2)}`
+                  : `2px solid ${theme.colors.border}`
+              }}>
+                خيارات المنتج
+              </h3>
+              {product.predefinedFields
+                .filter((field: any) => field.isActive && field.selectedOptions.length > 0)
+                .map((field: any) => (
+                  <div key={field.category} style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: theme.spacing.xs
+                    flexDirection: 'column',
+                    gap: theme.spacing.sm
                   }}>
-                    <span style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary
-                    }} />
-                    {field.category === 'sizes' ? 'المقاسات' : 
-                     field.category === 'colors' ? 'الألوان' : 
-                     field.category === 'materials' ? 'الخامات' : 
-                     field.category === 'seasons' ? 'المواسم' : 
-                     field.category === 'availability' ? 'التوفر' : field.category}
-                    {selectedVariants[field.category] && (
-                      <span style={{
-                        fontSize: theme.fonts.size.sm,
-                        color: hasCustomColors ? colors.primaryLight : theme.colors.primary,
-                        fontWeight: theme.fonts.weight.medium,
-                        backgroundColor: hasCustomColors ? colors.primaryAlpha(0.1) : `${theme.colors.primary}15`,
-                        padding: `2px ${theme.spacing.xs}`,
-                        borderRadius: theme.borderRadius.sm
-                      }}>
-                        ({selectedVariants[field.category]})
-                      </span>
-                    )}
-                  </label>
-                  <div style={{
-                    display: 'flex',
-                    gap: theme.spacing.sm,
-                    flexWrap: 'wrap',
-                    padding: theme.spacing.sm,
-                    backgroundColor: hasCustomColors ? colors.primaryAlpha(0.03) : theme.colors.surface,
-                    borderRadius: theme.borderRadius.md,
-                    border: `1px solid ${hasCustomColors ? colors.primaryAlpha(0.1) : theme.colors.border}`
-                  }}>
-                    {field.selectedOptions.map((option: string) => {
-                      const isSelected = selectedVariants[field.category] === option;
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => handleVariantSelection(field.category, option)}
-                          style={{
-                            padding: `${theme.spacing.sm} ${theme.spacing.md}`,
-                            border: `2px solid ${isSelected 
-                              ? (hasCustomColors ? colors.primary : theme.colors.primary)
-                              : (hasCustomColors ? colors.primaryAlpha(0.3) : theme.colors.border)
-                            }`,
-                            borderRadius: theme.borderRadius.md,
-                            fontSize: theme.fonts.size.sm,
-                            fontWeight: isSelected ? theme.fonts.weight.bold : theme.fonts.weight.medium,
-                            textTransform: 'capitalize',
-                            backgroundColor: isSelected 
-                              ? (hasCustomColors ? colors.primaryAlpha(0.15) : `${theme.colors.primary}15`)
-                              : (hasCustomColors ? colors.primaryAlpha(0.05) : theme.colors.backgroundSecondary),
-                            color: isSelected 
-                              ? (hasCustomColors ? colors.primaryDark : theme.colors.primary)
-                              : theme.colors.text,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            minWidth: '60px',
-                            textAlign: 'center',
-                            boxShadow: isSelected 
-                              ? (hasCustomColors ? `0 4px 12px ${colors.primaryAlpha(0.25)}` : `0 4px 12px ${theme.colors.primary}25`)
-                              : 'none',
-                            transform: isSelected ? 'translateY(-1px)' : 'translateY(0)'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = hasCustomColors ? colors.primaryAlpha(0.08) : `${theme.colors.primary}08`;
-                              e.currentTarget.style.borderColor = hasCustomColors ? colors.primaryAlpha(0.5) : `${theme.colors.primary}80`;
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                              e.currentTarget.style.boxShadow = hasCustomColors ? `0 2px 8px ${colors.primaryAlpha(0.15)}` : `0 2px 8px ${theme.colors.primary}15`;
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = hasCustomColors ? colors.primaryAlpha(0.05) : theme.colors.backgroundSecondary;
-                              e.currentTarget.style.borderColor = hasCustomColors ? colors.primaryAlpha(0.3) : theme.colors.border;
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }
-                          }}
-                        >
-                          {isSelected && (
-                            <span style={{
-                              position: 'absolute',
-                              top: '2px',
-                              right: '2px',
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary,
-                              boxShadow: '0 0 0 2px white'
-                            }} />
-                          )}
-                          {option === 'S' || option === 'M' || option === 'L' || option === 'XL' || option === 'XXL' ? option :
-                           option === 'red' ? 'أحمر' :
-                           option === 'blue' ? 'أزرق' :
-                           option === 'black' ? 'أسود' :
-                           option === 'white' ? 'أبيض' :
-                           option === 'green' ? 'أخضر' :
-                           option === 'summer' ? 'صيف' :
-                           option === 'winter' ? 'شتاء' :
-                           option === 'spring' ? 'ربيع' :
-                           option === 'autumn' ? 'خريف' :
-                           option === 'wool' ? 'صوف' :
-                           option === 'cotton' ? 'قطن' :
-                           option === 'fleece' ? 'فرو' :
-                           option === 'down' ? 'ريش' :
-                           option === 'in stock' ? 'متوفر' :
-                           option === 'out of stock' ? 'غير متوفر' :
-                           option === 'discounted' ? 'مخفض' :
-                           option === 'coming soon' ? 'قريباً' : option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Selection indicator */}
-                  {!selectedVariants[field.category] && (
-                    <div style={{
-                      fontSize: theme.fonts.size.xs,
-                      color: theme.colors.textSecondary,
-                      fontStyle: 'italic',
-                      textAlign: 'center',
-                      padding: theme.spacing.xs
+                    <label style={{
+                      fontSize: theme.fonts.size.md,
+                      fontWeight: theme.fonts.weight.semiBold,
+                      textTransform: 'capitalize',
+                      color: hasCustomColors ? "black" : theme.colors.text,
+                      marginBottom: theme.spacing.xs,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: theme.spacing.xs
                     }}>
-                      اختر خياراً واحداً
+                      <span style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary
+                      }} />
+                      {field.category === 'sizes' ? 'المقاسات' : 
+                       field.category === 'colors' ? 'الألوان' : 
+                       field.category === 'materials' ? 'الخامات' : 
+                       field.category === 'seasons' ? 'المواسم' : 
+                       field.category === 'availability' ? 'التوفر' : field.category}
+                      {selectedVariants[field.category] && (
+                        <span style={{
+                          fontSize: theme.fonts.size.sm,
+                          color: hasCustomColors ? colors.primaryLight : theme.colors.primary,
+                          fontWeight: theme.fonts.weight.medium,
+                          backgroundColor: hasCustomColors ? colors.primaryAlpha(0.1) : `${theme.colors.primary}15`,
+                          padding: `2px ${theme.spacing.xs}`,
+                          borderRadius: theme.borderRadius.sm
+                        }}>
+                          ({selectedVariants[field.category]})
+                        </span>
+                      )}
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      gap: theme.spacing.sm,
+                      flexWrap: 'wrap',
+                      padding: theme.spacing.sm,
+                      backgroundColor: hasCustomColors ? colors.primaryAlpha(0.03) : theme.colors.surface,
+                      borderRadius: theme.borderRadius.md,
+                      border: `1px solid ${hasCustomColors ? colors.primaryAlpha(0.1) : theme.colors.border}`
+                    }}>
+                      {field.selectedOptions.map((option: string) => {
+                        const isSelected = selectedVariants[field.category] === option;
+                        return (
+                          <motion.button
+                            key={option}
+                            variants={buttonVariants}
+                            initial="initial"
+                            whileHover="hover"
+                            whileTap="tap"
+                            animate={isSelected ? "selected" : "initial"}
+                            type="button"
+                            onClick={() => handleVariantSelection(field.category, option)}
+                            style={{
+                              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+                              border: `2px solid ${isSelected 
+                                ? (hasCustomColors ? colors.primary : theme.colors.primary)
+                                : (hasCustomColors ? colors.primaryAlpha(0.3) : theme.colors.border)
+                              }`,
+                              borderRadius: theme.borderRadius.md,
+                              fontSize: theme.fonts.size.sm,
+                              fontWeight: isSelected ? theme.fonts.weight.bold : theme.fonts.weight.medium,
+                              textTransform: 'capitalize',
+                              backgroundColor: isSelected 
+                                ? (hasCustomColors ? colors.primaryAlpha(0.15) : `${theme.colors.primary}15`)
+                                : (hasCustomColors ? colors.primaryAlpha(0.05) : theme.colors.backgroundSecondary),
+                              color: isSelected 
+                                ? (hasCustomColors ? colors.primaryDark : theme.colors.primary)
+                                : theme.colors.text,
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              minWidth: '60px',
+                              textAlign: 'center',
+                              boxShadow: isSelected 
+                                ? (hasCustomColors ? `0 4px 12px ${colors.primaryAlpha(0.25)}` : `0 4px 12px ${theme.colors.primary}25`)
+                                : 'none',
+                              transform: isSelected ? 'translateY(-1px)' : 'translateY(0)'
+                            }}
+                          >
+                            {isSelected && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '2px',
+                                  right: '2px',
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: hasCustomColors ? colors.primary : theme.colors.primary,
+                                  boxShadow: '0 0 0 2px white'
+                                }}
+                              />
+                            )}
+                            {option === 'S' || option === 'M' || option === 'L' || option === 'XL' || option === 'XXL' ? option :
+                             option === 'red' ? 'أحمر' :
+                             option === 'blue' ? 'أزرق' :
+                             option === 'black' ? 'أسود' :
+                             option === 'white' ? 'أبيض' :
+                             option === 'green' ? 'أخضر' :
+                             option === 'summer' ? 'صيف' :
+                             option === 'winter' ? 'شتاء' :
+                             option === 'spring' ? 'ربيع' :
+                             option === 'autumn' ? 'خريف' :
+                             option === 'wool' ? 'صوف' :
+                             option === 'cotton' ? 'قطن' :
+                             option === 'fleece' ? 'فرو' :
+                             option === 'down' ? 'ريش' :
+                             option === 'in stock' ? 'متوفر' :
+                             option === 'out of stock' ? 'غير متوفر' :
+                             option === 'discounted' ? 'مخفض' :
+                             option === 'coming soon' ? 'قريباً' : option}
+                          </motion.button>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              ))}
-          </div>
-        )}
+                    
+                    {/* Selection indicator */}
+                    {!selectedVariants[field.category] && (
+                      <div style={{
+                        fontSize: theme.fonts.size.xs,
+                        color: theme.colors.textSecondary,
+                        fontStyle: 'italic',
+                        textAlign: 'center',
+                        padding: theme.spacing.xs
+                      }}>
+                        اختر خياراً واحداً
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Global Error Display */}
-        {(validationErrors.submit || errors.length > 0) && (
-          <div style={{
-            padding: theme.spacing.md,
-            backgroundColor: `${theme.colors.error}15`,
-            border: `1px solid ${theme.colors.error}`,
-            borderRadius: theme.borderRadius.md,
-            color: theme.colors.error,
-            marginBottom: theme.spacing.lg,
-            textAlign: 'center',
-            fontSize: theme.fonts.size.md,
-            fontWeight: theme.fonts.weight.medium
-          }}>
-            {validationErrors.submit || 'يرجى تصحيح الأخطاء المذكورة أعلاه'}
-          </div>
-        )}
+        <AnimatePresence>
+          {(validationErrors.submit || errors.length > 0) && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{
+                padding: theme.spacing.md,
+                backgroundColor: `${theme.colors.error}15`,
+                border: `1px solid ${theme.colors.error}`,
+                borderRadius: theme.borderRadius.md,
+                color: theme.colors.error,
+                marginBottom: theme.spacing.lg,
+                textAlign: 'center',
+                fontSize: theme.fonts.size.md,
+                fontWeight: theme.fonts.weight.medium
+              }}
+            >
+              {validationErrors.submit || 'يرجى تصحيح الأخطاء المذكورة أعلاه'}
+            </motion.div>
+          )}
+        </AnimatePresence>
          
         {/* Total Price and Submit */}
-        <div style={{
-          padding: theme.spacing.lg,
-          background: hasCustomColors 
-            ? `linear-gradient(135deg, ${colors.primaryAlpha(0.08)} 0%, ${colors.primaryAlpha(0.03)} 100%)`
-            : theme.colors.backgroundSecondary,
-          borderRadius: theme.borderRadius.md,
-          border: hasCustomColors 
-            ? `2px solid ${colors.primaryAlpha(0.15)}`
-            : `1px solid ${theme.colors.border}`,
-          marginBottom: theme.spacing.lg,
-          boxShadow: hasCustomColors ? `0 4px 15px ${colors.primaryAlpha(0.1)}` : 'none'
-        }}>
+        <motion.div
+          variants={itemVariants}
+          style={{
+            padding: theme.spacing.lg,
+            background: hasCustomColors 
+              ? `linear-gradient(135deg, ${colors.primaryAlpha(0.08)} 0%, ${colors.primaryAlpha(0.03)} 100%)`
+              : theme.colors.backgroundSecondary,
+            borderRadius: theme.borderRadius.md,
+            border: hasCustomColors 
+              ? `2px solid ${colors.primaryAlpha(0.15)}`
+              : `1px solid ${theme.colors.border}`,
+            marginBottom: theme.spacing.lg,
+            boxShadow: hasCustomColors ? `0 4px 15px ${colors.primaryAlpha(0.1)}` : 'none'
+          }}
+        >
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -1351,11 +1509,22 @@ useEffect(() => {
             color: "black"
           }}>
             <span>المبلغ الإجمالي:</span>
-            <span style={{ color: colors.primary }}>{formatPrice(calculateTotalPrice())}</span>
+            <motion.span
+              key={calculateTotalPrice()}
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              style={{ color: colors.primaryDark}}
+            >
+              {formatPrice(calculateTotalPrice())}
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
 
-        <button
+        <motion.button
+          variants={buttonVariants}
+          initial="initial"
+          whileHover={!isFormSubmitting && !isSubmitting && !isLoadingFingerprint ? "hover" : undefined}
+          whileTap={!isFormSubmitting && !isSubmitting && !isLoadingFingerprint ? "tap" : undefined}
           type="submit"
           disabled={isFormSubmitting || isSubmitting || isLoadingFingerprint}
           style={{
@@ -1382,63 +1551,43 @@ useEffect(() => {
               ? `0 8px 25px ${colors.primaryDark}40`
               : theme.shadows.lg
           }}
-          onMouseEnter={(e) => {
-            if (!isFormSubmitting && !isSubmitting && !isLoadingFingerprint) {
-              e.currentTarget.style.opacity = '0.9';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = hasCustomColors 
-                ? `0 12px 30px ${colors.primaryDark}60`
-                : theme.shadows.xl;
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isFormSubmitting && !isSubmitting && !isLoadingFingerprint) {
-              e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = hasCustomColors 
-                ? `0 8px 25px ${colors.primaryDark}40`
-                : theme.shadows.lg;
-            }
-          }}
         >
           {isLoadingFingerprint ? (
             <>
-              <div style={{
-                width: '20px',
-                height: '20px',
-                border: `2px solid ${theme.colors.textOnPrimary}`,
-                borderTop: '2px solid transparent',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }} />
+              <motion.div
+                variants={loadingVariants}
+                animate="animate"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  border: `2px solid ${theme.colors.textOnPrimary}`,
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                }}
+              />
               جاري التحقق...
             </>
           ) : (isFormSubmitting || isSubmitting) ? (
             <>
-              <div style={{
-                width: '20px',
-                height: '20px',
-                border: `2px solid ${theme.colors.textOnPrimary}`,
-                borderTop: '2px solid transparent',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }} />
+              <motion.div
+                variants={loadingVariants}
+                animate="animate"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  border: `2px solid ${theme.colors.textOnPrimary}`,
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                }}
+              />
               جاري الإرسال...
             </>
           ) : (
             `تأكيد الطلب - ${formatPrice(calculateTotalPrice())}`
           )}
-        </button>
+        </motion.button>
       </form>
-
-      {/* CSS for loading animation */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 };
 

@@ -23,6 +23,7 @@ import ThankYou from './pages/ThankYou';
 import IntegrateSheet from './pages/IntegrateSheet';
 import ParameterPixel from './pages/ParameterPixel';
 import BotDetection from './pages/BotDetection';
+import FakeOrders from './pages/FakeOrders';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -151,6 +152,17 @@ const AppContent: React.FC = () => {
                 <>
                   <AdminNavbar />
                   <InquiryDashboard />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/fakeOrders"
+            element={
+              <ProtectedRoute>
+                <>
+                  <AdminNavbar />
+                  <FakeOrders />
                 </>
               </ProtectedRoute>
             }

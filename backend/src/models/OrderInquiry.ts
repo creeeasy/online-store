@@ -19,6 +19,7 @@ export interface IOrderInquiry extends Document {
   ipClient?:string;
   timeEnter?:Date;
   offer?: IOffer;
+  BotScore?:number;
 }
 
 const OrderInquirySchema = new Schema<IOrderInquiry>(
@@ -31,6 +32,7 @@ const OrderInquirySchema = new Schema<IOrderInquiry>(
 
     offerId: { type: Schema.Types.ObjectId, ref: 'Offer' },
     quantity: { type: Number, min: [1, 'Quantity must be at least 1'] },
+    BotScore: { type: Number, required:false},
 
     selectedVariants: { type: Schema.Types.Mixed, default: {} },
     totalPrice: { type: Number, min: 0, required: true },

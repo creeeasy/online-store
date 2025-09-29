@@ -11,9 +11,36 @@ interface DynamicFieldsTabProps {
 
 // Default required fields for every product
 const DEFAULT_DYNAMIC_FIELDS: Omit<IDynamicField, '_id'>[] = [
-  { key: 'fullName', placeholder: 'Enter your full name', isRequired: true, isDefault: true },
-  { key: 'phoneNumber', placeholder: 'Enter your phone number (e.g., 0555123456)', isRequired: true, isDefault: true },
-  { key: 'wilaya', placeholder: 'Select your wilaya', isRequired: true, isDefault: true }
+  { key: 'fullName', placeholder: 'أدخل اسمك الكامل', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' },
+  { key: 'phoneNumber', placeholder: 'أدخل رقم هاتفك (على سبيل المثال، 0555442462)', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' },
+  { key: 'wilaya', placeholder: 'اختر ولايتك', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' }
+];
+
+// Font family options
+const FONT_OPTIONS = [
+  { value: '', label: 'Default' },
+  { value: 'Arial, sans-serif', label: 'Arial' },
+  { value: 'Helvetica, sans-serif', label: 'Helvetica' },
+  { value: 'Times New Roman, serif', label: 'Times New Roman' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: 'Courier New, monospace', label: 'Courier New' },
+  { value: 'Verdana, sans-serif', label: 'Verdana' },
+  { value: 'Tahoma, sans-serif', label: 'Tahoma' },
+  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
+  { value: 'Palatino, serif', label: 'Palatino' },
+  { value: 'Garamond, serif', label: 'Garamond' },
+  { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS' },
+  { value: 'Impact, fantasy', label: 'Impact' },
+  { value: 'Lucida Console, monospace', label: 'Lucida Console' },
+  { value: 'Roboto, sans-serif', label: 'Roboto' },
+  { value: 'Open Sans, sans-serif', label: 'Open Sans' },
+  { value: 'Lato, sans-serif', label: 'Lato' },
+  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
+  { value: 'Poppins, sans-serif', label: 'Poppins' },
+  { value: 'Cairo, sans-serif', label: 'Cairo (Arabic)' },
+  { value: 'Tajawal, sans-serif', label: 'Tajawal (Arabic)' },
+  { value: 'Almarai, sans-serif', label: 'Almarai (Arabic)' },
+  { value: 'Amiri, serif', label: 'Amiri (Arabic)' },
 ];
 
 const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormData, validationErrors }) => {
@@ -22,7 +49,15 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     placeholder: '',
     isRequired: false,
     isDefault: false,
+    fontText: '',
+    fontSize: '',
+    languageField: 'fr'
   });
+
+  // Get globalLanguage from the first dynamic field's languageField, default to 'fr'
+  const globalLanguage = formData.dynamicFields && formData.dynamicFields.length > 0 
+    ? formData.dynamicFields[0].languageField as 'fr' | 'ar'
+    : 'fr';
 
   /**
    * 🔹 Normalize API errors into { "dynamicFields.0.key": ["message"] }
@@ -66,7 +101,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     if (!formData.dynamicFields || formData.dynamicFields.length === 0) {
       setFormData(prev => ({
         ...prev,
-        dynamicFields: DEFAULT_DYNAMIC_FIELDS.map(field => ({ ...field } as IDynamicField)),
+        dynamicFields: DEFAULT_DYNAMIC_FIELDS.map(field => ({ ...field, languageField: globalLanguage } as IDynamicField)),
       }));
     } else {
       const existingKeys = formData.dynamicFields.map(field => field.key);
@@ -75,13 +110,28 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
         setFormData(prev => ({
           ...prev,
           dynamicFields: [
-            ...missingDefaults.map(f => ({ ...f } as IDynamicField)),
+            ...missingDefaults.map(f => ({ ...f, languageField: globalLanguage } as IDynamicField)),
             ...(prev.dynamicFields || []),
           ],
         }));
       }
     }
-  }, [formData.dynamicFields, setFormData]);
+  }, [formData.dynamicFields, setFormData, globalLanguage]);
+
+  /**
+   * 🔹 Update global language for all fields
+   */
+  const updateGlobalLanguage = (language: 'fr' | 'ar') => {
+    if (formData.dynamicFields && formData.dynamicFields.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        dynamicFields: prev.dynamicFields?.map(field => ({
+          ...field,
+          languageField: language
+        }))
+      }));
+    }
+  };
 
   /**
    * 🔹 Add a new dynamic field
@@ -90,9 +140,9 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     if (!newField.key.trim()) return;
     setFormData(prev => ({
       ...prev,
-      dynamicFields: [...(prev.dynamicFields || []), { ...newField } as IDynamicField],
+      dynamicFields: [...(prev.dynamicFields || []), { ...newField, languageField: globalLanguage } as IDynamicField],
     }));
-    setNewField({ key: '', placeholder: '', isRequired: false, isDefault: false });
+    setNewField({ key: '', placeholder: '', isRequired: false, isDefault: false, fontText: '', fontSize: '', languageField: globalLanguage });
   };
 
   /**
@@ -149,6 +199,24 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
       background: 'white',
       color: 'black',
     },
+    select: {
+      width: '100%',
+      padding: '0.5rem',
+      borderRadius: '6px',
+      border: `1px solid #CBD5E1'}`,
+      background: 'white',
+      color: 'black',
+      cursor: 'pointer',
+    },
+    fontPreview: {
+      marginTop: '0.5rem',
+      padding: '0.75rem',
+      background: 'white',
+      border: '1px solid #CBD5E1',
+      borderRadius: '6px',
+      fontSize: '1rem',
+      color: '#334155',
+    },
     checkbox: {
       marginRight: '0.5rem',
     },
@@ -178,6 +246,25 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     <div style={styles.section}>
       <h3 style={{ marginBottom: '1rem' }}>Dynamic Fields</h3>
 
+      {/* Global Language Selector */}
+      <div style={{ ...styles.card, marginBottom: '2rem' }}>
+        <h4 style={{ marginBottom: '1rem' }}>Global Language Settings</h4>
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Select Language for All Fields</label>
+          <select
+            style={styles.select}
+            value={globalLanguage}
+            onChange={e => updateGlobalLanguage(e.target.value as 'fr' | 'ar')}
+          >
+            <option value="fr">French (FR)</option>
+            <option value="ar">Arabic (AR)</option>
+          </select>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.5rem' }}>
+          Changing this will update the language for all existing and new dynamic fields.
+        </p>
+      </div>
+
       {/* Existing dynamic fields */}
       {(formData.dynamicFields || []).map((field, index) => (
         <div key={index} style={styles.card}>
@@ -201,6 +288,45 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
               onChange={e => updateDynamicField(index, 'placeholder', e.target.value)}
             />
           </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Font Family</label>
+            <select
+              style={styles.select}
+              value={field.fontText || ''}
+              onChange={e => updateDynamicField(index, 'fontText', e.target.value)}
+            >
+              {FONT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Font Size (px)</label>
+            <input
+              type="number"
+              style={styles.input}
+              value={field.fontSize || ''}
+              onChange={e => updateDynamicField(index, 'fontSize', e.target.value)}
+              placeholder="e.g., 16"
+              min="1"
+            />
+          </div>
+
+
+          {(field.fontText || field.fontSize) && (
+            <div style={{ 
+              ...styles.fontPreview, 
+              fontFamily: field.fontText || 'inherit',
+              fontSize: field.fontSize ? `${field.fontSize}px` : '1rem',
+              direction: field.languageField === 'ar' ? 'rtl' : 'ltr'
+            }}>
+              Preview: {field.placeholder || 'Sample text in selected font'}
+            </div>
+          )}
 
           <div style={styles.actions}>
             <label style={{ display: 'flex', alignItems: 'center' }}>
@@ -255,6 +381,44 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             placeholder="Enter placeholder text"
           />
         </div>
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Font Family</label>
+          <select
+            style={styles.select}
+            value={newField.fontText}
+            onChange={e => setNewField({ ...newField, fontText: e.target.value })}
+          >
+            {FONT_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Font Size (px)</label>
+          <input
+            type="number"
+            style={styles.input}
+            value={newField.fontSize}
+            onChange={e => setNewField({ ...newField, fontSize: e.target.value })}
+            placeholder="e.g., 16"
+            min="1"
+          />
+        </div>
+
+        {(newField.fontText || newField.fontSize) && (
+          <div style={{ 
+            ...styles.fontPreview, 
+            fontFamily: newField.fontText || 'inherit',
+            fontSize: newField.fontSize ? `${newField.fontSize}px` : '1rem',
+            direction: newField.languageField === 'ar' ? 'rtl' : 'ltr'
+          }}>
+            Preview: {newField.placeholder || 'Sample text in selected font'}
+          </div>
+        )}
 
         <label style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
           <input

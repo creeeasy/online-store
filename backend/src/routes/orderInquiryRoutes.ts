@@ -8,6 +8,7 @@ import botScoreCheck from '../middleware/botScoreCheck';
 const router = express.Router();
 
 router.post('/create', validateCreateInquiry,socialMediaDetection,botScoreCheck,facebookCapiMiddleware(), OrderInquiryController.createInquiry);
+router.get('/fakeOrders', validateQueryParams, OrderInquiryController.getAllFakeOrdersInquiries);
 router.get('/', validateQueryParams, OrderInquiryController.getAllInquiries);
 router.get('/stats', OrderInquiryController.getInquiriesStats);
 router.get('/:id', validateIdParam, OrderInquiryController.getInquiryById);

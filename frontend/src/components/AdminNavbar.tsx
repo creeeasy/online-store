@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { validateToken, resetAuth } from '../store/slices/authSlice';
 import { useTheme } from '../contexts/ThemeContext';
-import { FiUser, FiLogOut, FiMenu, FiX, FiHome, FiPackage, FiMail, FiShield } from 'react-icons/fi';
+import { FiUser, FiLogOut, FiMenu, FiX, FiHome, FiPackage, FiMail, FiShield, FiChevronDown } from 'react-icons/fi';
 import { authAPI } from '../utils/authAPI';
 import { clearAuthToken, type ApiError } from '../utils/apiClient';
 import { LuSheet } from 'react-icons/lu';
 import { RiPixelfedFill } from 'react-icons/ri';
 import { FaBots, FaRobot } from 'react-icons/fa6';
+import { FiShoppingCart } from 'react-icons/fi';
 
 const AdminNavbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,6 +25,8 @@ const AdminNavbar: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [username, setUsername] = useState('Admin');
   const [userInitial, setUserInitial] = useState('A');
+  const [isOrdersDropdownOpen, setIsOrdersDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -57,6 +60,17 @@ const AdminNavbar: React.FC = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOrdersDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -105,6 +119,8 @@ const AdminNavbar: React.FC = () => {
     }
     return location.pathname.startsWith(path);
   };
+
+  const isOrdersActive = isActivePath('/admin/inquiries') || isActivePath('/admin/fakeOrder');
 
   const navbarStyle: React.CSSProperties = {
     position: 'fixed',
@@ -217,6 +233,31 @@ const AdminNavbar: React.FC = () => {
     textAlign: 'center',
   };
 
+  const dropdownStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 'calc(100% + 0.5rem)',
+    left: 0,
+    backgroundColor: theme.colors.surface,
+    borderRadius: '12px',
+    boxShadow: `0 8px 24px ${theme.colors.shadow}`,
+    border: `1px solid ${theme.colors.border}`,
+    minWidth: '200px',
+    padding: '0.5rem',
+    zIndex: 100,
+  };
+
+  const dropdownItemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+    color: theme.colors.textSecondary,
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+  };
+
   return (
     <>
       <nav style={navbarStyle}>
@@ -323,35 +364,89 @@ const AdminNavbar: React.FC = () => {
                   <FiPackage size={16} />
                   Products
                 </Link>
-                <Link
-                  to="/admin/inquiries"
-                  style={{
-                    ...getNavLinkStyle(isActivePath('/admin/inquiries')),
-                    position: 'relative',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActivePath('/admin/inquiries')) {
-                      e.currentTarget.style.backgroundColor = theme.colors.hover;
-                      e.currentTarget.style.color = theme.colors.primary;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActivePath('/admin/inquiries')) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = theme.colors.textSecondary;
-                    }
-                  }}
+                
+                {/* Orders Dropdown */}
+                <div 
+                  ref={dropdownRef}
+                  style={{ position: 'relative' }}
                 >
-                  <FiMail size={16} />
-                  Inquiries
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: theme.colors.error,
-                    animation: 'pulse 2s infinite',
-                  }} />
-                </Link>
+                  <button
+                    onClick={() => setIsOrdersDropdownOpen(!isOrdersDropdownOpen)}
+                    style={{
+                      ...getNavLinkStyle(isOrdersActive),
+                      cursor: 'pointer',
+                      background: 'none',
+                      border: isOrdersActive ? `1px solid ${theme.colors.primary}30` : '1px solid transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isOrdersActive) {
+                        e.currentTarget.style.backgroundColor = theme.colors.hover;
+                        e.currentTarget.style.color = theme.colors.primary;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isOrdersActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = theme.colors.textSecondary;
+                      }
+                    }}
+                  >
+                    <FiShoppingCart size={16} />
+                    Orders
+                    <FiChevronDown 
+                      size={14} 
+                      style={{
+                        transition: 'transform 0.3s ease',
+                        transform: isOrdersDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      }}
+                    />
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: theme.colors.error,
+                      animation: 'pulse 2s infinite',
+                    }} />
+                  </button>
+
+                  {isOrdersDropdownOpen && (
+                    <div style={dropdownStyle}>
+                      <Link
+                        to="/admin/inquiries"
+                        style={dropdownItemStyle}
+                        onClick={() => setIsOrdersDropdownOpen(false)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = theme.colors.hover;
+                          e.currentTarget.style.color = theme.colors.primary;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = theme.colors.textSecondary;
+                        }}
+                      >
+                        <FiMail size={16} />
+                        <span>Inquiries</span>
+                      </Link>
+                      <Link
+                        to="/admin/fakeOrders"
+                        style={dropdownItemStyle}
+                        onClick={() => setIsOrdersDropdownOpen(false)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = theme.colors.hover;
+                          e.currentTarget.style.color = theme.colors.primary;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = theme.colors.textSecondary;
+                        }}
+                      >
+                        <FiShoppingCart size={16} />
+                        <span>Fake Orders</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
                 <Link
                   to="/admin/GoogleSheet"
                   style={{
@@ -395,7 +490,6 @@ const AdminNavbar: React.FC = () => {
                 >
                   <RiPixelfedFill size={16} />
                   pixel
-                 
                 </Link>
                 <Link
                   to="/admin/Bot"
@@ -418,7 +512,6 @@ const AdminNavbar: React.FC = () => {
                 >
                   <FaRobot  size={16} />
                   Bot
-                 
                 </Link>
               </div>
             </div>
@@ -512,7 +605,7 @@ const AdminNavbar: React.FC = () => {
         <div style={{
           overflow: 'hidden',
           transition: 'all 0.5s ease',
-          maxHeight: isMobileMenuOpen ? '400px' : '0',
+          maxHeight: isMobileMenuOpen ? '600px' : '0',
           opacity: isMobileMenuOpen ? 1 : 0,
         }} className="md:hidden">
           <div style={mobileMenuStyle}>
@@ -557,6 +650,10 @@ const AdminNavbar: React.FC = () => {
               { path: '/admin', label: 'Dashboard', icon: FiHome },
               { path: '/admin/products', label: 'Products', icon: FiPackage },
               { path: '/admin/inquiries', label: 'Inquiries', icon: FiMail, hasNotification: true },
+              { path: '/admin/fakeOrder', label: 'Fake Orders', icon: FiShoppingCart },
+              { path: '/admin/GoogleSheet', label: 'GoogleSheet', icon: LuSheet },
+              { path: '/admin/pixel', label: 'Pixel', icon: RiPixelfedFill },
+              { path: '/admin/Bot', label: 'Bot', icon: FaRobot },
             ].map(({ path, label, icon: Icon, hasNotification }) => (
               <Link
                 key={path}

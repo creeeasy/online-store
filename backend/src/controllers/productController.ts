@@ -313,7 +313,6 @@ export const updateProduct = [
     // Validate quantity configuration if any fields are being updated
     const quantityFieldsBeingUpdated = ['allowQuantity', 'allowMultipleQuantities', 'maxQuantityPerInquiry']
       .some(field => req.body.hasOwnProperty(field));
-
     if (quantityFieldsBeingUpdated) {
       const finalQuantityConfig = {
         allowQuantity: req.body.hasOwnProperty('allowQuantity') ? req.body.allowQuantity : product.allowQuantity,
@@ -353,7 +352,6 @@ export const updateProduct = [
     } else if (updateData.allowMultipleQuantities === true && !updateData.maxQuantityPerInquiry && !product.maxQuantityPerInquiry) {
       updateData.maxQuantityPerInquiry = 10;
     }
-
 
     // FIXED: Proper offer handling
     if (req.body.offers !== undefined) {
@@ -697,7 +695,7 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     .sort({ createdAt: -1 })
     .limit(5)
     .select("name price discountPrice images colors allowQuantity allowMultipleQuantities maxQuantityPerInquiry createdAt");
-
+  
   // Additional stats
   const productsWithDynamicFields = await Product.countDocuments({
     dynamicFields: { $exists: true, $ne: [], $not: { $size: 0 } }

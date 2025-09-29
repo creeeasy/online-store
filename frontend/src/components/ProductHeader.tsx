@@ -87,6 +87,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
     fontFamily: theme.fonts.family.heading,
     marginBottom: theme.spacing.md,
     lineHeight: 1.2,
+    textAlign:"center",
     textShadow: hasCustomColors ? `0 2px 4px ${productColors.primary}10` : 'none',
     background: hasCustomColors 
       ? `linear-gradient(135deg, ${productColors.primaryDark} 0%, ${productColors.primary} 100%)`

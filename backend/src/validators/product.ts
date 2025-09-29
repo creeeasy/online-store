@@ -109,10 +109,7 @@ body('maxQuantityPerInquiry')
       .toFloat(),
     
     body('description')
-      .optional()
-      .trim()
-      .isLength({ min: 10, max: 1000 })
-      .withMessage('Description must be between 10 and 1000 characters if provided'),
+      .optional(),
     
     body('images')
       .optional()

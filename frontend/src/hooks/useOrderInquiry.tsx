@@ -82,6 +82,29 @@ const orderInquiryAPI = {
       pagination: result.pagination!
     };
   },
+  async getFakeOrdersInquiries(filters?: OrderInquiryFilters): Promise<{ inquiries: OrderInquiry[]; pagination: PaginationData }> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    const response = await fetch(`${API_BASE_URL}/order-inquiries/fakeOrders?${params}`);
+    const result: SuccessResponse<OrderInquiry[]> = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to fetch inquiries');
+    }
+
+    return {
+      inquiries: result.data,
+      pagination: result.pagination!
+    };
+  },
 
   async getInquiryById(id: string): Promise<OrderInquiry> {
     const response = await fetch(`${API_BASE_URL}/order-inquiries/${id}`);
@@ -264,6 +287,24 @@ export const useOrderInquiries = (filters?: OrderInquiryFilters) => {
   return useQuery({
     queryKey: ['order-inquiries', filters],
     queryFn: () => orderInquiryAPI.getInquiries(filters),
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (data) => ({
+      inquiries: data.inquiries,
+      pagination: data.pagination
+    })
+  });
+};
+export const useFakeOrderInquiries = (filters?: OrderInquiryFilters) => {
+  return useQuery({
+    queryKey: ['order-inquiries', filters],
+    queryFn: () => orderInquiryAPI.getFakeOrdersInquiries(filters),
     retry: (failureCount, error: any) => {
       // Don't retry on 4xx errors (client errors)
       if (error?.response?.status >= 400 && error?.response?.status < 500) {

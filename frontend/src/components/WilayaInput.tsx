@@ -15,6 +15,7 @@ export const WilayaSelect: React.FC<WilayaSelectProps> = ({
   errors,
   required = false,
   value,
+  customStyle,
   onChange
 }) => {
   const options = WILAYAS.map(wilaya => ({
@@ -32,6 +33,7 @@ export const WilayaSelect: React.FC<WilayaSelectProps> = ({
       onChange={onChange}
       options={options}
       placeholder={fieldName}
+      customStyle={customStyle}
     />
   );
 };

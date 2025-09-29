@@ -380,7 +380,6 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         <div style={getFieldContainerStyle(hasFieldError('description', allErrors))}>
           <label style={getLabelStyle(hasFieldError('description', allErrors))}>
             Description
-            <span style={{ color: theme.colors.error }}>*</span>
             {hasFieldError('description', allErrors) && <FiAlertTriangle size={14} />}
           </label>
           <textarea

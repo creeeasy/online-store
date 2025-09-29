@@ -138,26 +138,6 @@ const validateBasicInfo = (formData: Partial<IProduct>, errors: ValidationError[
     }
   }
   
-  // Description validation
-  if (!formData.description || formData.description.trim().length === 0) {
-    errors.push({
-      field: 'description',
-      message: 'Description is required',
-      tab: 'basic'
-    });
-  } else if (formData.description.trim().length < 10) {
-    errors.push({
-      field: 'description',
-      message: 'Description must be at least 10 characters long',
-      tab: 'basic'
-    });
-  } else if (formData.description.trim().length > 2000) {
-    errors.push({
-      field: 'description',
-      message: 'Description cannot exceed 2000 characters',
-      tab: 'basic'
-    });
-  }
   
   // Images validation
   if (!formData.images || formData.images.length === 0 || formData.images.every(img => !img || img.trim().length === 0)) {

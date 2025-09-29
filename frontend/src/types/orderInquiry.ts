@@ -30,6 +30,7 @@ export interface OrderInquiry {
   updatedAt: string;
   product?: Product;
   offer?: Offer;
+  BotScore?:number;
 }
 
 export interface CreateOrderInquiry {

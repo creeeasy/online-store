@@ -419,7 +419,7 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
   options,
   placeholder,
   className = '',
-  customStyle = {},
+  customStyle,
   ...props
 }) => {
   const { theme } = useTheme();
@@ -442,7 +442,6 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'right 12px center',
     backgroundSize: '14px 8px',
-    paddingRight: theme.spacing['3xl'],
     appearance: 'none',
     WebkitAppearance: 'none',
     MozAppearance: 'none',
@@ -461,12 +460,12 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
     fontSize: theme.fonts.size.md,
     fontFamily: theme.fonts.family.body
   };
-
+  console.log(customStyle)
   return (
     <select
       required={required}
       {...props}
-      style={selectStyle}
+      style={customStyle}
       className={className}
       onFocus={(e) => {
         if (!hasErrors) {

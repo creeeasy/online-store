@@ -19,6 +19,9 @@ export interface IDynamicField {
   placeholder: string;
   isRequired?: boolean;
   isDefault?: boolean;
+  fontText?: string;
+  fontSize?: string;
+  languageField?: string;
   _id?: mongoose.Types.ObjectId;
 }
 
@@ -56,7 +59,7 @@ export interface IProduct extends Document {
   name: string;
   price: number;
   discountPrice?: number;
-  description: string;
+  description?: string;
   images: string[];
   colors?: IProductColor[]; // Optional array of up to 3 colors
   dynamicFields: IDynamicField[];
@@ -127,8 +130,7 @@ const ProductSchema = new Schema({
   },
   description: { 
     type: String, 
-    required: true,
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
+    required: false,
   },
   images: {
     type: [String],
@@ -178,6 +180,9 @@ const ProductSchema = new Schema({
       trim: true,
       maxlength: [100, 'Dynamic field placeholder cannot exceed 100 characters']
     },
+    fontText: { type: String,required:false, default: "" },
+    fontSize: { type: String,required:false },
+    languageField: { type: String,required:false,default:"ar" },
     isRequired: { type: Boolean, default: false },
     isDefault: { type: Boolean, default: false }
   }],
@@ -203,8 +208,6 @@ const ProductSchema = new Schema({
     },
     description: { 
       type: String, 
-      trim: true,
-      maxlength: [100, 'Hidden field description cannot exceed 100 characters']
     }
   }],
   

@@ -11,6 +11,7 @@ import { google } from "googleapis";
 import Sheet from "../models/sheet"
 import requestIp from "request-ip"
 import mongoose from 'mongoose';
+import { OrderFake } from '../models/OrderFake';
 // Load credentials from a JSON file
 const credentialsPath = path.join(__dirname, "../../apiGoogleSheet.json");
 const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
@@ -44,7 +45,8 @@ static createInquiry = asyncHandler(async (req: Request, res: Response) => {
     typeOfOrder,       // 'offer' | 'quantity'
     offerId,           // optional
     selectedVariants = {},
-    notes
+    notes,
+    botScore
   } = req.body;
    // Check if file exists
 
@@ -179,6 +181,7 @@ const sheetMetadata = await sheets.spreadsheets.get({
 
   let totalPrice = 0;
   let offerTitle = '';
+  let offerReference = '';
 
   if (typeOfOrder === 'offer') {
     if (!offerId) {
@@ -192,6 +195,7 @@ const sheetMetadata = await sheets.spreadsheets.get({
 
     totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
     offerTitle = offer.title || '';
+    offerReference=offer?.reference || "";
 
   } else if (typeOfOrder === 'quantity') {
     if (quantity < 1) {
@@ -223,6 +227,7 @@ const sheetMetadata = await sheets.spreadsheets.get({
       typeOfOrder,
       ipClient,
       timeEnter,
+      BotScore:botScore,
     });
 
     await inquiry.save();
@@ -243,6 +248,7 @@ const rowData = [
   typeOfOrder, 
   totalPrice, 
   offerTitle,
+  offerReference,
   product.reference
 ];
 if(SPREADSHEET_ID){
@@ -326,8 +332,78 @@ static getAllInquiries = asyncHandler(async (req: Request, res: Response) => {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
-
   const total = await OrderInquiry.countDocuments(filter);
+
+  ResponseHandler.paginated(
+    res,
+    inquiries,
+    total,
+    page,
+    limit,
+    'Inquiries retrieved successfully'
+  );
+});
+static getAllFakeOrdersInquiries = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  // Build filter object
+  const filter: any = {};
+  
+  if (req.query.status) {
+    filter.status = req.query.status;
+  }
+  
+  if (req.query.productId) {
+    filter.productId = req.query.productId;
+  }
+
+  // Dynamic customer data filtering
+  if (req.query.phone) {
+    filter['customerData.phone'] = { 
+      $regex: req.query.phone, 
+      $options: 'i' 
+    };
+  }
+
+  if (req.query.name) {
+    filter['customerData.name'] = { 
+      $regex: req.query.name, 
+      $options: 'i' 
+    };
+  }
+
+  // Support dynamic field filtering
+  Object.keys(req.query).forEach(key => {
+    if (key.startsWith('customerData.')) {
+      const fieldName = key.substring('customerData.'.length);
+      filter[`customerData.${fieldName}`] = { 
+        $regex: req.query[key], 
+        $options: 'i' 
+      };
+    }
+  });
+
+  // Date range filter
+  if (req.query.startDate || req.query.endDate) {
+    filter.createdAt = {};
+    if (req.query.startDate) {
+      filter.createdAt.$gte = new Date(req.query.startDate as string);
+    }
+    if (req.query.endDate) {
+      filter.createdAt.$lte = new Date(req.query.endDate as string);
+    }
+  }
+
+  // Execute query with population
+  const inquiries = await OrderFake.find(filter)
+    .populate('product', 'name price discountPrice images dynamicFields')
+    .populate('offer', 'title originalPrice discountedPrice isActive validUntil')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  const total = await OrderFake.countDocuments(filter);
 
   ResponseHandler.paginated(
     res,
@@ -359,21 +435,28 @@ static getInquiryById = asyncHandler(async (req: Request, res: Response) => {
 
  
 
-  static deleteInquiry = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+static deleteInquiry = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    const inquiry = await OrderInquiry.findByIdAndDelete(id);
+  // Try deleting from OrderInquiry first
+  let deletedDoc = await OrderInquiry.findByIdAndDelete(id);
 
-    if (!inquiry) {
-      return ResponseHandler.notFound(res, 'Order inquiry');
-    }
+  // If not found, try deleting from OrderFake
+  if (!deletedDoc) {
+    deletedDoc = await OrderFake.findByIdAndDelete(id);
+  }
 
-    ResponseHandler.success(
-      res,
-      { deletedInquiry: inquiry },
-      'Order inquiry deleted successfully'
-    );
-  });
+  // If not found in either collection
+  if (!deletedDoc) {
+    return ResponseHandler.notFound(res, 'Order inquiry or fake order');
+  }
+
+  ResponseHandler.success(
+    res,
+    { deleted: deletedDoc },
+    'Order deleted successfully'
+  );
+});
 
 static getInquiriesStats = asyncHandler(async (req: Request, res: Response) => {
   const stats = await OrderInquiry.aggregate([
@@ -440,40 +523,60 @@ static getInquiriesStats = asyncHandler(async (req: Request, res: Response) => {
   // Bulk delete inquiries
   static bulkDelete = asyncHandler(async (req: Request, res: Response) => {
     const { ids } = req.body;
-
-    const result = await OrderInquiry.deleteMany({ _id: { $in: ids } });
-
+  
+    // Delete from OrderInquiry
+    const inquiryResult = await OrderInquiry.deleteMany({ _id: { $in: ids } });
+  
+    // Delete from OrderFake
+    const fakeResult = await OrderFake.deleteMany({ _id: { $in: ids } });
+  
+    const totalDeleted = (inquiryResult.deletedCount || 0) + (fakeResult.deletedCount || 0);
+  
     ResponseHandler.success(
       res,
-      { deletedCount: result.deletedCount },
-      `${result.deletedCount} inquiries deleted successfully`
+      { 
+        deletedFromInquiry: inquiryResult.deletedCount, 
+        deletedFromFake: fakeResult.deletedCount,
+        totalDeleted 
+      },
+      `${totalDeleted} orders deleted successfully`
     );
   });
+  
 
   // Delete all inquiries (requires confirmation code)
-static deleteAllInquiries = asyncHandler(async (req: Request, res: Response) => {
-  const { confirmationCode } = req.body;
-
-  // Security check – to avoid accidental deletion
-  const REQUIRED_CODE = process.env.DELETE_ALL_CONFIRMATION || 'CONFIRM_DELETE_ALL';
-
-  if (!confirmationCode || confirmationCode !== REQUIRED_CODE) {
-    return ResponseHandler.error(
+  static deleteAllInquiries = asyncHandler(async (req: Request, res: Response) => {
+    const { confirmationCode } = req.body;
+  
+    // Security check – to avoid accidental deletion
+    const REQUIRED_CODE = process.env.DELETE_ALL_CONFIRMATION || 'CONFIRM_DELETE_ALL';
+  
+    if (!confirmationCode || confirmationCode !== REQUIRED_CODE) {
+      return ResponseHandler.error(
+        res,
+        'Invalid or missing confirmation code',
+        403,
+        undefined,
+        'INVALID_CONFIRMATION'
+      );
+    }
+  
+    // Delete everything from both collections
+    const inquiryResult = await OrderInquiry.deleteMany({});
+    const fakeResult = await OrderFake.deleteMany({});
+  
+    const totalDeleted = (inquiryResult.deletedCount || 0) + (fakeResult.deletedCount || 0);
+  
+    ResponseHandler.success(
       res,
-      'Invalid or missing confirmation code',
-      403,
-      undefined,
-      'INVALID_CONFIRMATION'
+      {
+        deletedFromInquiry: inquiryResult.deletedCount,
+        deletedFromFake: fakeResult.deletedCount,
+        totalDeleted,
+      },
+      `${totalDeleted} orders deleted successfully`
     );
-  }
-
-  const result = await OrderInquiry.deleteMany({});
-
-  ResponseHandler.success(
-    res,
-    { deletedCount: result.deletedCount },
-    `${result.deletedCount} inquiries deleted successfully`
-  );
-});
+  });
+  
 
 }

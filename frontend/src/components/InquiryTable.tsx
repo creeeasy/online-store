@@ -141,7 +141,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
   const { theme } = useTheme();
   const [selectedInquiries, setSelectedInquiries] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  
+  console.log(inquiries)
   // Delete hooks
   const deleteInquiry = useDeleteOrderInquiry();
   const { isConfirming, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
@@ -556,6 +556,7 @@ const quantityBadgeStyle = (hasQuantity: boolean): React.CSSProperties => ({
               <th scope="col" style={thStyle}>Quantity</th>
               <th scope="col" style={thStyle}>Selected Offer</th>
               <th scope="col" style={thStyle}>Total Price</th>
+              <th scope="col" style={thStyle}>Bot Score</th>
               <th scope="col" style={thStyle}>Date</th>
               <th scope="col" style={thActionsStyle}>Actions</th>
             </tr>
@@ -666,6 +667,11 @@ const quantityBadgeStyle = (hasQuantity: boolean): React.CSSProperties => ({
                 <td style={tdStyle}>
                   <div style={priceStyle}>
                     {InquiryUtils.formatPrice(inquiry.totalPrice)}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <div style={priceStyle}>
+                    {inquiry?.BotScore}
                   </div>
                 </td>
 
