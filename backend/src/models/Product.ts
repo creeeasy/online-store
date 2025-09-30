@@ -22,6 +22,7 @@ export interface IDynamicField {
   fontText?: string;
   fontSize?: string;
   languageField?: string;
+  fontBold?: string;
   _id?: mongoose.Types.ObjectId;
 }
 
@@ -60,6 +61,7 @@ export interface IProduct extends Document {
   price: number;
   discountPrice?: number;
   description?: string;
+  thankYou?: boolean;
   images: string[];
   colors?: IProductColor[]; // Optional array of up to 3 colors
   dynamicFields: IDynamicField[];
@@ -132,6 +134,11 @@ const ProductSchema = new Schema({
     type: String, 
     required: false,
   },
+  thankYou: { 
+    type: Boolean, 
+    required: false,
+    default:true
+  },
   images: {
     type: [String],
     validate: {
@@ -183,6 +190,7 @@ const ProductSchema = new Schema({
     fontText: { type: String,required:false, default: "" },
     fontSize: { type: String,required:false },
     languageField: { type: String,required:false,default:"ar" },
+    fontBold: { type: String,required:false,default:"bold" },
     isRequired: { type: Boolean, default: false },
     isDefault: { type: Boolean, default: false }
   }],

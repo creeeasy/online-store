@@ -319,7 +319,8 @@ const ThankYou: React.FC = () => {
           </p>
           
           {/* Action Button */}
-          <button
+          {console.log(order)}
+          {order.thankYouButton && <button
             style={buttonStyle}
             onClick={() => navigate('/')}
             onMouseEnter={(e) => {
@@ -335,7 +336,7 @@ const ThankYou: React.FC = () => {
               marginRight: theme.spacing.sm,
               transition: theme.transitions.fast,
             }}>→</span>
-          </button>
+          </button>}
           
           {/* Decorative Elements */}
           <div style={{

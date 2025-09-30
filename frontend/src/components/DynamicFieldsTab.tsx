@@ -11,9 +11,9 @@ interface DynamicFieldsTabProps {
 
 // Default required fields for every product
 const DEFAULT_DYNAMIC_FIELDS: Omit<IDynamicField, '_id'>[] = [
-  { key: 'fullName', placeholder: 'أدخل اسمك الكامل', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' },
-  { key: 'phoneNumber', placeholder: 'أدخل رقم هاتفك (على سبيل المثال، 0555442462)', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' },
-  { key: 'wilaya', placeholder: 'اختر ولايتك', isRequired: true, isDefault: true, fontText: '', fontSize: '', languageField: 'ar' }
+  { key: 'fullName', placeholder: 'أدخل اسمك الكامل', isRequired: true, isDefault: true, fontText: '', fontSize: '', fontBold: '', languageField: 'ar' },
+  { key: 'phoneNumber', placeholder: 'أدخل رقم هاتفك (على سبيل المثال، 0555442462)', isRequired: true, isDefault: true, fontText: '', fontSize: '', fontBold: '', languageField: 'ar' },
+  { key: 'wilaya', placeholder: 'اختر ولايتك', isRequired: true, isDefault: true, fontText: '', fontSize: '', fontBold: '', languageField: 'ar' }
 ];
 
 // Font family options
@@ -43,6 +43,24 @@ const FONT_OPTIONS = [
   { value: 'Amiri, serif', label: 'Amiri (Arabic)' },
 ];
 
+// Font weight options
+const FONT_WEIGHT_OPTIONS = [
+  { value: '', label: 'Default' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'bold', label: 'Bold' },
+  { value: '100', label: '100 - Thin' },
+  { value: '200', label: '200 - Extra Light' },
+  { value: '300', label: '300 - Light' },
+  { value: '400', label: '400 - Normal' },
+  { value: '500', label: '500 - Medium' },
+  { value: '600', label: '600 - Semi Bold' },
+  { value: '700', label: '700 - Bold' },
+  { value: '800', label: '800 - Extra Bold' },
+  { value: '900', label: '900 - Black' },
+  { value: 'lighter', label: 'Lighter' },
+  { value: 'bolder', label: 'Bolder' },
+];
+
 const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormData, validationErrors }) => {
   const [newField, setNewField] = useState<Omit<IDynamicField, '_id'>>({
     key: '',
@@ -51,6 +69,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
     isDefault: false,
     fontText: '',
     fontSize: '',
+    fontBold: '',
     languageField: 'fr'
   });
 
@@ -142,7 +161,7 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
       ...prev,
       dynamicFields: [...(prev.dynamicFields || []), { ...newField, languageField: globalLanguage } as IDynamicField],
     }));
-    setNewField({ key: '', placeholder: '', isRequired: false, isDefault: false, fontText: '', fontSize: '', languageField: globalLanguage });
+    setNewField({ key: '', placeholder: '', isRequired: false, isDefault: false, fontText: '', fontSize: '', fontBold: '', languageField: globalLanguage });
   };
 
   /**
@@ -316,12 +335,27 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
             />
           </div>
 
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Font Weight</label>
+            <select
+              style={styles.select}
+              value={field.fontBold || ''}
+              onChange={e => updateDynamicField(index, 'fontBold', e.target.value)}
+            >
+              {FONT_WEIGHT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {(field.fontText || field.fontSize) && (
+          {(field.fontText || field.fontSize || field.fontBold) && (
             <div style={{ 
               ...styles.fontPreview, 
               fontFamily: field.fontText || 'inherit',
               fontSize: field.fontSize ? `${field.fontSize}px` : '1rem',
+              fontWeight: field.fontBold || 'normal',
               direction: field.languageField === 'ar' ? 'rtl' : 'ltr'
             }}>
               Preview: {field.placeholder || 'Sample text in selected font'}
@@ -409,11 +443,27 @@ const DynamicFieldsTab: React.FC<DynamicFieldsTabProps> = ({ formData, setFormDa
           />
         </div>
 
-        {(newField.fontText || newField.fontSize) && (
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Font Weight</label>
+          <select
+            style={styles.select}
+            value={newField.fontBold}
+            onChange={e => setNewField({ ...newField, fontBold: e.target.value })}
+          >
+            {FONT_WEIGHT_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(newField.fontText || newField.fontSize || newField.fontBold) && (
           <div style={{ 
             ...styles.fontPreview, 
             fontFamily: newField.fontText || 'inherit',
             fontSize: newField.fontSize ? `${newField.fontSize}px` : '1rem',
+            fontWeight: newField.fontBold || 'normal',
             direction: newField.languageField === 'ar' ? 'rtl' : 'ltr'
           }}>
             Preview: {newField.placeholder || 'Sample text in selected font'}

@@ -12,6 +12,7 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import * as Bowser from "bowser";
 import { useDispatch } from 'react-redux';
 import { setOrderState } from '../store/slices/orderSlice';
+import { FaGift } from 'react-icons/fa6';
 
 interface ProductFormProps {
   product: IProduct;
@@ -113,10 +114,10 @@ const OrderForm: React.FC<ProductFormProps> = ({
     initial: { scale: 1 },
     hover: { 
       scale: 1.02,
-      transition: { duration: 0.2 }
+      transition: { duration: 0.01 }
     },
     selected: {
-      scale: 1.03,
+      scale: 1.05,
       boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
     }
   };
@@ -577,8 +578,7 @@ useEffect(() => {
       }
       
       console.log('🟢 API call completed successfully');
-      console.log(result.data.order)
-      dispatch(setOrderState({order:result.data.order,prix:calculateTotalPrice(),productName:product.name}));
+      dispatch(setOrderState({order:result.data.order,thankYouButton:result.data.thankYouButton,prix:calculateTotalPrice(),productName:product.name}));
       return navigate("/thank-you");
       
       // Reset form or redirect as needed
@@ -665,7 +665,7 @@ useEffect(() => {
       ? `2px solid ${colors.primaryAlpha(0.2)}`
       : `1px solid ${theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
-    padding:"12px",
+    padding:"14px",
     direction: 'rtl',
     textAlign: 'right',
     position: 'relative',
@@ -700,20 +700,29 @@ useEffect(() => {
   // Enhanced offer card styles
   const getOfferCardStyle = (isSelected: boolean): React.CSSProperties => ({
     display: 'flex',
-    flexDirection:"column",
+    flexDirection: "column",
     alignItems: 'flex-start',
     gap: theme.spacing.md,
-    padding: "10px 5px",
-    border: `2px solid ${isSelected ? colors.primaryLight : theme.colors.border}`,
-    borderRadius: theme.borderRadius.lg,
+    padding: "20px 8px",
+    border: `2px solid ${isSelected ? colors.primaryLight : 'transparent'}`,
+    borderRadius: '16px',
     backgroundColor: isSelected 
-      ? `${colors.primaryLight}1A`
+      ? `${colors.primaryLight}08`
       : theme.colors.backgroundSecondary,
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
+    transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
     boxShadow: isSelected 
-      ? `0 6px 20px ${colors.primaryLight}26`
-      : theme.shadows.sm
+      ? `0 12px 40px -8px ${colors.primaryLight}35, 
+         0 0 0 1px ${colors.primaryLight}15 inset,
+         0 4px 12px rgba(0, 0, 0, 0.08)`
+      : '0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04)',
+    transform: isSelected ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
+    position: 'relative',
+    overflow: 'hidden',
+    backdropFilter: isSelected ? 'blur(8px)' : 'none',
+    background: isSelected
+      ? `linear-gradient(135deg, ${colors.primaryLight}12 0%, ${colors.primaryLight}05 100%)`
+      : theme.colors.backgroundSecondary,
   });
  console.log(product)
   return (
@@ -777,17 +786,17 @@ useEffect(() => {
 
         {/* Order Type Selection */}
         <motion.div variants={itemVariants} style={{ marginBottom: theme.spacing.xl }}>
-          <label style={{
+        {product.allowQuantity && product.offers.length>0 &&  <label style={{
             display: 'block',
-            fontSize: theme.fonts.size.lg,
+            fontSize: "26px",
             fontWeight: theme.fonts.weight.semiBold,
             color: "black",
             marginBottom: theme.spacing.md,
             textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
           }}>
            
-            {product.dynamicFields[0].languageField==="fr"?"Type de commande":" نوع الطلب"}
-          </label>
+            {product.dynamicFields[0].languageField==="fr"?"Type de commande:":" نوع الطلب:"}
+          </label>}
           
           <div style={{
             display: 'flex',
@@ -796,7 +805,7 @@ useEffect(() => {
 
           }}>
             {/* Quantity Option */}
-            {product.allowQuantity && (
+            {product.offers.length>0 && product.allowQuantity && (
               <motion.button
                 variants={buttonVariants}
                 initial="initial"
@@ -811,7 +820,7 @@ useEffect(() => {
             )}
 
             {/* Offer Option */}
-            {product.offers && product.offers.length > 0 && (
+            {product.allowQuantity && product.offers && product.offers.length > 0 && (
               <motion.button
                 variants={buttonVariants}
                 initial="initial"
@@ -839,14 +848,14 @@ useEffect(() => {
             >
               <label style={{
                 display: 'block',
-                fontSize: theme.fonts.size.lg,
+                fontSize: "24px",
                 fontWeight: theme.fonts.weight.semiBold,
                 color: "black",
                 marginBottom: theme.spacing.md,
                 textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
               }}>
                
-                {product.dynamicFields[0].languageField==="fr"?"Quantité":" الكمية"}
+                {product.dynamicFields[0].languageField==="fr"?"Quantité:":" الكمية:"}
               </label>
               
               <div style={{
@@ -870,7 +879,7 @@ useEffect(() => {
                     cursor: 'pointer',
                     fontSize: theme.fonts.size.lg,
                     fontWeight: theme.fonts.weight.bold,
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   -
@@ -940,7 +949,7 @@ useEffect(() => {
 
         {/* Offers Selection */}
         <AnimatePresence>
-          {selectedOrderType === 'offer' && product.offers && product.offers.length > 0 && (
+          { selectedOrderType === 'offer' && product.offers && product.offers.length > 0 && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -950,7 +959,7 @@ useEffect(() => {
             >
               <label style={{
                 display: 'block',
-                fontSize: theme.fonts.size.lg,
+                fontSize: "26px",
                 fontWeight: theme.fonts.weight.semiBold,
                 color: hasCustomColors ? colors.primaryLight : theme.colors.text,
                 marginBottom: theme.spacing.md,
@@ -959,114 +968,117 @@ useEffect(() => {
                 {product.dynamicFields[0].languageField==="fr"?"Choisir l’offre ":" اختر العرض"}
               </label>
               
-              <div
+              <motion.div
                 style={{
                   display: 'flex',
                   flexDirection: 'row', // default
                   gap: theme.spacing.md,
                   flexWrap: 'wrap',
-                  justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right"
+                  justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right",
                 }}
               >
                 {product.offers
-                  .filter((offer: IOffer) => offer.isActive)
-                  .map((offer: IOffer) => (
-                    <motion.label
-                      key={offer._id}
-                      variants={offerCardVariants}
-                      initial="initial"
-                      whileHover="hover"
-                      animate={selectedOffer === offer._id ? "selected" : "initial"}
-                      style={getOfferCardStyle(selectedOffer === offer._id)}
-                    >
-                      <input
-                        type="radio"
-                        name="offer"
-                        value={offer._id}
-                        checked={selectedOffer === offer._id}
-                        onChange={(e) => {
-                          setSelectedOffer(e.target.value);
-                          setSelectedOfferTitle(offer.title);
-                        }}  
-                        className=' hidden'                    
-                        style={{
-                          marginTop: '0.25rem',
-                          accentColor: colors.primaryLight,
-                        }}
-                      />
+  .filter((offer: IOffer) => offer.isActive)
+  .map((offer: IOffer) => (
+    <motion.label
+      key={offer._id}
+      variants={offerCardVariants}
+      initial="initial"
+      whileHover="hover"
+      animate={selectedOffer === offer._id ? "selected" : "initial"}
+      style={getOfferCardStyle(selectedOffer === offer._id)}
+      className='max-sm:w-full w-[270px]'
+    >
+      <input
+        type="radio"
+        name="offer"
+        value={offer._id}
+        checked={selectedOffer === offer._id}
+        onChange={(e) => {
+          setSelectedOffer(e.target.value);
+          setSelectedOfferTitle(offer.title);
+        }}  
+        className='hidden'                    
+        style={{
+          marginTop: '0.25rem',
+          accentColor: colors.primaryLight,
+        }}
+      />
 
-                      <div style={{ flex: 1 }}>
-                        <div
-                        className={`
-                          ${offer.titleFontSize ? `text-[${offer.titleFontSize}px]` : "text-xl"} 
-                          ${offer.titleFontFamily ? `font-[${offer.titleFontFamily}]` : "font-poppins"} 
-                          max-sm:text-xl
-                        `}                        
-                          style={{
-                            fontWeight: theme.fonts.weight.bold,
-                            color: hasCustomColors
-                              ? colors.primaryLight
-                              : theme.colors.text,
-                            marginBottom: theme.spacing.xs,
-                            direction:product.dynamicFields[0].languageField==='fr' ? 'ltr' : 'rtl',
-                          }}
-                        >
-                          {offer.title}
-                        </div>
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontSize: offer.titleFontSize ? offer.titleFontSize + "px" : "16px",
+            fontFamily: offer.titleFontFamily ? offer.titleFontFamily : "font-poppins",
+            fontWeight: offer.titleFontBold ? offer.titleFontBold : "bold",
+            color: hasCustomColors
+              ? colors.primaryLight
+              : theme.colors.text,
+            marginBottom: theme.spacing.xs,
+            direction: product.dynamicFields[0].languageField === 'fr' ? 'ltr' : 'rtl',
+          }}
+        >
+          <FaGift />
+          {offer.title}
+        </div>
 
-                        {offer.description && (
-                          <div
-                          className={`
-                            ${offer.descriptionFontSize ? `text-[${offer.descriptionFontSize}px]` : "text-xl"} 
-                            ${offer.descriptionFontSize ? `font-[${offer.descriptionFontFamily}]` : "font-poppins"} 
-                            max-sm:text-xl
-                          `}
-                          
-                            style={{
-                              color: theme.colors.textSecondary,
-                              marginBottom: theme.spacing.xs,
-                            }}
-                          >
-                            {offer.description}
-                          </div>
-                        )}
+        {offer.description && (
+          <div
+            style={{
+              fontSize: offer.descriptionFontSize ? offer.descriptionFontSize + "px" : "14px",
+              fontFamily: offer.descriptionFontFamily ? offer.descriptionFontFamily : "font-poppins",
+              fontWeight: offer.descriptionFontBold ? offer.descriptionFontBold : "bold",
+              color: theme.colors.textSecondary,
+              marginBottom: theme.spacing.xs,
+              textAlign: product.dynamicFields[0].languageField === 'fr' ? 'left' : 'right',
+            }}
+          >
+            {offer.description}
+          </div>
+        )}
 
-                        <div
-                          style={{
-                            display: 'flex',
-                            marginBottom: theme.spacing.xs,
-                            justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right",
-                          }}
-                        >
-                          {offer.originalPrice && (
-                            <span
-                              style={{
-                                fontSize: "15px",
-                                color: theme.colors.textMuted,
-                                textDecoration: 'line-through',
-                                display:"flex",
-                                alignItems:"center"
-                              }}
-                            >
-                              {formatPrice(offer.originalPrice)}
-                            </span>
-                          )}
-                          {offer.discountedPrice && (
-                            <span
-                            className=' max-sm:text-[20px] text-xl'
-                              style={{
-                                color: colors.primaryLight,
-                                fontWeight: theme.fonts.weight.semiBold,
-                              }}
-                            >
-                              {formatPrice(offer.discountedPrice)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </motion.label>
-                  ))}
-              </div>
+        <div
+          style={{
+            display: 'flex',
+            marginBottom: theme.spacing.xs,
+            justifyContent: product.dynamicFields[0].languageField === "fr" ? "left" : "right",
+          }}
+        >
+          {offer.originalPrice && (
+            <span
+              style={{
+                fontSize: offer.originalPriceFontSize ? offer.originalPriceFontSize + "px" : "15px",
+                fontFamily: offer.originalPriceFontFamily ? offer.originalPriceFontFamily : "font-poppins",
+                fontWeight: offer.originalPriceFontBold ? offer.originalPriceFontBold : "bold",
+                color: theme.colors.textMuted,
+                textDecoration: 'line-through',
+                display: "flex",
+                alignItems: "center"
+              }}
+            >
+              {formatPrice(offer.originalPrice)}
+            </span>
+          )}
+          {offer.discountedPrice && (
+            <span
+              style={{
+                color: colors.primaryLight,
+                fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "15px",
+                fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
+                fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "bold",
+              }}
+            >
+              {formatPrice(offer.discountedPrice)}
+            </span>
+          )}
+        </div>
+      </div>
+    </motion.label>
+  ))}
+              </motion.div>
 
               {renderFieldError('offer')}
             </motion.div>
@@ -1082,11 +1094,11 @@ useEffect(() => {
             >
               <label style={{
                 display: 'block',
-                fontSize: theme.fonts.size.lg,
+                fontSize: "28px",
                 fontWeight: theme.fonts.weight.semiBold,
                 color: "black",
                 marginBottom: theme.spacing.md,
-                textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
+                textAlign:"center"
               }}>
               {product.dynamicFields[0].languageField==="fr"?"Informations nécessaires":" المعلومات المطلوبة"} 
               </label>
@@ -1112,7 +1124,7 @@ useEffect(() => {
                       display: 'block',
                       fontSize: field?.fontSize?field.fontSize+"px":'clamp(0.875rem, 2.5vw, 1rem)',
                       fontFamily:field.fontText,
-                      fontWeight: theme.fonts.weight.medium,
+                      fontWeight:field.fontBold?field.fontBold:"200",
                       color: "black",
                       marginBottom: theme.spacing.xs,
                       wordBreak: 'break-word',
@@ -1516,9 +1528,11 @@ useEffect(() => {
             alignItems: 'center',
             fontSize: theme.fonts.size.xl,
             fontWeight: theme.fonts.weight.bold,
-            color: "black"
+            color: "black",
+            flexDirection:product.dynamicFields[0].languageField==="fr"?"row-reverse":"row"
           }}>
-            <span>المبلغ الإجمالي:</span>
+            <span>{product.dynamicFields[0].languageField==="fr"?"Montant total":"المبلغ الإجمالي:"}</span>
+           
             <motion.span
               key={calculateTotalPrice()}
               initial={{ scale: 1.2 }}
@@ -1593,7 +1607,12 @@ useEffect(() => {
               جاري الإرسال...
             </>
           ) : (
-            `تأكيد الطلب - ${formatPrice(calculateTotalPrice())}`
+            <span style={{display:"flex", flexDirection: product.dynamicFields[0].languageField === "fr" ? "row-reverse" : "row"}}>
+            <span>{product.dynamicFields[0].languageField === "fr" ? "Confirmation de commande" : "تأكيد الطلب"}</span>
+            <span>${formatPrice(calculateTotalPrice())}</span>
+          </span>
+          
+
           )}
         </motion.button>
       </form>

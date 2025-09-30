@@ -17,7 +17,7 @@ import type { IProduct, IProductColor } from '../types/product';
 // CORRECT IMPORT for react-meta-pixel
 import ReactPixel from 'react-facebook-pixel'; // or the correct package name
 
-const SERVER_URL = 'http://localhost:5001';
+
 
 interface ProductColorScheme {
   primary: string;
@@ -374,7 +374,7 @@ const ProductDetailsPage: React.FC = () => {
             >
               <ProductGallery 
                 images={product.images?.map((img: string) => 
-                  img.startsWith('http') ? img : `${SERVER_URL}${img}`
+                  img.startsWith('http') ? img : `${import.meta.env.VITE_SERVER_URL}${img}`
                 ) || []}
                 accentColor={productColorScheme.primary}
               />
@@ -452,7 +452,7 @@ const ProductDetailsPage: React.FC = () => {
                     className="overflow-hidden rounded-lg shadow-lg"
                   >
                     <motion.img 
-                      src={img.startsWith('http') ? img : `${SERVER_URL}${img}`}
+                      src={img.startsWith('http') ? img : `${import.meta.env.VITE_SERVER_URL}${img}`}
                       alt={`Product view ${index + 1}`}
                       className="w-full h-auto object-cover"
                       whileHover={{ scale: 1.1 }}

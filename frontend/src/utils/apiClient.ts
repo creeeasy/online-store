@@ -1,5 +1,5 @@
 import type { ApiConfig, ErrorResponse, RequestOptions, SuccessResponse } from "../types/api";
-export const SERVER_URL = "http://localhost:5001";
+
 
 
 class ApiClient {

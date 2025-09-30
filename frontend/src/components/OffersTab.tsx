@@ -38,6 +38,23 @@ const FONT_OPTIONS = [
   { value: 'Amiri, serif', label: 'Amiri (Arabic)' },
 ];
 
+const FONT_WEIGHT_OPTIONS = [
+  { value: '', label: 'Default' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'bold', label: 'Bold' },
+  { value: '100', label: '100 - Thin' },
+  { value: '200', label: '200 - Extra Light' },
+  { value: '300', label: '300 - Light' },
+  { value: '400', label: '400 - Normal' },
+  { value: '500', label: '500 - Medium' },
+  { value: '600', label: '600 - Semi Bold' },
+  { value: '700', label: '700 - Bold' },
+  { value: '800', label: '800 - Extra Bold' },
+  { value: '900', label: '900 - Black' },
+  { value: 'lighter', label: 'Lighter' },
+  { value: 'bolder', label: 'Bolder' },
+];
+
 const OffersTab: React.FC<OffersTabProps> = ({ 
   formData, 
   setFormData, 
@@ -54,8 +71,16 @@ const OffersTab: React.FC<OffersTabProps> = ({
     reference: '',
     titleFontFamily: '',
     titleFontSize: '',
+    titleFontBold: '',
     descriptionFontFamily: '',
-    descriptionFontSize: ''
+    descriptionFontSize: '',
+    descriptionFontBold: '',
+    originalPriceFontFamily: '',
+    originalPriceFontSize: '',
+    originalPriceFontBold: '',
+    discountedPriceFontFamily: '',
+    discountedPriceFontSize: '',
+    discountedPriceFontBold: ''
   });
 
   // Fixed: Properly handle both array and object validation error structures
@@ -124,8 +149,16 @@ const OffersTab: React.FC<OffersTabProps> = ({
         reference: newOffer.reference || '',
         titleFontFamily: newOffer.titleFontFamily || '',
         titleFontSize: newOffer.titleFontSize || '',
+        titleFontBold: newOffer.titleFontBold || '',
         descriptionFontFamily: newOffer.descriptionFontFamily || '',
-        descriptionFontSize: newOffer.descriptionFontSize || ''
+        descriptionFontSize: newOffer.descriptionFontSize || '',
+        descriptionFontBold: newOffer.descriptionFontBold || '',
+        originalPriceFontFamily: newOffer.originalPriceFontFamily || '',
+        originalPriceFontSize: newOffer.originalPriceFontSize || '',
+        originalPriceFontBold: newOffer.originalPriceFontBold || '',
+        discountedPriceFontFamily: newOffer.discountedPriceFontFamily || '',
+        discountedPriceFontSize: newOffer.discountedPriceFontSize || '',
+        discountedPriceFontBold: newOffer.discountedPriceFontBold || ''
       } as IOffer]
     }));
     
@@ -140,8 +173,16 @@ const OffersTab: React.FC<OffersTabProps> = ({
       reference: '',
       titleFontFamily: '',
       titleFontSize: '',
+      titleFontBold: '',
       descriptionFontFamily: '',
-      descriptionFontSize: ''
+      descriptionFontSize: '',
+      descriptionFontBold: '',
+      originalPriceFontFamily: '',
+      originalPriceFontSize: '',
+      originalPriceFontBold: '',
+      discountedPriceFontFamily: '',
+      discountedPriceFontSize: '',
+      discountedPriceFontBold: ''
     });
   };
 
@@ -322,7 +363,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               </div>
 
               {/* Title Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Title Font Family
@@ -353,14 +394,32 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     min="1"
                   />
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Title Font Weight
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.titleFontBold || ''}
+                    onChange={(e) => updateOffer(index, 'titleFontBold', e.target.value)}
+                  >
+                    {FONT_WEIGHT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Title Font Preview */}
-              {(offer.titleFontFamily || offer.titleFontSize) && (
+              {(offer.titleFontFamily || offer.titleFontSize || offer.titleFontBold) && (
                 <div style={{ 
                   ...fontPreviewStyle, 
                   fontFamily: offer.titleFontFamily || 'inherit',
-                  fontSize: offer.titleFontSize ? `${offer.titleFontSize}px` : '1rem'
+                  fontSize: offer.titleFontSize ? `${offer.titleFontSize}px` : '1rem',
+                  fontWeight: offer.titleFontBold || 'normal'
                 }}>
                   Preview: {offer.title || 'Sample title text'}
                 </div>
@@ -416,6 +475,108 @@ const OffersTab: React.FC<OffersTabProps> = ({
                 </div>
               </div>
 
+              {/* Original Price Font Customization */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Original Price Font Family
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.originalPriceFontFamily || ''}
+                    onChange={(e) => updateOffer(index, 'originalPriceFontFamily', e.target.value)}
+                  >
+                    {FONT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Original Price Font Size (px)
+                  </label>
+                  <input
+                    type="number"
+                    style={inputStyle}
+                    value={offer.originalPriceFontSize || ''}
+                    onChange={(e) => updateOffer(index, 'originalPriceFontSize', e.target.value)}
+                    placeholder="e.g., 18"
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Original Price Font Weight
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.originalPriceFontBold || ''}
+                    onChange={(e) => updateOffer(index, 'originalPriceFontBold', e.target.value)}
+                  >
+                    {FONT_WEIGHT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Discounted Price Font Customization */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Discounted Price Font Family
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.discountedPriceFontFamily || ''}
+                    onChange={(e) => updateOffer(index, 'discountedPriceFontFamily', e.target.value)}
+                  >
+                    {FONT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Discounted Price Font Size (px)
+                  </label>
+                  <input
+                    type="number"
+                    style={inputStyle}
+                    value={offer.discountedPriceFontSize || ''}
+                    onChange={(e) => updateOffer(index, 'discountedPriceFontSize', e.target.value)}
+                    placeholder="e.g., 20"
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Discounted Price Font Weight
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.discountedPriceFontBold || ''}
+                    onChange={(e) => updateOffer(index, 'discountedPriceFontBold', e.target.value)}
+                  >
+                    {FONT_WEIGHT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Price Display */}
               {(offer.originalPrice || offer.discountedPrice || formData.price) && (
                 <div style={{ 
@@ -455,7 +616,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               </div>
 
               {/* Description Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Description Font Family
@@ -486,14 +647,32 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     min="1"
                   />
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Description Font Weight
+                  </label>
+                  <select
+                    style={inputStyle}
+                    value={offer.descriptionFontBold || ''}
+                    onChange={(e) => updateOffer(index, 'descriptionFontBold', e.target.value)}
+                  >
+                    {FONT_WEIGHT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Description Font Preview */}
-              {(offer.descriptionFontFamily || offer.descriptionFontSize) && (
+              {(offer.descriptionFontFamily || offer.descriptionFontSize || offer.descriptionFontBold) && (
                 <div style={{ 
                   ...fontPreviewStyle, 
                   fontFamily: offer.descriptionFontFamily || 'inherit',
-                  fontSize: offer.descriptionFontSize ? `${offer.descriptionFontSize}px` : '1rem'
+                  fontSize: offer.descriptionFontSize ? `${offer.descriptionFontSize}px` : '1rem',
+                  fontWeight: offer.descriptionFontBold || 'normal'
                 }}>
                   Preview: {offer.description || 'Sample description text'}
                 </div>
@@ -573,7 +752,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         </div>
 
         {/* Title Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Title Font Family
@@ -604,14 +783,32 @@ const OffersTab: React.FC<OffersTabProps> = ({
               min="1"
             />
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Title Font Weight
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.titleFontBold || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, titleFontBold: e.target.value })}
+            >
+              {FONT_WEIGHT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Title Font Preview for New Offer */}
-        {(newOffer.titleFontFamily || newOffer.titleFontSize) && (
+        {(newOffer.titleFontFamily || newOffer.titleFontSize || newOffer.titleFontBold) && (
           <div style={{ 
             ...fontPreviewStyle, 
             fontFamily: newOffer.titleFontFamily || 'inherit',
-            fontSize: newOffer.titleFontSize ? `${newOffer.titleFontSize}px` : '1rem'
+            fontSize: newOffer.titleFontSize ? `${newOffer.titleFontSize}px` : '1rem',
+            fontWeight: newOffer.titleFontBold || 'normal'
           }}>
             Preview: {newOffer.title || 'Sample title text'}
           </div>
@@ -663,6 +860,108 @@ const OffersTab: React.FC<OffersTabProps> = ({
           </div>
         </div>
 
+        {/* Original Price Font Customization for New Offer */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Original Price Font Family
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.originalPriceFontFamily || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, originalPriceFontFamily: e.target.value })}
+            >
+              {FONT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Original Price Font Size (px)
+            </label>
+            <input
+              type="number"
+              style={inputStyle}
+              value={newOffer.originalPriceFontSize || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, originalPriceFontSize: e.target.value })}
+              placeholder="e.g., 18"
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Original Price Font Weight
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.originalPriceFontBold || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, originalPriceFontBold: e.target.value })}
+            >
+              {FONT_WEIGHT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Discounted Price Font Customization for New Offer */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Discounted Price Font Family
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.discountedPriceFontFamily || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, discountedPriceFontFamily: e.target.value })}
+            >
+              {FONT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Discounted Price Font Size (px)
+            </label>
+            <input
+              type="number"
+              style={inputStyle}
+              value={newOffer.discountedPriceFontSize || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, discountedPriceFontSize: e.target.value })}
+              placeholder="e.g., 20"
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Discounted Price Font Weight
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.discountedPriceFontBold || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, discountedPriceFontBold: e.target.value })}
+            >
+              {FONT_WEIGHT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
             Description
@@ -677,7 +976,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         </div>
 
         {/* Description Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Description Font Family
@@ -708,14 +1007,32 @@ const OffersTab: React.FC<OffersTabProps> = ({
               min="1"
             />
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Description Font Weight
+            </label>
+            <select
+              style={inputStyle}
+              value={newOffer.descriptionFontBold || ''}
+              onChange={(e) => setNewOffer({ ...newOffer, descriptionFontBold: e.target.value })}
+            >
+              {FONT_WEIGHT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Description Font Preview for New Offer */}
-        {(newOffer.descriptionFontFamily || newOffer.descriptionFontSize) && (
+        {(newOffer.descriptionFontFamily || newOffer.descriptionFontSize || newOffer.descriptionFontBold) && (
           <div style={{ 
             ...fontPreviewStyle, 
             fontFamily: newOffer.descriptionFontFamily || 'inherit',
-            fontSize: newOffer.descriptionFontSize ? `${newOffer.descriptionFontSize}px` : '1rem'
+            fontSize: newOffer.descriptionFontSize ? `${newOffer.descriptionFontSize}px` : '1rem',
+            fontWeight: newOffer.descriptionFontBold || 'normal'
           }}>
             Preview: {newOffer.description || 'Sample description text'}
           </div>

@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { useImageUpload } from '../hooks/useUpload';
 import { getFieldErrors, hasFieldError, type ValidationError } from '../utils/validation';
 import ErrorDisplay from './ErrorDisplay';
-import { SERVER_URL } from '../utils/apiClient';
+
 
 interface BasicInfoTabProps {
   formData: Partial<IProduct>;
@@ -219,6 +219,33 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     animation: 'fadeIn 0.3s ease',
   };
 
+  const checkboxContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '1rem',
+    backgroundColor: theme.colors.surface,
+    borderRadius: '12px',
+    border: `1px solid ${theme.colors.border}`,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  };
+
+  const checkboxStyle: React.CSSProperties = {
+    width: '20px',
+    height: '20px',
+    cursor: 'pointer',
+    accentColor: theme.colors.primary,
+  };
+
+  const checkboxLabelStyle: React.CSSProperties = {
+    fontSize: '0.95rem',
+    color: theme.colors.text,
+    fontWeight: '500',
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   // Animation keyframes
   const keyframes = `
     @keyframes shake {
@@ -410,6 +437,31 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           {renderFieldErrors('description')}
         </div>
 
+        {/* Thank You Checkbox */}
+        <div 
+          style={checkboxContainerStyle}
+          onClick={() => handleInputChange('thankYou', !formData.thankYou)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+            e.currentTarget.style.borderColor = theme.colors.primary;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = theme.colors.surface;
+            e.currentTarget.style.borderColor = theme.colors.border;
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={formData.thankYou || false}
+            onChange={(e) => handleInputChange('thankYou', e.target.checked)}
+            onClick={(e) => e.stopPropagation()}
+            style={checkboxStyle}
+          />
+          <label style={checkboxLabelStyle}>
+            Thank You
+          </label>
+        </div>
+
         {/* Product Images */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -486,7 +538,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       <div style={imageRowStyle}>
         {image && (
           <img
-            src={SERVER_URL + image}
+            src={import.meta.env.VITE_SERVER_URL + image}
             alt={`Preview ${index + 1}`}
             style={{
               width: "80px",

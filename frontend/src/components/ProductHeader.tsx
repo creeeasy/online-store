@@ -170,27 +170,7 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
           {product.name}
         </h1>
 
-        {/* Price Section */}
-        <div style={priceContainerStyle}>
-          {/* Current Price */}
-          <span style={currentPriceStyle}>
-            {formatPrice(product.discountPrice || product.price)}
-          </span>
-
-          {/* Original Price (if discounted) */}
-          {hasDiscount && (
-            <span style={originalPriceStyle}>
-              {formatPrice(product.price)}
-            </span>
-          )}
-
-          {/* Discount Badge */}
-          {hasDiscount && (
-            <div style={discountBadgeStyle}>
-              <span>{discountPercentage}% خصم</span>
-            </div>
-          )}
-        </div>
+     
 
         {/* Enhanced divider */}
         <div style={dividerStyle} />

@@ -341,7 +341,6 @@ export const updateProduct = [
         );
       }
     }
-
     // Auto-adjust quantity-related fields
     const updateData = { ...req.body };
     if (updateData.allowQuantity === false) {
@@ -365,23 +364,31 @@ export const updateProduct = [
             ? new mongoose.Types.ObjectId(offer._id)
             : offer._id as mongoose.Types.ObjectId;
 
-          const updatedOffer = await Offer.findByIdAndUpdate(
-            offerId,
-            { 
-              title: offer.title,
-              description: offer.description,
-              originalPrice: offer.originalPrice,
-              discountedPrice: offer.discountedPrice,
-              validUntil: offer.validUntil,
-              reference:offer.reference,
-              titleFontFamily: offer.titleFontFamily,
-              titleFontSize: offer.titleFontSize,
-              descriptionFontFamily: offer.descriptionFontFamily,
-              descriptionFontSize: offer.descriptionFontSize,
-              isActive: offer.isActive !== false // Default to true if not specified
-            },
-            { new: true, runValidators: true }
-          );
+            const updatedOffer = await Offer.findByIdAndUpdate(
+              offerId,
+              { 
+                title: offer.title,
+                description: offer.description,
+                originalPrice: offer.originalPrice,
+                discountedPrice: offer.discountedPrice,
+                validUntil: offer.validUntil,
+                reference: offer.reference,
+                titleFontFamily: offer.titleFontFamily,
+                titleFontSize: offer.titleFontSize,
+                titleFontBold: offer.titleFontBold,
+                descriptionFontFamily: offer.descriptionFontFamily,
+                descriptionFontSize: offer.descriptionFontSize,
+                descriptionFontBold: offer.descriptionFontBold,
+                originalPriceFontFamily: offer.originalPriceFontFamily,
+                originalPriceFontSize: offer.originalPriceFontSize,
+                originalPriceFontBold: offer.originalPriceFontBold,
+                discountedPriceFontFamily: offer.discountedPriceFontFamily,
+                discountedPriceFontSize: offer.discountedPriceFontSize,
+                discountedPriceFontBold: offer.discountedPriceFontBold,
+                isActive: offer.isActive !== false // Default to true if not specified
+              },
+              { new: true, runValidators: true }
+            );
           
           if (updatedOffer) {
             offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);

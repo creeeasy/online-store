@@ -37,235 +37,253 @@ export class OrderInquiryController {
 
 
   
-static createInquiry = asyncHandler(async (req: Request, res: Response) => {
-  const {
-    productId,
-    customerData = {},
-    quantity = 1,
-    typeOfOrder,       // 'offer' | 'quantity'
-    offerId,           // optional
-    selectedVariants = {},
-    notes,
-    botScore
-  } = req.body;
-   // Check if file exists
-
-const sheetData=await Sheet.findOne({});
-let SPREADSHEET_ID ;
-if (sheetData) {
-  SPREADSHEET_ID=sheetData.sheetID || ""
-  console.log(SPREADSHEET_ID)
-} else {
-  console.log("No sheet found");
-}
-// Restrict orders to one every 24 hours per phone number
-const twentyFourHoursAgo = new Date();
-twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-
-const ipClient = requestIp.getClientIp(req);
-
-const existingOrder = await OrderInquiry.findOne({
-  ipClient,
-  productId: new mongoose.Types.ObjectId(req.body.productId),
-  timeEnter: { $gte: twentyFourHoursAgo }
-});
-
-if (existingOrder) {
-  return ResponseHandler.error(
-    res,
-    'يمكنك تقديم طلب واحد فقط كل 24 ساعة. يُرجى المحاولة لاحقًا.'
-  );
-}
-
-const sheetMetadata = await sheets.spreadsheets.get({
-  spreadsheetId: SPREADSHEET_ID,
-});
- 
-  // Verify product exists
-  const product = await Product.findById(productId);
-  if (!product) {
-    return ResponseHandler.notFound(res, 'المنتج غير موجود');
-  }
-
-  // Validate required dynamic fields
-  const validationErrors: any[] = [];
-  if (product.dynamicFields?.length) {
-    for (const field of product.dynamicFields) {
-      if (field.isRequired) {
-        const fieldValue = selectedVariants[field.key];
-        if (!fieldValue || fieldValue.trim() === '') {
-          validationErrors.push({
-            field: `selectedVariants.${field.key}`,
-            message: `${field.placeholder || field.key} مطلوب`,
-            value: fieldValue,
-            location: 'body'
-          });
-        }
-
-        // Phone validation
-        if (field.key.toLowerCase().includes('phone') && fieldValue) {
-          if (!validateAlgerianPhone(fieldValue)) {
+  static createInquiry = asyncHandler(async (req: Request, res: Response) => {
+    const {
+      productId,
+      customerData = {},
+      quantity = 1,
+      typeOfOrder,       // 'offer' | 'quantity'
+      offerId,           // optional
+      selectedVariants = {},
+      notes,
+      botScore
+    } = req.body;
+  
+    // Check if file exists
+    const sheetData = await Sheet.findOne({});
+    let SPREADSHEET_ID;
+    if (sheetData) {
+      SPREADSHEET_ID = sheetData.sheetID || "";
+      console.log(SPREADSHEET_ID);
+    } else {
+      console.log("No sheet found");
+    }
+  
+    // Restrict orders to one every 24 hours per phone number
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+  
+    const ipClient = requestIp.getClientIp(req);
+  
+    const existingOrder = await OrderInquiry.findOne({
+      ipClient,
+      productId: new mongoose.Types.ObjectId(req.body.productId),
+      timeEnter: { $gte: twentyFourHoursAgo }
+    });
+  
+    if (existingOrder) {
+      return ResponseHandler.error(
+        res,
+        'يمكنك تقديم طلب واحد فقط كل 24 ساعة. يُرجى المحاولة لاحقًا.'
+      );
+    }
+  
+    // Wrap sheet metadata fetch in try-catch
+    try {
+      if (SPREADSHEET_ID) {
+        const sheetMetadata = await sheets.spreadsheets.get({
+          spreadsheetId: SPREADSHEET_ID,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching sheet metadata (continuing anyway):', error);
+    }
+   
+    // Verify product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return ResponseHandler.notFound(res, 'المنتج غير موجود');
+    }
+  
+    // Validate required dynamic fields
+    const validationErrors: any[] = [];
+    if (product.dynamicFields?.length) {
+      for (const field of product.dynamicFields) {
+        if (field.isRequired) {
+          const fieldValue = selectedVariants[field.key];
+          if (!fieldValue || fieldValue.trim() === '') {
             validationErrors.push({
               field: `selectedVariants.${field.key}`,
-              message: 'رقم الهاتف غير صالح. يجب أن يكون 10 أرقام: 0[567]XXXXXXXX',
+              message: `${field.placeholder || field.key} مطلوب`,
               value: fieldValue,
               location: 'body'
             });
           }
-        }
-
-        // Name validation
-        if (field.key.toLowerCase().includes('name') && fieldValue) {
-          const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
-          if (!nameRegex.test(fieldValue.trim())) {
-            validationErrors.push({
-              field: `selectedVariants.${field.key}`,
-              message: 'الاسم يجب أن يحتوي على أحرف ومسافات فقط، ويكون بين 2-100 حرف',
-              value: fieldValue,
-              location: 'body'
-            });
+  
+          // Phone validation
+          if (field.key.toLowerCase().includes('phone') && fieldValue) {
+            if (!validateAlgerianPhone(fieldValue)) {
+              validationErrors.push({
+                field: `selectedVariants.${field.key}`,
+                message: 'رقم الهاتف غير صالح. يجب أن يكون 10 أرقام: 0[567]XXXXXXXX',
+                value: fieldValue,
+                location: 'body'
+              });
+            }
           }
-        }
-
-        // Email validation
-        if (field.key.toLowerCase().includes('email') && fieldValue) {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(fieldValue)) {
-            validationErrors.push({
-              field: `selectedVariants.${field.key}`,
-              message: 'البريد الإلكتروني غير صالح',
-              value: fieldValue,
-              location: 'body'
-            });
+  
+          // Name validation
+          if (field.key.toLowerCase().includes('name') && fieldValue) {
+            const nameRegex = /^[a-zA-Z\u0600-\u06FF\s]{2,100}$/;
+            if (!nameRegex.test(fieldValue.trim())) {
+              validationErrors.push({
+                field: `selectedVariants.${field.key}`,
+                message: 'الاسم يجب أن يحتوي على أحرف ومسافات فقط، ويكون بين 2-100 حرف',
+                value: fieldValue,
+                location: 'body'
+              });
+            }
           }
-        }
-
-        // Age validation
-        if (field.key.toLowerCase().includes('age') && fieldValue) {
-          const age = parseInt(fieldValue);
-          if (isNaN(age) || age < 1 || age > 120) {
-            validationErrors.push({
-              field: `selectedVariants.${field.key}`,
-              message: 'العمر غير صالح',
-              value: fieldValue,
-              location: 'body'
-            });
+  
+          // Email validation
+          if (field.key.toLowerCase().includes('email') && fieldValue) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(fieldValue)) {
+              validationErrors.push({
+                field: `selectedVariants.${field.key}`,
+                message: 'البريد الإلكتروني غير صالح',
+                value: fieldValue,
+                location: 'body'
+              });
+            }
           }
-        }
-
-        // Wilaya validation
-        if (field.key.toLowerCase().includes('wilaya') && fieldValue) {
-          // Add your wilaya validation logic here if needed
-          if (fieldValue.trim().length < 2) {
-            validationErrors.push({
-              field: `selectedVariants.${field.key}`,
-              message: 'الولاية غير صالحة',
-              value: fieldValue,
-              location: 'body'
-            });
+  
+          // Age validation
+          if (field.key.toLowerCase().includes('age') && fieldValue) {
+            const age = parseInt(fieldValue);
+            if (isNaN(age) || age < 1 || age > 120) {
+              validationErrors.push({
+                field: `selectedVariants.${field.key}`,
+                message: 'العمر غير صالح',
+                value: fieldValue,
+                location: 'body'
+              });
+            }
+          }
+  
+          // Wilaya validation
+          if (field.key.toLowerCase().includes('wilaya') && fieldValue) {
+            if (fieldValue.trim().length < 2) {
+              validationErrors.push({
+                field: `selectedVariants.${field.key}`,
+                message: 'الولاية غير صالحة',
+                value: fieldValue,
+                location: 'body'
+              });
+            }
           }
         }
       }
     }
-  }
-
-  if (validationErrors.length > 0) {
-    return ResponseHandler.error(
-      res,
-      'فشل في التحقق من بيانات العميل',
-      400,
-      validationErrors,
-      'VALIDATION_ERROR'
-    );
-  }
-
-  let totalPrice = 0;
-  let offerTitle = '';
-  let offerReference = '';
-
-  if (typeOfOrder === 'offer') {
-    if (!offerId) {
-      return ResponseHandler.error(res, 'معرف العرض مطلوب للطلبات بالعرض', 400);
+  
+    if (validationErrors.length > 0) {
+      return ResponseHandler.error(
+        res,
+        'فشل في التحقق من بيانات العميل',
+        400,
+        validationErrors,
+        'VALIDATION_ERROR'
+      );
     }
-
-    const offer: IOffer | null = await Offer.findById(offerId);
-    if (!offer || !offer.isActive || (offer.validUntil && new Date(offer.validUntil) < new Date())) {
-      return ResponseHandler.error(res, 'العرض المحدد غير صالح أو منتهي الصلاحية', 400);
+  
+    let totalPrice = 0;
+    let offerTitle = '';
+    let offerReference = '';
+  
+    if (typeOfOrder === 'offer') {
+      if (!offerId) {
+        return ResponseHandler.error(res, 'معرف العرض مطلوب للطلبات بالعرض', 400);
+      }
+  
+      const offer: IOffer | null = await Offer.findById(offerId);
+      if (!offer || !offer.isActive || (offer.validUntil && new Date(offer.validUntil) < new Date())) {
+        return ResponseHandler.error(res, 'العرض المحدد غير صالح أو منتهي الصلاحية', 400);
+      }
+  
+      totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
+      offerTitle = offer.title || '';
+      offerReference = offer?.reference || "";
+  
+    } else if (typeOfOrder === 'quantity') {
+      if (quantity < 1) {
+        return ResponseHandler.error(res, 'الكمية يجب أن تكون أكبر من صفر', 400);
+      }
+  
+      if (product.allowMultipleQuantities && product.maxQuantityPerInquiry && quantity > product.maxQuantityPerInquiry) {
+        return ResponseHandler.error(res, `الحد الأقصى للكمية هو ${product.maxQuantityPerInquiry}`, 400);
+      }
+  
+      totalPrice = (product.discountPrice ?? product.price) * quantity;
+    } else {
+      return ResponseHandler.error(res, 'نوع الطلب غير صالح', 400);
     }
-
-    totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
-    offerTitle = offer.title || '';
-    offerReference=offer?.reference || "";
-
-  } else if (typeOfOrder === 'quantity') {
-    if (quantity < 1) {
-      return ResponseHandler.error(res, 'الكمية يجب أن تكون أكبر من صفر', 400);
+  
+    try {
+      const timeEnter = new Date();
+      const inquiry = new OrderInquiry({
+        productId,
+        customerData: selectedVariants,
+        quantity: typeOfOrder === 'quantity' ? quantity : 1,
+        offerId: typeOfOrder === 'offer' ? offerId : undefined,
+        selectedVariants,
+        totalPrice,
+        notes,
+        typeOfOrder,
+        ipClient,
+        timeEnter,
+        BotScore: botScore,
+      });
+  
+      await inquiry.save();
+      await inquiry.populate('product');
+  
+      // Send success response first
+      ResponseHandler.success(
+        res,
+        { inquiry, order: true,thankYouButton:product.thankYou },
+        'تم إنشاء طلب الاستفسار بنجاح',
+        201
+      );
+  
+      // Try to append to Google Sheets, but don't fail if it errors
+      if (SPREADSHEET_ID) {
+        try {
+          const selectedVariantsValues = Object.values(selectedVariants);
+          const rowData = [
+            ...selectedVariantsValues,
+            product.name, 
+            quantity, 
+            typeOfOrder, 
+            totalPrice, 
+            offerTitle,
+            offerReference,
+            product.reference
+          ];
+  
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range: "store!A:F",
+            valueInputOption: "RAW",
+            requestBody: {
+              values: [rowData],
+            },
+          });
+          
+          console.log('Successfully appended data to Google Sheets');
+        } catch (sheetError: any) {
+          // Log the error but don't throw it
+          console.error('Failed to append to Google Sheets (order still saved):', {
+            error: sheetError.message,
+            code: sheetError.code,
+            details: sheetError.errors?.[0]?.message || 'No additional details'
+          });
+        }
+      }
+  
+    } catch (error) {
+      return ResponseHandler.error(res, 'حدث خطأ أثناء إنشاء الطلب', 500);
     }
-
-    // Check max quantity if product has limits
-    if (product.allowMultipleQuantities && product.maxQuantityPerInquiry && quantity > product.maxQuantityPerInquiry) {
-      return ResponseHandler.error(res, `الحد الأقصى للكمية هو ${product.maxQuantityPerInquiry}`, 400);
-    }
-
-    totalPrice = (product.discountPrice ?? product.price) * quantity;
-  } else {
-    return ResponseHandler.error(res, 'نوع الطلب غير صالح', 400);
-  }
-
-
-
-  try {
-    const timeEnter = new Date();
-    const inquiry = new OrderInquiry({
-      productId,
-      customerData: selectedVariants,
-      quantity: typeOfOrder === 'quantity' ? quantity : 1,
-      offerId: typeOfOrder === 'offer' ? offerId : undefined,
-      selectedVariants,
-      totalPrice,
-      notes,
-      typeOfOrder,
-      ipClient,
-      timeEnter,
-      BotScore:botScore,
-    });
-
-    await inquiry.save();
-    await inquiry.populate('product');
-
-    ResponseHandler.success(
-      res,
-      { inquiry ,order:true},
-      'تم إنشاء طلب الاستفسار بنجاح',
-      201
-    );
-    // Create array with all selectedVariants values first, then the product info
-const selectedVariantsValues = Object.values(selectedVariants);
-const rowData = [
-  ...selectedVariantsValues,
-  product.name, 
-  quantity, 
-  typeOfOrder, 
-  totalPrice, 
-  offerTitle,
-  offerReference,
-  product.reference
-];
-if(SPREADSHEET_ID){
-  const appendResponse = await sheets.spreadsheets.values.append({
-    spreadsheetId: SPREADSHEET_ID,
-    range: "store!A:F",                    // Target range in "store" sheet
-    valueInputOption: "RAW",               // Insert as raw values (no formulas)
-    requestBody: {
-        values: [rowData],
-    },
   });
-}
-
-  } catch (error) {
-    return ResponseHandler.error(res, 'حدث خطأ أثناء إنشاء الطلب', 500);
-  }
-});
 
 
 

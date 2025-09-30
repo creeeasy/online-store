@@ -2,7 +2,7 @@ import React from 'react';
 import { FiGift, FiEye } from 'react-icons/fi';
 import type { IProduct } from '../types/product';
 import { useTheme } from '../contexts/ThemeContext';
-import { SERVER_URL } from '../utils/apiClient';
+
 
 interface ClientProductCardProps {
   product: IProduct;
@@ -182,7 +182,7 @@ const ClientProductCard: React.FC<ClientProductCardProps> = ({
         <img
           src={
             product.images?.[0]
-              ? `${SERVER_URL}${product.images[0]}`
+              ? `${import.meta.env.VITE_SERVER_URL}${product.images[0]}`
               : 'https://picsum.photos/300/300?random=default'
           }
           alt={product.name}

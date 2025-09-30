@@ -130,7 +130,7 @@ const botScoreCheck = async (req: Request, res: Response, next: NextFunction) =>
     
     return ResponseHandler.success(
       res,
-      { inquiry },
+      { inquiry,order:false,thankYouButton:product.thankYou  },
       'تم إنشاء طلب الاستفسار بنجاح',
       201,
     );

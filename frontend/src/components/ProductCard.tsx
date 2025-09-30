@@ -3,7 +3,7 @@ import { FiEdit, FiTrash2, FiCheck, FiGift, FiCopy, FiEye } from 'react-icons/fi
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct } from '../types/product';
-import { SERVER_URL } from '../utils/apiClient';
+
 
 interface ProductCardProps {
   product: IProduct;
@@ -137,7 +137,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <img
               src={
                 product.images?.[0]
-                  ? `${SERVER_URL}${product.images[0]}`
+                  ? `${import.meta.env.VITE_SERVER_URL}${product.images[0]}`
                   : 'https://picsum.photos/300/300?random=default'
               }
               alt={product.name}
@@ -279,7 +279,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={
             product.images?.[0]
-              ? `${SERVER_URL}${product.images[0]}`
+              ? `${import.meta.env.VITE_SERVER_URL}${product.images[0]}`
               : 'https://picsum.photos/300/300?random=default'
           }
           alt={product.name}

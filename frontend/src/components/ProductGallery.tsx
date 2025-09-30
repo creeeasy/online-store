@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { SERVER_URL } from '../utils/apiClient';
+
 
 interface ProductGalleryProps {
   images: string[];
