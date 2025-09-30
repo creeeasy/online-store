@@ -8,12 +8,20 @@ export interface IOffer extends Document {
   validUntil?: Date;
   isActive: boolean;
   reference?:string;
+  titleFontFamily?:string;
+  titleFontSize?:string;
+  descriptionFontFamily?:string;
+  descriptionFontSize?:string;
 }
 
 export const OfferSchema = new Schema<IOffer>({
   title: { type: String, required: true, trim: true },
   description: { type: String, trim: true },
   reference: { type: String ,required:false},
+  titleFontFamily: { type: String ,required:false},
+  titleFontSize: { type: String ,required:false},
+  descriptionFontFamily: { type: String ,required:false},
+  descriptionFontSize: { type: String ,required:false},
   originalPrice: { type: Number, min: [0, 'Original price cannot be negative'] },
   discountedPrice: { 
     type: Number, 

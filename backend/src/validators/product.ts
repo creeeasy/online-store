@@ -26,9 +26,7 @@ export const productValidationRules = {
       }),
 
     body('description')
-      .trim()
-      .notEmpty().withMessage('Product description is required')
-      .isLength({ min: 10, max: 1000 }).withMessage('Description must be between 10 and 1000 characters'),
+      .trim(),
 
     body('images')
       .optional()

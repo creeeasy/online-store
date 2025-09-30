@@ -352,7 +352,6 @@ export const updateProduct = [
     } else if (updateData.allowMultipleQuantities === true && !updateData.maxQuantityPerInquiry && !product.maxQuantityPerInquiry) {
       updateData.maxQuantityPerInquiry = 10;
     }
-
     // FIXED: Proper offer handling
     if (req.body.offers !== undefined) {
       const offerIds: mongoose.Types.ObjectId[] = [];
@@ -375,6 +374,10 @@ export const updateProduct = [
               discountedPrice: offer.discountedPrice,
               validUntil: offer.validUntil,
               reference:offer.reference,
+              titleFontFamily: offer.titleFontFamily,
+              titleFontSize: offer.titleFontSize,
+              descriptionFontFamily: offer.descriptionFontFamily,
+              descriptionFontSize: offer.descriptionFontSize,
               isActive: offer.isActive !== false // Default to true if not specified
             },
             { new: true, runValidators: true }
@@ -808,12 +811,42 @@ export const cloneProduct = [
       quantityConfig.maxQuantityPerInquiry = 1;
     }
     
+    // ✅ Clone offers if they exist
+    const clonedOfferIds: any[] = [];
+    
+    if (originalProduct.offers && originalProduct.offers.length > 0) {
+      for (const offerRef of originalProduct.offers) {
+        // Extract the actual ID from the offer reference
+        const offerId = offerRef ;
+        
+        // Find the original offer
+        const originalOffer = await Offer.findById(offerId);
+        
+        if (originalOffer) {
+          // Clone the offer
+          const offerData = {
+            ...originalOffer.toObject(),
+            _id: undefined, // Remove original ID
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          // Create the cloned offer
+          const clonedOffer = await Offer.create(offerData);
+          
+          // Store the new offer ID
+          clonedOfferIds.push(clonedOffer._id);
+        }
+      }
+    }
+    
     // Create a copy of the product data
     const productData = {
       ...originalProduct.toObject(),
       _id: undefined, // Remove the original ID
       name: `${originalProduct.name} (Copy)`, // Append "Copy" to the name
       ...quantityConfig, // Apply validated quantity configuration
+      offers: clonedOfferIds, // ✅ Use the cloned offer IDs
       createdBy: req.user?.id,
       createdAt: new Date(),
       updatedAt: new Date(),

@@ -997,7 +997,11 @@ useEffect(() => {
 
                       <div style={{ flex: 1 }}>
                         <div
-                        className=' max-sm:text-xl text-xl'
+                        className={`
+                          ${offer.titleFontSize ? `text-[${offer.titleFontSize}px]` : "text-xl"} 
+                          ${offer.titleFontFamily ? `font-[${offer.titleFontFamily}]` : "font-poppins"} 
+                          max-sm:text-xl
+                        `}                        
                           style={{
                             fontWeight: theme.fonts.weight.bold,
                             color: hasCustomColors
@@ -1012,8 +1016,13 @@ useEffect(() => {
 
                         {offer.description && (
                           <div
+                          className={`
+                            ${offer.descriptionFontSize ? `text-[${offer.descriptionFontSize}px]` : "text-xl"} 
+                            ${offer.descriptionFontSize ? `font-[${offer.descriptionFontFamily}]` : "font-poppins"} 
+                            max-sm:text-xl
+                          `}
+                          
                             style={{
-                              fontSize: theme.fonts.size.sm,
                               color: theme.colors.textSecondary,
                               marginBottom: theme.spacing.xs,
                             }}
@@ -1025,9 +1034,8 @@ useEffect(() => {
                         <div
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
                             marginBottom: theme.spacing.xs,
-                            justifyContent:product.dynamicFields[0].languageField==="fr"?"center":"right",
+                            justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right",
                           }}
                         >
                           {offer.originalPrice && (
@@ -1036,6 +1044,8 @@ useEffect(() => {
                                 fontSize: "15px",
                                 color: theme.colors.textMuted,
                                 textDecoration: 'line-through',
+                                display:"flex",
+                                alignItems:"center"
                               }}
                             >
                               {formatPrice(offer.originalPrice)}

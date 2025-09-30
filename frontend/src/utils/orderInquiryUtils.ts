@@ -259,12 +259,7 @@ export const ProductValidation = {
       }
     }
     
-    // Description validation
-    if (!product.description.trim()) {
-      errors.push('Product description is required');
-    } else if (product.description.length < 10 || product.description.length > 1000) {
-      errors.push('Description must be between 10 and 1000 characters');
-    }
+
     
     // Colors validation
     if (product.colors && product.colors.length > 0) {
