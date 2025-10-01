@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiTrash2, FiPlus, FiAlertTriangle } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiAlertTriangle, FiUpload, FiX } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IOffer } from '../types/product';
 import { getFieldErrors, hasFieldError } from '../utils/validation';
@@ -67,7 +67,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
     originalPrice: undefined,
     discountedPrice: undefined,
     isActive: true,
-    validUntil: undefined,
     reference: '',
     titleFontFamily: '',
     titleFontSize: '',
@@ -84,7 +83,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
     discountedPriceFontFamily: '',
     discountedPriceFontSize: '',
     discountedPriceFontBold: '',
-    discountedPriceColor: ''
+    discountedPriceColor: '',
+    image: null
   });
 
   // Fixed: Properly handle both array and object validation error structures
@@ -99,10 +99,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
   // Simple offer stats
   const offerStats = {
     total: formData.offers?.length || 0,
-    active: formData.offers?.filter(offer => offer.isActive).length || 0,
-    expired: formData.offers?.filter(offer => 
-      offer.validUntil && new Date(offer.validUntil) <= new Date()
-    ).length || 0
+    active: formData.offers?.filter(offer => offer.isActive).length || 0
   };
 
   // Simple price calculation
@@ -121,9 +118,70 @@ const OffersTab: React.FC<OffersTabProps> = ({
     return { amount, percentage };
   };
 
-  // Check if offer is expired
-  const isOfferExpired = (offer: IOffer): boolean => {
-    return offer.validUntil ? new Date(offer.validUntil) <= new Date() : false;
+  // Handle image upload for new offer - convert to base64
+  const handleNewOfferImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        setNewOffer(prev => ({ 
+          ...prev, 
+          image: imageData // Store as base64 string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove image from new offer
+  const removeNewOfferImage = () => {
+    setNewOffer(prev => ({ 
+      ...prev, 
+      image: null
+    }));
+  };
+
+  // Handle image upload for existing offer
+  const handleExistingOfferImageUpload = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        updateOffer(index, 'image', imageData);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove image from existing offer
+  const removeExistingOfferImage = (index: number) => {
+    updateOffer(index, 'image', null);
   };
 
   // Add new offer with validation
@@ -133,11 +191,13 @@ const OffersTab: React.FC<OffersTabProps> = ({
     // Validate prices
     if (newOffer.originalPrice && newOffer.discountedPrice && 
         newOffer.discountedPrice >= newOffer.originalPrice) {
+      alert('Discounted price must be less than original price');
       return;
     }
     
     // Validate required fields
     if (!newOffer.title.trim()) {
+      alert('Offer title is required');
       return;
     }
     
@@ -148,7 +208,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
         description: newOffer.description || '',
         originalPrice: newOffer.originalPrice,
         discountedPrice: newOffer.discountedPrice,
-        validUntil: newOffer.validUntil,
         isActive: newOffer.isActive !== false,
         reference: newOffer.reference || '',
         titleFontFamily: newOffer.titleFontFamily || '',
@@ -166,7 +225,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
         discountedPriceFontFamily: newOffer.discountedPriceFontFamily || '',
         discountedPriceFontSize: newOffer.discountedPriceFontSize || '',
         discountedPriceFontBold: newOffer.discountedPriceFontBold || '',
-        discountedPriceColor: newOffer.discountedPriceColor || ''
+        discountedPriceColor: newOffer.discountedPriceColor || '',
+        image: newOffer.image || null
       } as IOffer]
     }));
     
@@ -177,7 +237,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
       originalPrice: undefined,
       discountedPrice: undefined,
       isActive: true,
-      validUntil: undefined,
       reference: '',
       titleFontFamily: '',
       titleFontSize: '',
@@ -194,7 +253,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
       discountedPriceFontFamily: '',
       discountedPriceFontSize: '',
       discountedPriceFontBold: '',
-      discountedPriceColor: ''
+      discountedPriceColor: '',
+      image: null
     });
   };
 
@@ -221,18 +281,11 @@ const OffersTab: React.FC<OffersTabProps> = ({
           ...offerToCopy,
           title: `${offerToCopy.title} (Copy)`,
           reference: offerToCopy.reference ? `${offerToCopy.reference}-copy` : '',
-          _id: undefined
+          _id: undefined,
+          image: null // Don't duplicate image
         }]
       }));
     }
-  };
-
-  // Format date for input
-  const formatDateForInput = (date: Date | undefined): string => {
-    if (!date) return '';
-    const localDate = new Date(date);
-    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-    return localDate.toISOString().slice(0, 16);
   };
 
   // Simple styles
@@ -334,6 +387,50 @@ const OffersTab: React.FC<OffersTabProps> = ({
     backgroundColor: theme.colors.surface
   };
 
+  const imageUploadContainerStyle: React.CSSProperties = {
+    border: `2px dashed ${theme.colors.border}`,
+    borderRadius: '8px',
+    padding: '1rem',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    backgroundColor: theme.colors.backgroundSecondary
+  };
+
+  const imagePreviewContainerStyle: React.CSSProperties = {
+    position: 'relative',
+    display: 'inline-block',
+    marginTop: '0.5rem'
+  };
+
+  const imagePreviewStyle: React.CSSProperties = {
+    maxWidth: '200px',
+    maxHeight: '150px',
+    borderRadius: '6px',
+    objectFit: 'cover'
+  };
+
+  const removeImageButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '-8px',
+    right: '-8px',
+    background: theme.colors.error,
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '24px',
+    height: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: '12px'
+  };
+
+  const fileInputStyle: React.CSSProperties = {
+    display: 'none'
+  };
+
   // Check if add button should be disabled
   const isAddDisabled = !newOffer.title?.trim();
 
@@ -370,6 +467,59 @@ const OffersTab: React.FC<OffersTabProps> = ({
     </div>
   );
 
+  // Image upload component
+  const ImageUpload = ({ 
+    image, 
+    onImageChange, 
+    onImageRemove 
+  }: { 
+    image: string | null; 
+    onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void; 
+    onImageRemove: () => void; 
+  }) => (
+    <div>
+      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+        Offer Image
+      </label>
+      
+      {image ? (
+        <div style={imagePreviewContainerStyle}>
+          <img 
+            src={image} 
+            alt="Offer preview" 
+            style={imagePreviewStyle}
+          />
+          <button 
+            type="button"
+            onClick={onImageRemove}
+            style={removeImageButtonStyle}
+            title="Remove image"
+          >
+            <FiX />
+          </button>
+        </div>
+      ) : (
+        <label style={imageUploadContainerStyle}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onImageChange}
+            style={fileInputStyle}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <FiUpload size={24} color={theme.colors.textSecondary} />
+            <div style={{ color: theme.colors.textSecondary }}>
+              Click to upload offer image
+            </div>
+            <div style={{ fontSize: '0.8rem', color: theme.colors.textSecondary }}>
+              JPG, PNG, WEBP (Max 5MB)
+            </div>
+          </div>
+        </label>
+      )}
+    </div>
+  );
+
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
@@ -379,7 +529,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
       {/* Existing Offers */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {(formData.offers || []).map((offer, index) => {
-          const expired = isOfferExpired(offer);
           const savings = getOfferSavings(offer);
           const fieldPrefix = `offers.${index}`;
           
@@ -403,6 +552,15 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     <FiTrash2 />
                   </button>
                 </div>
+              </div>
+
+              {/* Offer Image */}
+              <div style={{ marginBottom: '1rem' }}>
+                <ImageUpload 
+                  image={offer.image || null}
+                  onImageChange={(e) => handleExistingOfferImageUpload(index, e)}
+                  onImageRemove={() => removeExistingOfferImage(index)}
+                />
               </div>
 
               {/* Offer Title */}
@@ -778,21 +936,8 @@ const OffersTab: React.FC<OffersTabProps> = ({
                 </div>
               )}
 
-              {/* Valid Until & Active Status */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                    Valid Until
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formatDateForInput(offer.validUntil)}
-                    onChange={(e) => updateOffer(index, 'validUntil', e.target.value ? new Date(e.target.value) : undefined)}
-                    style={hasErrorForField(`${fieldPrefix}.validUntil`) ? errorInputStyle : inputStyle}
-                  />
-                  {renderFieldErrors(`${fieldPrefix}.validUntil`)}
-                </div>
-                
+              {/* Active Status */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
@@ -802,19 +947,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   Active
                 </label>
               </div>
-
-              {expired && (
-                <div style={{ 
-                  color: theme.colors.error, 
-                  fontSize: '0.8rem', 
-                  marginTop: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <FiAlertTriangle /> This offer has expired
-                </div>
-              )}
             </div>
           );
         })}
@@ -837,6 +969,15 @@ const OffersTab: React.FC<OffersTabProps> = ({
       <div style={{ ...offerCardStyle, backgroundColor: theme.colors.backgroundSecondary }}>
         <h4 style={{ margin: '0 0 1rem 0', color: theme.colors.text }}>Add New Offer</h4>
         
+        {/* Offer Image for New Offer */}
+        <div style={{ marginBottom: '1rem' }}>
+          <ImageUpload 
+            image={newOffer.image || null}
+            onImageChange={handleNewOfferImageUpload}
+            onImageRemove={removeNewOfferImage}
+          />
+        </div>
+
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
             Offer Title *
@@ -1180,19 +1321,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end', marginBottom: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-              Valid Until
-            </label>
-            <input
-              type="datetime-local"
-              value={formatDateForInput(newOffer.validUntil)}
-              onChange={(e) => setNewOffer({ ...newOffer, validUntil: e.target.value ? new Date(e.target.value) : undefined })}
-              style={inputStyle}
-            />
-          </div>
-          
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -1215,4 +1344,4 @@ const OffersTab: React.FC<OffersTabProps> = ({
   );
 };
 
-export default OffersTab; 
+export default OffersTab;

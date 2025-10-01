@@ -80,7 +80,7 @@ OrderFakeSchema.pre<IOrderFake>('save', async function(next) {
       const Offer = mongoose.model('Offer');
       const offer = await Offer.findById(this.offerId);
       if (!offer) return next(new Error('Offer not found') as mongoose.CallbackError);
-      if (!offer.isActive || (offer.validUntil && offer.validUntil < new Date())) {
+      if (!offer.isActive) {
         return next(new Error('Offer is not valid or has expired') as mongoose.CallbackError);
       }
 

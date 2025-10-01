@@ -311,20 +311,7 @@ const validateSingleOffer = (offer: IOffer, index: number, errors: ValidationErr
     }
   }
   
-  // Valid until date validation
-  if (offer.validUntil) {
-    const validUntilDate = new Date(offer.validUntil);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (validUntilDate < today) {
-      errors.push({
-        field: `${fieldPrefix}.validUntil`,
-        message: `Offer ${index + 1}: Valid until date cannot be in the past`,
-        tab: 'offers'
-      });
-    }
-  }
+  
 };
 
 const validateColors = (formData: Partial<IProduct>, errors: ValidationError[]): void => {

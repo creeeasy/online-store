@@ -196,7 +196,7 @@ export class OrderInquiryController {
       }
   
       const offer: IOffer | null = await Offer.findById(offerId);
-      if (!offer || !offer.isActive || (offer.validUntil && new Date(offer.validUntil) < new Date())) {
+      if (!offer || !offer.isActive ) {
         return ResponseHandler.error(res, 'العرض المحدد غير صالح أو منتهي الصلاحية', 400);
       }
   
@@ -536,7 +536,7 @@ static getAllInquiries = asyncHandler(async (req: Request, res: Response) => {
   // Execute query with population
   const inquiries = await OrderInquiry.find(filter)
     .populate('product', 'name price discountPrice images dynamicFields')
-    .populate('offer', 'title originalPrice discountedPrice isActive validUntil')
+    .populate('offer', 'title originalPrice discountedPrice isActive')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -607,7 +607,7 @@ static getAllFakeOrdersInquiries = asyncHandler(async (req: Request, res: Respon
   // Execute query with population
   const inquiries = await OrderFake.find(filter)
     .populate('product', 'name price discountPrice images dynamicFields')
-    .populate('offer', 'title originalPrice discountedPrice isActive validUntil')
+    .populate('offer', 'title originalPrice discountedPrice isActive')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -628,7 +628,7 @@ static getInquiryById = asyncHandler(async (req: Request, res: Response) => {
 
   const inquiry = await OrderInquiry.findById(id)
     .populate('product', 'name price discountPrice images dynamicFields predefinedFields')
-    .populate('offer', 'title originalPrice discountedPrice isActive validUntil');
+    .populate('offer', 'title originalPrice discountedPrice isActive ');
 
   if (!inquiry) {
     return ResponseHandler.notFound(res, 'Order inquiry');

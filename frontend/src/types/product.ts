@@ -2,12 +2,27 @@ import type { PaginationData, ValidationErrorDetail } from "./api";
 
 // ✅ Fixed IOffer interface to match backend model
 export interface IOffer {
+  discountedPriceColor: Color | undefined;
+  originalPriceColor: Color | undefined;
+  descriptionColor: Color | undefined;
+  titleColor: string | undefined;
+  discountedPriceFontBold: any;
+  discountedPriceFontFamily: any;
+  discountedPriceFontSize: any;
+  originalPriceFontSize: string;
+  originalPriceFontBold: any;
+  originalPriceFontFamily: any;
+  descriptionFontBold: any;
+  titleFontBold: any;
+  descriptionFontFamily: any;
+  descriptionFontSize: any;
+  titleFontFamily: any;
+  titleFontSize: any;
   _id?: string;
   title: string;
   description?: string;
   originalPrice?: number;    // Before price
   discountedPrice?: number;  // After price
-  validUntil?: Date;
   isActive: boolean;
 }
 
@@ -19,6 +34,10 @@ export interface IProductColor {
 }
 
 export interface IDynamicField {
+  fontBold: FontWeight | undefined;
+  languageField: SetStateAction<"ar" | "fr">;
+  fontSize: FontSize<string | number> | undefined;
+  fontText: FontFamily | undefined;
   key: string;
   placeholder: string;
   isRequired?: boolean;
@@ -43,6 +62,11 @@ export interface IHiddenField {
 
 // ✅ Enhanced Product interface aligned with backend
 export interface IProduct {
+  offerTitleFontWeight: any;
+  offerTitleFontFamily: any;
+  offerTitleFontSize: any;
+  offerTitleColor: Color | undefined;
+  offersTitle: any;
   _id: string;
   name: string;
   price: number;

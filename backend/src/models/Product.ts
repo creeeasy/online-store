@@ -336,11 +336,7 @@ ProductSchema.pre('save', function(next) {
 
 // ✅ Simple instance method: Get active offers
 ProductSchema.methods.getActiveOffers = function(): IOffer[] {
-  const now = new Date();
-  
-  return this.offers.filter((offer: IOffer) => {
-    return offer.isActive && (!offer.validUntil || offer.validUntil > now);
-  });
+  return this.offers;
 };
 
 // ✅ Instance method: Check if a quantity can be ordered
@@ -380,7 +376,7 @@ ProductSchema.index({ 'colors.isAvailable': 1 });
 ProductSchema.index({ allowQuantity: 1 });
 ProductSchema.index({ allowMultipleQuantities: 1 });
 ProductSchema.index({ maxQuantityPerInquiry: 1 });
-ProductSchema.index({ 'offers.isActive': 1, 'offers.validUntil': 1 });
+ProductSchema.index({ 'offers.isActive': 1});
 ProductSchema.index({ allowQuantity: 1, allowMultipleQuantities: 1, maxQuantityPerInquiry: 1 }); // Compound index
 
 // ✅ Static method: Find products suitable for bulk orders
@@ -395,15 +391,7 @@ ProductSchema.statics.findBulkOrderSuitable = function(minQuantity: number = 2) 
 // ✅ Static method: Find products with active offers
 ProductSchema.statics.findWithActiveOffers = function() {
   return this.find({
-    offers: { 
-      $elemMatch: { 
-        isActive: true,
-        $or: [
-          { validUntil: { $exists: false } },
-          { validUntil: { $gt: new Date() } }
-        ]
-      }
-    }
+    'offers.isActive': true
   });
 };
 

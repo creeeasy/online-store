@@ -143,6 +143,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
   const [selectedInquiries, setSelectedInquiries] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [savingToSheet, setSavingToSheet] = useState<string | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   console.log(inquiries)
   // Delete hooks
   const deleteInquiry = useDeleteOrderInquiry();
@@ -187,6 +188,12 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
         throw new Error('Failed to save to sheet');
       }
 
+      // Show success popup
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+      }, 3000);
+
       // Optional: Show success message or handle response
       console.log('Successfully saved to sheet');
     } catch (error) {
@@ -227,6 +234,27 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     alignItems: 'center',
     gap: theme.spacing.xs,
     marginRight: theme.spacing.sm,
+  };
+
+  // Success popup styles
+  const successPopupStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    backgroundColor: theme.colors.success,
+    color: 'white',
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    borderRadius: theme.borderRadius.lg,
+    boxShadow: theme.shadows.xl,
+    zIndex: 1000,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
+    transition: 'all 0.3s ease-in-out',
+    transform: showSuccessPopup ? 'translateX(0)' : 'translateX(100%)',
+    opacity: showSuccessPopup ? 1 : 0,
   };
 
   // All existing styles from your original component
@@ -575,6 +603,16 @@ const quantityBadgeStyle = (hasQuantity: boolean): React.CSSProperties => ({
 
   return (
     <div style={containerStyle}>
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div style={successPopupStyle}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Successfully saved to Google Sheets!
+        </div>
+      )}
+
       {selectedInquiries.length > 0 && (
         <InquiryActions 
           selectedIds={selectedInquiries} 

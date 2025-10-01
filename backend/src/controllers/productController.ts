@@ -64,7 +64,6 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   // Active offers filter
   if (req.query.hasOffers === 'true') {
     filter['offers.isActive'] = true;
-    filter['offers.validUntil'] = { $gt: new Date() };
   }
 
   // ✅ Enhanced quantity filters
@@ -127,7 +126,6 @@ export const getProduct = asyncHandler(async (req: Request, res: Response) => {
       path: 'offers',
       match: { 
         isActive: true, 
-        $or: [{ validUntil: { $exists: false } }, { validUntil: { $gt: new Date() } }]
       }
     });
 
@@ -315,6 +313,7 @@ export const updateProduct = [
     if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
       return ResponseHandler.forbidden(res, 'Not authorized to update this product');
     }
+
     // Validate quantity configuration if any fields are being updated
     const quantityFieldsBeingUpdated = ['allowQuantity', 'allowMultipleQuantities', 'maxQuantityPerInquiry']
       .some(field => req.body.hasOwnProperty(field));
@@ -346,6 +345,7 @@ export const updateProduct = [
         );
       }
     }
+
     // Auto-adjust quantity-related fields
     const updateData = { ...req.body };
     if (updateData.allowQuantity === false) {
@@ -356,18 +356,25 @@ export const updateProduct = [
     } else if (updateData.allowMultipleQuantities === true && !updateData.maxQuantityPerInquiry && !product.maxQuantityPerInquiry) {
       updateData.maxQuantityPerInquiry = 10;
     }
-    // FIXED: Proper offer handling
-    if (req.body.offers !== undefined) {
-      const offerIds: mongoose.Types.ObjectId[] = [];
-      const existingOfferIds = new Set();
 
-      // Process each offer in the request
-      for (const offer of req.body.offers) {
-        if (offer._id) {
-          // Update existing offer
-          const offerId = typeof offer._id === 'string'
-            ? new mongoose.Types.ObjectId(offer._id)
-            : offer._id as mongoose.Types.ObjectId;
+
+    // FIXED: Proper offer handling - check if offers field exists in request
+    if (req.body.offers !== undefined) {
+      // If offers is an empty array, clear all offers
+      if (req.body.offers.length === 0) {
+        updateData.offers = [];
+      } else {
+        // Process offers when array is not empty
+        const offerIds: mongoose.Types.ObjectId[] = [];
+        const existingOfferIds = new Set();
+
+        // Process each offer in the request
+        for (const offer of req.body.offers) {
+          if (offer._id) {
+            // Update existing offer
+            const offerId = typeof offer._id === 'string'
+              ? new mongoose.Types.ObjectId(offer._id)
+              : offer._id as mongoose.Types.ObjectId;
 
             const updatedOffer = await Offer.findByIdAndUpdate(
               offerId,
@@ -393,40 +400,42 @@ export const updateProduct = [
                 discountedPriceFontSize: offer.discountedPriceFontSize,
                 discountedPriceFontBold: offer.discountedPriceFontBold,
                 discountedPriceColor: offer.discountedPriceColor,
+                image: offer.image,
                 isActive: offer.isActive !== false // Default to true if not specified
               },
               { new: true, runValidators: true }
             );
           
-          if (updatedOffer) {
-            offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);
-            existingOfferIds.add(offerId.toString());
+            if (updatedOffer) {
+              offerIds.push(updatedOffer._id as mongoose.Types.ObjectId);
+              existingOfferIds.add(offerId.toString());
+            }
+          } else {
+            // Create new offer
+            const newOffer = await Offer.create({ 
+              ...offer, 
+              isActive: offer.isActive !== false 
+            });
+            offerIds.push(newOffer._id as mongoose.Types.ObjectId);
           }
-        } else {
-          // Create new offer
-          const newOffer = await Offer.create({ 
-            ...offer, 
-            isActive: offer.isActive !== false 
-          });
-          offerIds.push(newOffer._id as mongoose.Types.ObjectId);
         }
-      }
 
-      // Preserve existing offers that weren't included in the request
-      // This is the key fix - don't delete offers that aren't in the request
-      const currentOffers = product.offers || [];
-      for (const existingOffer of currentOffers) {
-        const existingOfferId = existingOffer._id.toString();
-        if (!existingOfferIds.has(existingOfferId)) {
-          offerIds.push(existingOffer._id as mongoose.Types.ObjectId);
+        // Preserve existing offers that weren't included in the request
+        const currentOffers = product.offers || [];
+        for (const existingOffer of currentOffers) {
+          const existingOfferId = existingOffer._id.toString();
+          if (!existingOfferIds.has(existingOfferId)) {
+            offerIds.push(existingOffer._id as mongoose.Types.ObjectId);
+          }
         }
-      }
 
-      updateData.offers = offerIds;
+        updateData.offers = offerIds;
+      }
     } else {
       // If offers field is not provided in request, preserve existing offers
       updateData.offers = product.offers;
     }
+
 
     product = await Product.findByIdAndUpdate(
       req.params.id,
@@ -493,10 +502,6 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
         "offers": {
           $elemMatch: {
             isActive: true,
-            $or: [
-              { validUntil: { $exists: false } },
-              { validUntil: { $gt: new Date() } }
-            ],
             discountedPrice: { $exists: true, $ne: null },
             originalPrice: { $exists: true, $ne: null }
           }
@@ -510,10 +515,6 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     "offers": {
       $elemMatch: {
         isActive: true,
-        $or: [
-          { validUntil: { $exists: false } },
-          { validUntil: { $gt: new Date() } }
-        ]
       }
     }
   });
@@ -525,10 +526,6 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
         "offers": {
           $elemMatch: {
             isActive: true,
-            $or: [
-              { validUntil: { $exists: false } },
-              { validUntil: { $gt: new Date() } }
-            ],
             discountedPrice: { $exists: true, $ne: null },
             originalPrice: { $exists: true, $ne: null }
           }
@@ -544,12 +541,6 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
             cond: {
               $and: [
                 { $eq: ["$$offer.isActive", true] },
-                { 
-                  $or: [
-                    { $not: { $ifNull: ["$$offer.validUntil", false] } },
-                    { $gt: ["$$offer.validUntil", new Date()] }
-                  ]
-                },
                 { $ne: ["$$offer.discountedPrice", null] },
                 { $ne: ["$$offer.originalPrice", null] },
                 { $lt: ["$$offer.discountedPrice", "$$offer.originalPrice"] }
@@ -648,10 +639,6 @@ export const getProductStats = asyncHandler(async (req: Request, res: Response) 
     {
       $match: {
         "offers.isActive": true,
-        $or: [
-          { "offers.validUntil": { $exists: false } },
-          { "offers.validUntil": { $gt: new Date() } }
-        ],
         "offers.originalPrice": { $exists: true, $ne: null },
         "offers.discountedPrice": { $exists: true, $ne: null }
       }

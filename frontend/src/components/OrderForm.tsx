@@ -700,7 +700,7 @@ useEffect(() => {
   // Enhanced offer card styles
   const getOfferCardStyle = (isSelected: boolean): React.CSSProperties => ({
     display: 'flex',
-    flexDirection: "column",
+    flexDirection: "row",
     alignItems: 'flex-start',
     gap: theme.spacing.md,
     padding: "20px 8px",
@@ -989,7 +989,7 @@ useEffect(() => {
       whileHover="hover"
       animate={selectedOffer === offer._id ? "selected" : "initial"}
       style={getOfferCardStyle(selectedOffer === offer._id)}
-      className='max-sm:w-full w-[270px]'
+      className='w-full'
     >
       <input
         type="radio"
@@ -1027,7 +1027,7 @@ useEffect(() => {
           <div style={{textAlign:product.dynamicFields[0].languageField === 'fr'? "left":"right" }}>
   {offer.title}
 </div>
-
+       
         </div>
 
         {offer.description && (
@@ -1082,6 +1082,12 @@ useEffect(() => {
           )}
         </div>
       </div>
+      {offer.image &&  <div style={{display:"flex",height:"100%",alignItems:"center"}}>
+        <img 
+            src={offer.image} 
+            alt="Offer preview"
+            style={{maxWidth:"50px",maxHeight:"100px"}}
+          /></div>}
     </motion.label>
   ))}
               </motion.div>

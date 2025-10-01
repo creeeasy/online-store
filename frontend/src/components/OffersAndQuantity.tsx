@@ -32,8 +32,7 @@ const OffersAndQuantity: React.FC<OffersAndQuantityProps> = ({
     if (!product?.offers) return [];
     const now = new Date();
     return product.offers.filter(offer => 
-      offer.isActive && 
-      (!offer.validUntil || new Date(offer.validUntil) > now)
+      offer.isActive
     );
   };
 
@@ -50,14 +49,7 @@ const OffersAndQuantity: React.FC<OffersAndQuantityProps> = ({
     return 'Special Offer';
   };
 
-  // Calculate days remaining for offer
-  const getDaysRemaining = (validUntil: Date) => {
-    const now = new Date();
-    const validDate = new Date(validUntil);
-    const diffTime = validDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+
 
   // Calculate total price
   const calculateTotalPrice = (): number => {
@@ -175,20 +167,6 @@ const OffersAndQuantity: React.FC<OffersAndQuantityProps> = ({
                       </div>
                     </div>
                     
-                    {offer.validUntil && (
-                      <div 
-                        className="flex items-center gap-2 text-sm px-3 py-1 rounded-full"
-                        style={{
-                          backgroundColor: productColors.primary + '15',
-                          color: productColors.primaryDark
-                        }}
-                      >
-                        <FiClock size={14} />
-                        <span className="font-semibold">
-                          {getDaysRemaining(offer.validUntil)} days left
-                        </span>
-                      </div>
-                    )}
                   </div>
                   
                   {offer.description && (

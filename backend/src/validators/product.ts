@@ -66,10 +66,6 @@ body('maxQuantityPerInquiry')
       }
       return true;
     }),
-    body('offers.*.validUntil').if(body('offers').exists()).optional().isISO8601().withMessage('Must be valid date').custom(value => {
-      if (value && new Date(value) <= new Date()) throw new Error('Valid until must be future date');
-      return true;
-    }),
     body('offers.*.isActive').if(body('offers').exists()).optional().isBoolean(),
     
     // Hidden fields
@@ -173,17 +169,6 @@ body('maxQuantityPerInquiry')
         return true;
       }),
     
-    body('offers.*.validUntil')
-      .if(body('offers').exists())
-      .optional()
-      .isISO8601()
-      .withMessage('Valid until date must be a valid date')
-      .custom((value) => {
-        if (value && new Date(value) <= new Date()) {
-          throw new Error('Valid until date must be in the future');
-        }
-        return true;
-      }),
     
     body('offers.*.isActive')
       .if(body('offers').exists())

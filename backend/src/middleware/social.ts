@@ -145,7 +145,7 @@ const socialInquiryTest = async (req: Request, res: Response, next: NextFunction
 
     if (typeOfOrder === 'offer' && offerId) {
       const offer = await Offer.findById(offerId);
-      if (offer && offer.isActive && (!offer.validUntil || new Date(offer.validUntil) >= new Date())) {
+      if (offer && offer.isActive) {
         totalPrice = offer.discountedPrice ?? offer.originalPrice ?? product.price;
         offerTitle = offer.title || '';
       } else {

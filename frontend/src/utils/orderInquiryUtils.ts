@@ -116,8 +116,7 @@ export const OrderInquiryUtils = {
     if (!product.offers) return [];
     const now = new Date();
     return product.offers.filter(offer => 
-      offer.isActive && 
-      (!offer.validUntil || new Date(offer.validUntil) > now)
+      offer.isActive
     );
   },
 
@@ -221,10 +220,6 @@ export const ProductValidation = {
         offer.discountedPrice >= offer.originalPrice
       ) {
         errors.push(`Offer ${index + 1} discounted price must be less than original price`);
-      }
-      
-      if (offer.validUntil && new Date(offer.validUntil) <= new Date()) {
-        errors.push(`Offer ${index + 1} valid until date must be in the future`);
       }
     });
     
