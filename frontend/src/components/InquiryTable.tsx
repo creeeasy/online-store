@@ -3,6 +3,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import InquiryActions from './InquiryActions';
 import type { OrderInquiry } from '../types/orderInquiry';
 import { useDeleteConfirmation, useDeleteOrderInquiry } from '../hooks/useOrderInquiry';
+import { getAuthToken } from '../utils/apiClient';
 
 const InquiryUtils = {
   formatPrice: (price?: number) => {
@@ -141,6 +142,7 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
   const { theme } = useTheme();
   const [selectedInquiries, setSelectedInquiries] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [savingToSheet, setSavingToSheet] = useState<string | null>(null);
   console.log(inquiries)
   // Delete hooks
   const deleteInquiry = useDeleteOrderInquiry();
@@ -167,6 +169,34 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     });
   };
 
+  // Handle save to sheet
+  const handleSaveToSheet = async (inquiryId: string) => {
+    setSavingToSheet(inquiryId);
+    const token=getAuthToken()
+    try {
+      const response = await fetch(`${import.meta.env.VITE_APP_API_URL}/order-inquiries/save-to-sheet`, {
+        method: 'POST',
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: inquiryId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save to sheet');
+      }
+
+      // Optional: Show success message or handle response
+      console.log('Successfully saved to sheet');
+    } catch (error) {
+      console.error('Error saving to sheet:', error);
+      // Optional: Show error message to user
+    } finally {
+      setSavingToSheet(null);
+    }
+  };
+
   // Enhanced theme-based styles
   const deleteButtonStyle: React.CSSProperties = {
     color: '#ef4444',
@@ -181,6 +211,22 @@ const InquiryTable: React.FC<InquiryTableProps> = ({ inquiries, totalCount }) =>
     display: 'inline-flex',
     alignItems: 'center',
     gap: theme.spacing.xs,
+  };
+
+  const saveButtonStyle: React.CSSProperties = {
+    color: theme.colors.success,
+    backgroundColor: `${theme.colors.success}10`,
+    border: `1px solid ${theme.colors.success}30`,
+    borderRadius: theme.borderRadius.md,
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    cursor: 'pointer',
+    fontSize: theme.fonts.size.sm,
+    fontWeight: theme.fonts.weight.medium,
+    transition: theme.transitions.fast,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginRight: theme.spacing.sm,
   };
 
   // All existing styles from your original component
@@ -683,41 +729,78 @@ const quantityBadgeStyle = (hasQuantity: boolean): React.CSSProperties => ({
                   </div>
                 </td>
 
-                {/* Actions Column - Only Delete */}
+                {/* Actions Column - Save to Sheet and Delete */}
                 <td style={{ ...tdStyle, textAlign: 'center', paddingRight: theme.spacing.xl }}>
-                  <button 
-                    onClick={() => handleDeleteSingle(inquiry._id)}
-                    disabled={deleteInquiry.isPending}
-                    style={{
-                      ...deleteButtonStyle,
-                      opacity: deleteInquiry.isPending ? 0.5 : 1,
-                      cursor: deleteInquiry.isPending ? 'not-allowed' : 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!deleteInquiry.isPending) {
-                        e.currentTarget.style.backgroundColor = '#ef4444';
-                        e.currentTarget.style.color = 'white';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = theme.shadows.md;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!deleteInquiry.isPending) {
-                        e.currentTarget.style.backgroundColor = '#ef444410';
-                        e.currentTarget.style.color = '#ef4444';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3,6 5,6 21,6"/>
-                      <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                      <line x1="10" y1="11" x2="10" y2="17"/>
-                      <line x1="14" y1="11" x2="14" y2="17"/>
-                    </svg>
-                    {deleteInquiry.isPending ? 'Deleting...' : 'Delete'}
-                  </button>
+                  <div style={{ display: 'flex', gap: theme.spacing.sm, justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => handleSaveToSheet(inquiry._id)}
+                      disabled={savingToSheet === inquiry._id}
+                      style={{
+                        ...saveButtonStyle,
+                        opacity: savingToSheet === inquiry._id ? 0.5 : 1,
+                        cursor: savingToSheet === inquiry._id ? 'not-allowed' : 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (savingToSheet !== inquiry._id) {
+                          e.currentTarget.style.backgroundColor = theme.colors.success;
+                          e.currentTarget.style.color = 'white';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = theme.shadows.md;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (savingToSheet !== inquiry._id) {
+                          e.currentTarget.style.backgroundColor = `${theme.colors.success}10`;
+                          e.currentTarget.style.color = theme.colors.success;
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                      </svg>
+                      {savingToSheet === inquiry._id ? 'Saving...' : 'Save to Sheet'}
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleDeleteSingle(inquiry._id)}
+                      disabled={deleteInquiry.isPending}
+                      style={{
+                        ...deleteButtonStyle,
+                        opacity: deleteInquiry.isPending ? 0.5 : 1,
+                        cursor: deleteInquiry.isPending ? 'not-allowed' : 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!deleteInquiry.isPending) {
+                          e.currentTarget.style.backgroundColor = '#ef4444';
+                          e.currentTarget.style.color = 'white';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = theme.shadows.md;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!deleteInquiry.isPending) {
+                          e.currentTarget.style.backgroundColor = '#ef444410';
+                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3,6 5,6 21,6"/>
+                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                      </svg>
+                      {deleteInquiry.isPending ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -72,15 +72,19 @@ const OffersTab: React.FC<OffersTabProps> = ({
     titleFontFamily: '',
     titleFontSize: '',
     titleFontBold: '',
+    titleColor: '',
     descriptionFontFamily: '',
     descriptionFontSize: '',
     descriptionFontBold: '',
+    descriptionColor: '',
     originalPriceFontFamily: '',
     originalPriceFontSize: '',
     originalPriceFontBold: '',
+    originalPriceColor: '',
     discountedPriceFontFamily: '',
     discountedPriceFontSize: '',
-    discountedPriceFontBold: ''
+    discountedPriceFontBold: '',
+    discountedPriceColor: ''
   });
 
   // Fixed: Properly handle both array and object validation error structures
@@ -150,15 +154,19 @@ const OffersTab: React.FC<OffersTabProps> = ({
         titleFontFamily: newOffer.titleFontFamily || '',
         titleFontSize: newOffer.titleFontSize || '',
         titleFontBold: newOffer.titleFontBold || '',
+        titleColor: newOffer.titleColor || '',
         descriptionFontFamily: newOffer.descriptionFontFamily || '',
         descriptionFontSize: newOffer.descriptionFontSize || '',
         descriptionFontBold: newOffer.descriptionFontBold || '',
+        descriptionColor: newOffer.descriptionColor || '',
         originalPriceFontFamily: newOffer.originalPriceFontFamily || '',
         originalPriceFontSize: newOffer.originalPriceFontSize || '',
         originalPriceFontBold: newOffer.originalPriceFontBold || '',
+        originalPriceColor: newOffer.originalPriceColor || '',
         discountedPriceFontFamily: newOffer.discountedPriceFontFamily || '',
         discountedPriceFontSize: newOffer.discountedPriceFontSize || '',
-        discountedPriceFontBold: newOffer.discountedPriceFontBold || ''
+        discountedPriceFontBold: newOffer.discountedPriceFontBold || '',
+        discountedPriceColor: newOffer.discountedPriceColor || ''
       } as IOffer]
     }));
     
@@ -174,15 +182,19 @@ const OffersTab: React.FC<OffersTabProps> = ({
       titleFontFamily: '',
       titleFontSize: '',
       titleFontBold: '',
+      titleColor: '',
       descriptionFontFamily: '',
       descriptionFontSize: '',
       descriptionFontBold: '',
+      descriptionColor: '',
       originalPriceFontFamily: '',
       originalPriceFontSize: '',
       originalPriceFontBold: '',
+      originalPriceColor: '',
       discountedPriceFontFamily: '',
       discountedPriceFontSize: '',
-      discountedPriceFontBold: ''
+      discountedPriceFontBold: '',
+      discountedPriceColor: ''
     });
   };
 
@@ -296,6 +308,32 @@ const OffersTab: React.FC<OffersTabProps> = ({
     color: theme.colors.text,
   };
 
+  const colorInputContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center'
+  };
+
+  const colorTextInputStyle: React.CSSProperties = {
+    flex: 1,
+    padding: '0.75rem',
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: '8px',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    fontFamily: 'monospace'
+  };
+
+  const colorPickerStyle: React.CSSProperties = {
+    width: '42px',
+    height: '42px',
+    padding: '0.25rem',
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: '8px',
+    cursor: 'pointer',
+    backgroundColor: theme.colors.surface
+  };
+
   // Check if add button should be disabled
   const isAddDisabled = !newOffer.title?.trim();
 
@@ -311,6 +349,26 @@ const OffersTab: React.FC<OffersTabProps> = ({
       </div>
     );
   };
+
+  // Color input component with both text and picker
+  const ColorInput = ({ value, onChange }: { value: string, onChange: (value: string) => void }) => (
+    <div style={colorInputContainerStyle}>
+      <input
+        type="text"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="#000000"
+        style={colorTextInputStyle}
+        maxLength={7}
+      />
+      <input
+        type="color"
+        value={value || '#000000'}
+        onChange={(e) => onChange(e.target.value)}
+        style={colorPickerStyle}
+      />
+    </div>
+  );
 
   return (
     <div style={containerStyle}>
@@ -363,7 +421,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               </div>
 
               {/* Title Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Title Font Family
@@ -411,15 +469,26 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Title Color
+                  </label>
+                  <ColorInput 
+                    value={offer.titleColor || ''} 
+                    onChange={(value) => updateOffer(index, 'titleColor', value)} 
+                  />
+                </div>
               </div>
 
               {/* Title Font Preview */}
-              {(offer.titleFontFamily || offer.titleFontSize || offer.titleFontBold) && (
+              {(offer.titleFontFamily || offer.titleFontSize || offer.titleFontBold || offer.titleColor) && (
                 <div style={{ 
                   ...fontPreviewStyle, 
                   fontFamily: offer.titleFontFamily || 'inherit',
                   fontSize: offer.titleFontSize ? `${offer.titleFontSize}px` : '1rem',
-                  fontWeight: offer.titleFontBold || 'normal'
+                  fontWeight: offer.titleFontBold || 'normal',
+                  color: offer.titleColor || 'inherit'
                 }}>
                   Preview: {offer.title || 'Sample title text'}
                 </div>
@@ -476,7 +545,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               </div>
 
               {/* Original Price Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Original Price Font Family
@@ -524,10 +593,20 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Original Price Color
+                  </label>
+                  <ColorInput 
+                    value={offer.originalPriceColor || ''} 
+                    onChange={(value) => updateOffer(index, 'originalPriceColor', value)} 
+                  />
+                </div>
               </div>
 
               {/* Discounted Price Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Discounted Price Font Family
@@ -575,6 +654,16 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Discounted Price Color
+                  </label>
+                  <ColorInput 
+                    value={offer.discountedPriceColor || ''} 
+                    onChange={(value) => updateOffer(index, 'discountedPriceColor', value)} 
+                  />
+                </div>
               </div>
 
               {/* Price Display */}
@@ -616,7 +705,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               </div>
 
               {/* Description Font Customization */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
                     Description Font Family
@@ -664,15 +753,26 @@ const OffersTab: React.FC<OffersTabProps> = ({
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Description Color
+                  </label>
+                  <ColorInput 
+                    value={offer.descriptionColor || ''} 
+                    onChange={(value) => updateOffer(index, 'descriptionColor', value)} 
+                  />
+                </div>
               </div>
 
               {/* Description Font Preview */}
-              {(offer.descriptionFontFamily || offer.descriptionFontSize || offer.descriptionFontBold) && (
+              {(offer.descriptionFontFamily || offer.descriptionFontSize || offer.descriptionFontBold || offer.descriptionColor) && (
                 <div style={{ 
                   ...fontPreviewStyle, 
                   fontFamily: offer.descriptionFontFamily || 'inherit',
                   fontSize: offer.descriptionFontSize ? `${offer.descriptionFontSize}px` : '1rem',
-                  fontWeight: offer.descriptionFontBold || 'normal'
+                  fontWeight: offer.descriptionFontBold || 'normal',
+                  color: offer.descriptionColor || 'inherit'
                 }}>
                   Preview: {offer.description || 'Sample description text'}
                 </div>
@@ -752,7 +852,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         </div>
 
         {/* Title Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Title Font Family
@@ -800,15 +900,26 @@ const OffersTab: React.FC<OffersTabProps> = ({
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Title Color
+            </label>
+            <ColorInput 
+              value={newOffer.titleColor || ''} 
+              onChange={(value) => setNewOffer({ ...newOffer, titleColor: value })} 
+            />
+          </div>
         </div>
 
         {/* Title Font Preview for New Offer */}
-        {(newOffer.titleFontFamily || newOffer.titleFontSize || newOffer.titleFontBold) && (
+        {(newOffer.titleFontFamily || newOffer.titleFontSize || newOffer.titleFontBold || newOffer.titleColor) && (
           <div style={{ 
             ...fontPreviewStyle, 
             fontFamily: newOffer.titleFontFamily || 'inherit',
             fontSize: newOffer.titleFontSize ? `${newOffer.titleFontSize}px` : '1rem',
-            fontWeight: newOffer.titleFontBold || 'normal'
+            fontWeight: newOffer.titleFontBold || 'normal',
+            color: newOffer.titleColor || 'inherit'
           }}>
             Preview: {newOffer.title || 'Sample title text'}
           </div>
@@ -839,7 +950,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
               min="0"
               value={newOffer.originalPrice || ''}
               onChange={(e) => setNewOffer({ ...newOffer, originalPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
-              placeholder={`Base: $${formData.price || 0}`}
+              placeholder={`Base: ${formData.price || 0}`}
               style={inputStyle}
             />
           </div>
@@ -861,7 +972,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         </div>
 
         {/* Original Price Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Original Price Font Family
@@ -909,10 +1020,20 @@ const OffersTab: React.FC<OffersTabProps> = ({
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Original Price Color
+            </label>
+            <ColorInput 
+              value={newOffer.originalPriceColor || ''} 
+              onChange={(value) => setNewOffer({ ...newOffer, originalPriceColor: value })} 
+            />
+          </div>
         </div>
 
         {/* Discounted Price Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Discounted Price Font Family
@@ -960,6 +1081,16 @@ const OffersTab: React.FC<OffersTabProps> = ({
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Discounted Price Color
+            </label>
+            <ColorInput 
+              value={newOffer.discountedPriceColor || ''} 
+              onChange={(value) => setNewOffer({ ...newOffer, discountedPriceColor: value })} 
+            />
+          </div>
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -976,7 +1107,7 @@ const OffersTab: React.FC<OffersTabProps> = ({
         </div>
 
         {/* Description Font Customization for New Offer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
               Description Font Family
@@ -1024,15 +1155,26 @@ const OffersTab: React.FC<OffersTabProps> = ({
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              Description Color
+            </label>
+            <ColorInput 
+              value={newOffer.descriptionColor || ''} 
+              onChange={(value) => setNewOffer({ ...newOffer, descriptionColor: value })} 
+            />
+          </div>
         </div>
 
         {/* Description Font Preview for New Offer */}
-        {(newOffer.descriptionFontFamily || newOffer.descriptionFontSize || newOffer.descriptionFontBold) && (
+        {(newOffer.descriptionFontFamily || newOffer.descriptionFontSize || newOffer.descriptionFontBold || newOffer.descriptionColor) && (
           <div style={{ 
             ...fontPreviewStyle, 
             fontFamily: newOffer.descriptionFontFamily || 'inherit',
             fontSize: newOffer.descriptionFontSize ? `${newOffer.descriptionFontSize}px` : '1rem',
-            fontWeight: newOffer.descriptionFontBold || 'normal'
+            fontWeight: newOffer.descriptionFontBold || 'normal',
+            color: newOffer.descriptionColor || 'inherit'
           }}>
             Preview: {newOffer.description || 'Sample description text'}
           </div>
@@ -1073,4 +1215,4 @@ const OffersTab: React.FC<OffersTabProps> = ({
   );
 };
 
-export default OffersTab;
+export default OffersTab; 

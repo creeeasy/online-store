@@ -24,7 +24,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const { theme } = useTheme();
 
   const handleViewDetails = () => {
-    navigate(`/products/${product._id}`);
+    navigate(`/products/${product.reference}`);
   };
 
   const handleClone = (e: React.MouseEvent) => {

@@ -792,7 +792,8 @@ useEffect(() => {
             fontWeight: theme.fonts.weight.semiBold,
             color: "black",
             marginBottom: theme.spacing.md,
-            textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
+            textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right",
+            direction:product.dynamicFields[0].languageField==="fr"?"ltr":"rtl",
           }}>
            
             {product.dynamicFields[0].languageField==="fr"?"Type de commande:":" نوع الطلب:"}
@@ -959,13 +960,14 @@ useEffect(() => {
             >
               <label style={{
                 display: 'block',
-                fontSize: "26px",
-                fontWeight: theme.fonts.weight.semiBold,
-                color: hasCustomColors ? colors.primaryLight : theme.colors.text,
+                fontFamily:product.offerTitleFontFamily?product.offerTitleFontFamily:"normal",
+                fontSize: product.offerTitleFontSize ? product.offerTitleFontSize+"px":"26px",
+                fontWeight: product.offerTitleFontWeight ? product.offerTitleFontWeight:theme.fonts.weight.semiBold,
+                color: product.offerTitleColor ? product.offerTitleColor : theme.colors.text,
                 marginBottom: theme.spacing.md,
                 textAlign:product.dynamicFields[0].languageField==="fr"?"left":"right"
               }}>
-                {product.dynamicFields[0].languageField==="fr"?"Choisir l’offre ":" اختر العرض"}
+                {product.offersTitle?product.offersTitle:product.dynamicFields[0].languageField==="fr"?"Choisir l’offre ":" اختر العرض"}
               </label>
               
               <motion.div
@@ -1014,15 +1016,18 @@ useEffect(() => {
             fontSize: offer.titleFontSize ? offer.titleFontSize + "px" : "16px",
             fontFamily: offer.titleFontFamily ? offer.titleFontFamily : "font-poppins",
             fontWeight: offer.titleFontBold ? offer.titleFontBold : "bold",
-            color: hasCustomColors
-              ? colors.primaryLight
+            color: offer.titleColor
+              ? offer.titleColor
               : theme.colors.text,
             marginBottom: theme.spacing.xs,
             direction: product.dynamicFields[0].languageField === 'fr' ? 'ltr' : 'rtl',
           }}
         >
           <FaGift />
-          {offer.title}
+          <div style={{textAlign:product.dynamicFields[0].languageField === 'fr'? "left":"right" }}>
+  {offer.title}
+</div>
+
         </div>
 
         {offer.description && (
@@ -1031,7 +1036,7 @@ useEffect(() => {
               fontSize: offer.descriptionFontSize ? offer.descriptionFontSize + "px" : "14px",
               fontFamily: offer.descriptionFontFamily ? offer.descriptionFontFamily : "font-poppins",
               fontWeight: offer.descriptionFontBold ? offer.descriptionFontBold : "bold",
-              color: theme.colors.textSecondary,
+              color: offer.descriptionColor,
               marginBottom: theme.spacing.xs,
               textAlign: product.dynamicFields[0].languageField === 'fr' ? 'left' : 'right',
             }}
@@ -1045,6 +1050,7 @@ useEffect(() => {
             display: 'flex',
             marginBottom: theme.spacing.xs,
             justifyContent: product.dynamicFields[0].languageField === "fr" ? "left" : "right",
+            alignItems:"center"
           }}
         >
           {offer.originalPrice && (
@@ -1053,7 +1059,7 @@ useEffect(() => {
                 fontSize: offer.originalPriceFontSize ? offer.originalPriceFontSize + "px" : "15px",
                 fontFamily: offer.originalPriceFontFamily ? offer.originalPriceFontFamily : "font-poppins",
                 fontWeight: offer.originalPriceFontBold ? offer.originalPriceFontBold : "bold",
-                color: theme.colors.textMuted,
+                color: offer.originalPriceColor,
                 textDecoration: 'line-through',
                 display: "flex",
                 alignItems: "center"
@@ -1065,7 +1071,7 @@ useEffect(() => {
           {offer.discountedPrice && (
             <span
               style={{
-                color: colors.primaryLight,
+                color: offer.discountedPriceColor,
                 fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "15px",
                 fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
                 fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "bold",

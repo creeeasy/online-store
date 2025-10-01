@@ -61,6 +61,14 @@ export interface IProduct extends Document {
   price: number;
   discountPrice?: number;
   description?: string;
+  offersTitle?: string;
+  
+  // ✅ New offer title styling fields
+  offerTitleFontFamily?: string;
+  offerTitleFontSize?: string;
+  offerTitleFontWeight?: string;
+  offerTitleColor?: string;
+  
   thankYou?: boolean;
   images: string[];
   colors?: IProductColor[]; // Optional array of up to 3 colors
@@ -134,6 +142,57 @@ const ProductSchema = new Schema({
     type: String, 
     required: false,
   },
+  offersTitle: { 
+    type: String, 
+    required: false,
+  },
+  
+  // ✅ New offer title styling fields
+  offerTitleFontFamily: { 
+    type: String, 
+    required: false,
+    trim: true,
+    maxlength: [100, 'Font family cannot exceed 100 characters']
+  },
+  offerTitleFontSize: { 
+    type: String, 
+    required: false,
+    trim: true,
+    maxlength: [10, 'Font size cannot exceed 10 characters'],
+    validate: {
+      validator: function(value: string) {
+        if (!value) return true;
+        // Allow numbers with optional 'px' suffix
+        return /^\d+(px)?$/.test(value);
+      },
+      message: 'Font size must be a number with optional "px" suffix (e.g., "16" or "16px")'
+    }
+  },
+  offerTitleFontWeight: { 
+    type: String, 
+    required: false,
+    trim: true,
+    maxlength: [20, 'Font weight cannot exceed 20 characters'],
+    enum: {
+      values: ['', 'normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'lighter', 'bolder'],
+      message: 'Invalid font weight value'
+    }
+  },
+  offerTitleColor: { 
+    type: String, 
+    required: false,
+    trim: true,
+    maxlength: [7, 'Color code cannot exceed 7 characters'],
+    validate: {
+      validator: function(value: string) {
+        if (!value) return true;
+        // Validate hex color code
+        return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value);
+      },
+      message: 'Please provide a valid hex color code (e.g., #FF0000 or #F00)'
+    }
+  },
+  
   thankYou: { 
     type: Boolean, 
     required: false,

@@ -1,4 +1,4 @@
-// src/components/ProductForm/BasicInfoTab.tsx - Enhanced with frontend validation
+// src/components/ProductForm/BasicInfoTab.tsx - Enhanced with offer title styling inputs
 import React, { useRef, useEffect } from 'react';
 import { FiPlus, FiTrash2, FiUpload, FiLoader, FiAlertTriangle } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,7 +9,6 @@ import { useImageUpload } from '../hooks/useUpload';
 import { getFieldErrors, hasFieldError, type ValidationError } from '../utils/validation';
 import ErrorDisplay from './ErrorDisplay';
 
-
 interface BasicInfoTabProps {
   formData: Partial<IProduct>;
   setFormData: React.Dispatch<React.SetStateAction<Partial<IProduct>>>;
@@ -18,6 +17,101 @@ interface BasicInfoTabProps {
   hasAttemptedSubmit: boolean;
   allErrors: ValidationError[];
 }
+
+// Font family options
+const FONT_OPTIONS = [
+  { value: '', label: 'Default' },
+  { value: 'Arial, sans-serif', label: 'Arial' },
+  { value: 'Helvetica, sans-serif', label: 'Helvetica' },
+  { value: 'Times New Roman, serif', label: 'Times New Roman' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: 'Courier New, monospace', label: 'Courier New' },
+  { value: 'Verdana, sans-serif', label: 'Verdana' },
+  { value: 'Tahoma, sans-serif', label: 'Tahoma' },
+  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
+  { value: 'Palatino, serif', label: 'Palatino' },
+  { value: 'Garamond, serif', label: 'Garamond' },
+  { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS' },
+  { value: 'Impact, fantasy', label: 'Impact' },
+  { value: 'Lucida Console, monospace', label: 'Lucida Console' },
+  { value: 'Roboto, sans-serif', label: 'Roboto' },
+  { value: 'Open Sans, sans-serif', label: 'Open Sans' },
+  { value: 'Lato, sans-serif', label: 'Lato' },
+  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
+  { value: 'Poppins, sans-serif', label: 'Poppins' },
+  { value: 'Cairo, sans-serif', label: 'Cairo (Arabic)' },
+  { value: 'Tajawal, sans-serif', label: 'Tajawal (Arabic)' },
+  { value: 'Almarai, sans-serif', label: 'Almarai (Arabic)' },
+  { value: 'Amiri, serif', label: 'Amiri (Arabic)' },
+];
+
+const FONT_WEIGHT_OPTIONS = [
+  { value: '', label: 'Default' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'bold', label: 'Bold' },
+  { value: '100', label: '100 - Thin' },
+  { value: '200', label: '200 - Extra Light' },
+  { value: '300', label: '300 - Light' },
+  { value: '400', label: '400 - Normal' },
+  { value: '500', label: '500 - Medium' },
+  { value: '600', label: '600 - Semi Bold' },
+  { value: '700', label: '700 - Bold' },
+  { value: '800', label: '800 - Extra Bold' },
+  { value: '900', label: '900 - Black' },
+  { value: 'lighter', label: 'Lighter' },
+  { value: 'bolder', label: 'Bolder' },
+];
+
+// Color Input Component
+const ColorInput = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => {
+  const { theme } = useTheme();
+  
+  const colorInputContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center',
+  };
+
+  const colorTextInputStyle: React.CSSProperties = {
+    flex: 1,
+    padding: '0.5rem',
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: '6px',
+    outline: 'none',
+    fontSize: '0.875rem',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    minWidth: '80px',
+  };
+
+  const colorPickerStyle: React.CSSProperties = {
+    width: '40px',
+    height: '40px',
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: '6px',
+    cursor: 'pointer',
+    padding: 0,
+  };
+
+  return (
+    <div style={colorInputContainerStyle}>
+      <input
+        type="text"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="#000000"
+        style={colorTextInputStyle}
+        maxLength={7}
+      />
+      <input
+        type="color"
+        value={value || '#000000'}
+        onChange={(e) => onChange(e.target.value)}
+        style={colorPickerStyle}
+      />
+    </div>
+  );
+};
 
 const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ 
   formData, 
@@ -110,6 +204,21 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     boxShadow: hasError ? `0 0 0 3px ${theme.colors.error}15` : 'none',
   });
 
+  const getSelectStyle = (hasError: boolean): React.CSSProperties => ({
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: `2px solid ${hasError ? theme.colors.error : theme.colors.border}`,
+    borderRadius: '12px',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+    fontSize: '1rem',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    fontWeight: '400',
+    boxShadow: hasError ? `0 0 0 3px ${theme.colors.error}15` : 'none',
+    cursor: 'pointer',
+  });
+
   const getLabelStyle = (hasError: boolean): React.CSSProperties => ({
     fontWeight: '600',
     color: hasError ? theme.colors.error : theme.colors.text,
@@ -186,18 +295,6 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     gap: '0.75rem',
     alignItems: 'flex-start',
   };
-
-  const imagePreviewStyle = (url: string): React.CSSProperties => ({
-    width: '60px',
-    height: '60px',
-    borderRadius: '8px',
-    backgroundImage: `url(${url})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    border: `1px solid ${theme.colors.border}`,
-    flexShrink: 0,
-    boxShadow: `0 2px 4px ${theme.colors.shadow}`,
-  });
 
   const emptyStateStyle: React.CSSProperties = {
     padding: '1.5rem',
@@ -437,6 +534,140 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           {renderFieldErrors('description')}
         </div>
 
+        {/* Offers Title */}
+        <div style={getFieldContainerStyle(hasFieldError('offersTitle', allErrors))}>
+          <label style={getLabelStyle(hasFieldError('offersTitle', allErrors))}>
+            Offers Title
+            {hasFieldError('offersTitle', allErrors) && <FiAlertTriangle size={14} />}
+          </label>
+          <input
+            name="offersTitle"
+            type="text"
+            value={formData.offersTitle || ''}
+            onChange={(e) => handleInputChange('offersTitle', e.target.value)}
+            placeholder="Enter offers title (optional)"
+            style={getInputStyle('offersTitle', hasFieldError('offersTitle', allErrors))}
+            onFocus={(e) => {
+              if (!hasFieldError('offersTitle', allErrors)) {
+                e.target.style.borderColor = theme.colors.primary;
+                e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
+              }
+            }}
+            onBlur={(e) => {
+              if (!hasFieldError('offersTitle', allErrors)) {
+                e.target.style.borderColor = theme.colors.border;
+                e.target.style.boxShadow = 'none';
+              }
+            }}
+          />
+          {renderFieldErrors('offersTitle')}
+        </div>
+
+        {/* Offer Title Styling Options */}
+        <div style={{ 
+          padding: '1.5rem', 
+          backgroundColor: theme.colors.backgroundSecondary, 
+          borderRadius: '12px',
+          border: `1px solid ${theme.colors.border}` 
+        }}>
+          <h4 style={{ 
+            margin: '0 0 1rem 0', 
+            fontSize: '1rem', 
+            fontWeight: '600',
+            color: theme.colors.text 
+          }}>
+            Offer Title Styling
+          </h4>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '1rem' 
+          }}>
+            {/* Offer Title Font Family */}
+            <div style={getFieldContainerStyle(hasFieldError('offerTitleFontFamily', allErrors))}>
+              <label style={getLabelStyle(hasFieldError('offerTitleFontFamily', allErrors))}>
+                Offer Title Font Family
+                {hasFieldError('offerTitleFontFamily', allErrors) && <FiAlertTriangle size={14} />}
+              </label>
+              <select
+                style={getSelectStyle(hasFieldError('offerTitleFontFamily', allErrors))}
+                value={formData.offerTitleFontFamily || ''}
+                onChange={(e) => handleInputChange('offerTitleFontFamily', e.target.value)}
+              >
+                {FONT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {renderFieldErrors('offerTitleFontFamily')}
+            </div>
+
+            {/* Offer Title Font Size */}
+            <div style={getFieldContainerStyle(hasFieldError('offerTitleFontSize', allErrors))}>
+              <label style={getLabelStyle(hasFieldError('offerTitleFontSize', allErrors))}>
+                Offer Title Font Size (px)
+                {hasFieldError('offerTitleFontSize', allErrors) && <FiAlertTriangle size={14} />}
+              </label>
+              <input
+                type="number"
+                style={getInputStyle('offerTitleFontSize', hasFieldError('offerTitleFontSize', allErrors))}
+                value={formData.offerTitleFontSize || ''}
+                onChange={(e) => handleInputChange('offerTitleFontSize', e.target.value)}
+                placeholder="e.g., 20"
+                min="1"
+                onFocus={(e) => {
+                  if (!hasFieldError('offerTitleFontSize', allErrors)) {
+                    e.target.style.borderColor = theme.colors.primary;
+                    e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!hasFieldError('offerTitleFontSize', allErrors)) {
+                    e.target.style.borderColor = theme.colors.border;
+                    e.target.style.boxShadow = 'none';
+                  }
+                }}
+              />
+              {renderFieldErrors('offerTitleFontSize')}
+            </div>
+
+            {/* Offer Title Font Weight */}
+            <div style={getFieldContainerStyle(hasFieldError('offerTitleFontWeight', allErrors))}>
+              <label style={getLabelStyle(hasFieldError('offerTitleFontWeight', allErrors))}>
+                Offer Title Font Weight
+                {hasFieldError('offerTitleFontWeight', allErrors) && <FiAlertTriangle size={14} />}
+              </label>
+              <select
+                style={getSelectStyle(hasFieldError('offerTitleFontWeight', allErrors))}
+                value={formData.offerTitleFontWeight || ''}
+                onChange={(e) => handleInputChange('offerTitleFontWeight', e.target.value)}
+              >
+                {FONT_WEIGHT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {renderFieldErrors('offerTitleFontWeight')}
+            </div>
+
+            {/* Offer Title Color */}
+            <div style={getFieldContainerStyle(hasFieldError('offerTitleColor', allErrors))}>
+              <label style={getLabelStyle(hasFieldError('offerTitleColor', allErrors))}>
+                Offer Title Color
+                {hasFieldError('offerTitleColor', allErrors) && <FiAlertTriangle size={14} />}
+              </label>
+              <ColorInput 
+                value={formData.offerTitleColor || ''}
+                onChange={(value) => handleInputChange('offerTitleColor', value)}
+              />
+              {renderFieldErrors('offerTitleColor')}
+            </div>
+          </div>
+        </div>
+
         {/* Thank You Checkbox */}
         <div 
           style={checkboxContainerStyle}
@@ -458,7 +689,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             style={checkboxStyle}
           />
           <label style={checkboxLabelStyle}>
-            Thank You
+          Show a ‘Return Home’ button In ThankYou Page
           </label>
         </div>
 
@@ -508,158 +739,157 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
           )}
 
-        {(formData.images || []).map((image, index) => {
-  const fieldName = `images.${index}`;
-  const fieldHasError =
-    hasFieldError(fieldName, allErrors) ||
-    (index === 0 && hasFieldError("images", allErrors));
+          {(formData.images || []).map((image, index) => {
+            const fieldName = `images.${index}`;
+            const fieldHasError =
+              hasFieldError(fieldName, allErrors) ||
+              (index === 0 && hasFieldError("images", allErrors));
 
-  return (
-    <div
-      key={index}
-      style={{
-        ...getFieldContainerStyle(fieldHasError),
-        padding: "1rem",
-        backgroundColor: theme.colors.surface,
-        borderRadius: "12px",
-        border: `1px solid ${
-          fieldHasError ? theme.colors.error : theme.colors.border
-        }`,
-      }}
-    >
-      <label style={getLabelStyle(fieldHasError)}>
-        Image {index + 1}
-        {index === 0 && (
-          <span style={{ color: theme.colors.error }}>*</span>
-        )}
-        {fieldHasError && <FiAlertTriangle size={14} />}
-      </label>
+            return (
+              <div
+                key={index}
+                style={{
+                  ...getFieldContainerStyle(fieldHasError),
+                  padding: "1rem",
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: "12px",
+                  border: `1px solid ${
+                    fieldHasError ? theme.colors.error : theme.colors.border
+                  }`,
+                }}
+              >
+                <label style={getLabelStyle(fieldHasError)}>
+                  Image {index + 1}
+                  {index === 0 && (
+                    <span style={{ color: theme.colors.error }}>*</span>
+                  )}
+                  {fieldHasError && <FiAlertTriangle size={14} />}
+                </label>
 
-      <div style={imageRowStyle}>
-        {image && (
-          <img
-            src={import.meta.env.VITE_SERVER_URL + image}
-            alt={`Preview ${index + 1}`}
-            style={{
-              width: "80px",
-              height: "80px",
-              objectFit: "cover",
-              borderRadius: "8px",
-              border: `1px solid ${theme.colors.border}`,
-            }}
-          />
-        )}
+                <div style={imageRowStyle}>
+                  {image && (
+                    <img
+                      src={import.meta.env.VITE_SERVER_URL + image}
+                      alt={`Preview ${index + 1}`}
+                      style={{
+                        width: "80px",
+                        height: "80px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        border: `1px solid ${theme.colors.border}`,
+                      }}
+                    />
+                  )}
 
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
-        >
-          <input
-            type="text"
-            value={image}
-            onChange={(e) => handleImageUrlChange(index, e.target.value)}
-            placeholder="Image URL or upload a file"
-            style={getInputStyle(fieldName, fieldHasError)}
-            onFocus={(e) => {
-              if (!fieldHasError) {
-                e.target.style.borderColor = theme.colors.primary;
-                e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
-              }
-            }}
-            onBlur={(e) => {
-              if (!fieldHasError) {
-                e.target.style.borderColor = theme.colors.border;
-                e.target.style.boxShadow = "none";
-              }
-            }}
-          />
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      value={image}
+                      onChange={(e) => handleImageUrlChange(index, e.target.value)}
+                      placeholder="Image URL or upload a file"
+                      style={getInputStyle(fieldName, fieldHasError)}
+                      onFocus={(e) => {
+                        if (!fieldHasError) {
+                          e.target.style.borderColor = theme.colors.primary;
+                          e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (!fieldHasError) {
+                          e.target.style.borderColor = theme.colors.border;
+                          e.target.style.boxShadow = "none";
+                        }
+                      }}
+                    />
 
-          {image && (
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: theme.colors.textSecondary,
-              }}
-            >
-              {image.startsWith("http") ? "URL: " : "Uploaded: "}
-              {image.length > 50
-                ? `${image.substring(0, 50)}...`
-                : image}
-            </div>
-          )}
-        </div>
+                    {image && (
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: theme.colors.textSecondary,
+                        }}
+                      >
+                        {image.startsWith("http") ? "URL: " : "Uploaded: "}
+                        {image.length > 50
+                          ? `${image.substring(0, 50)}...`
+                          : image}
+                      </div>
+                    )}
+                  </div>
 
-        <input
-          type="file"
-          ref={(el) => (fileInputRefs.current[index] = el)}
-          accept="image/*"
-          onChange={(e) => handleFileSelect(index, e)}
-          style={{ display: "none" }}
-        />
+                  <input
+                    type="file"
+                    ref={(el) => (fileInputRefs.current[index] = el)}
+                    accept="image/*"
+                    onChange={(e) => handleFileSelect(index, e)}
+                    style={{ display: "none" }}
+                  />
 
-        <button
-          type="button"
-          onClick={() => triggerFileInput(index)}
-          disabled={isUploading}
-          style={uploadButtonStyle(isUploading)}
-          onMouseEnter={(e) => {
-            if (!isUploading) {
-              e.currentTarget.style.backgroundColor =
-                theme.colors.hover || theme.colors.backgroundSecondary;
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isUploading) {
-              e.currentTarget.style.backgroundColor =
-                theme.colors.backgroundSecondary;
-              e.currentTarget.style.transform = "translateY(0)";
-            }
-          }}
-        >
-          {isUploading ? (
-            <>
-              <FiLoader className="animate-spin" size={14} />
-              Uploading...
-            </>
-          ) : (
-            <>
-              <FiUpload size={14} />
-              Upload
-            </>
-          )}
-        </button>
+                  <button
+                    type="button"
+                    onClick={() => triggerFileInput(index)}
+                    disabled={isUploading}
+                    style={uploadButtonStyle(isUploading)}
+                    onMouseEnter={(e) => {
+                      if (!isUploading) {
+                        e.currentTarget.style.backgroundColor =
+                          theme.colors.hover || theme.colors.backgroundSecondary;
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isUploading) {
+                        e.currentTarget.style.backgroundColor =
+                          theme.colors.backgroundSecondary;
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {isUploading ? (
+                      <>
+                        <FiLoader className="animate-spin" size={14} />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <FiUpload size={14} />
+                        Upload
+                      </>
+                    )}
+                  </button>
 
-          {(formData.images?.length || 0) > 1 && (
-            <button
-              type="button"
-              onClick={() => removeImage(index)}
-              style={removeButtonStyle}
-              title="Remove image"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
-                e.currentTarget.style.transform = "scale(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              <FiTrash2 size={16} />
-            </button>
-          )}
-        </div>
+                  {(formData.images?.length || 0) > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      style={removeButtonStyle}
+                      title="Remove image"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                        e.currentTarget.style.transform = "scale(1.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  )}
+                </div>
 
-        {renderFieldErrors(fieldName)}
-        {index === 0 && renderFieldErrors("images")}
-      </div>
-    );
-  })}
-
+                {renderFieldErrors(fieldName)}
+                {index === 0 && renderFieldErrors("images")}
+              </div>
+            );
+          })}
         </div>
 
         {/* Display consolidated errors for this tab */}

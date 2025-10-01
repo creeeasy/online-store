@@ -11,15 +11,19 @@ export interface IOffer extends Document {
   titleFontFamily?: string;
   titleFontSize?: string;
   titleFontBold?: string;
+  titleColor?: string;
   descriptionFontFamily?: string;
   descriptionFontSize?: string;
   descriptionFontBold?: string;
+  descriptionColor?: string;
   originalPriceFontFamily?: string;
   originalPriceFontSize?: string;
   originalPriceFontBold?: string;
+  originalPriceColor?: string;
   discountedPriceFontFamily?: string;
   discountedPriceFontSize?: string;
   discountedPriceFontBold?: string;
+  discountedPriceColor?: string;
 }
 
 export const OfferSchema = new Schema<IOffer>({
@@ -29,15 +33,19 @@ export const OfferSchema = new Schema<IOffer>({
   titleFontFamily: { type: String, required: false },
   titleFontSize: { type: String, required: false },
   titleFontBold: { type: String, required: false },
+  titleColor: { type: String, required: false },
   descriptionFontFamily: { type: String, required: false },
   descriptionFontSize: { type: String, required: false },
   descriptionFontBold: { type: String, required: false },
+  descriptionColor: { type: String, required: false },
   originalPriceFontFamily: { type: String, required: false },
   originalPriceFontSize: { type: String, required: false },
   originalPriceFontBold: { type: String, required: false },
+  originalPriceColor: { type: String, required: false },
   discountedPriceFontFamily: { type: String, required: false },
   discountedPriceFontSize: { type: String, required: false },
   discountedPriceFontBold: { type: String, required: false },
+  discountedPriceColor: { type: String, required: false },
   originalPrice: { type: Number, min: [0, 'Original price cannot be negative'] },
   discountedPrice: { 
     type: Number, 

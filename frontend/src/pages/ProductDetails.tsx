@@ -30,6 +30,7 @@ interface ProductColorScheme {
 
 const ProductDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  console.log(id)
   const navigate = useNavigate();
   const { theme } = useTheme();
 
@@ -422,47 +423,47 @@ const ProductDetailsPage: React.FC = () => {
 
           {/* Additional Images Section */}
           <motion.div 
-            className="lg:sticky lg:top-8 mt-8"
-            variants={slideInRightVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: 0.5 }}
-          >
-            <motion.div
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-              variants={staggerChildrenVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <AnimatePresence>
-                {product.images?.map((img: string, index: number) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ 
-                      duration: 0.5, 
-                      delay: index * 0.1,
-                      ease: "easeOut"
-                    }}
-                    whileHover={{ 
-                      scale: 1.05,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="overflow-hidden rounded-lg shadow-lg"
-                  >
-                    <motion.img 
-                      src={img.startsWith('http') ? img : `${import.meta.env.VITE_SERVER_URL}${img}`}
-                      alt={`Product view ${index + 1}`}
-                      className="w-full h-auto object-cover"
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          </motion.div>
+  className="lg:sticky lg:top-8 mt-8"
+  variants={slideInRightVariants}
+  initial="hidden"
+  animate="visible"
+  transition={{ delay: 0.5 }}
+>
+  <motion.div
+    className="flex flex-col gap-4"
+    variants={staggerChildrenVariants}
+    initial="hidden"
+    animate="visible"
+  >
+    <AnimatePresence>
+      {product.images?.map((img: string, index: number) => (
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ 
+            duration: 0.5, 
+            delay: index * 0.1,
+            ease: "easeOut"
+          }}
+          whileHover={{ 
+            scale: 1.05,
+            transition: { duration: 0.2 }
+          }}
+          className="overflow-hidden rounded-lg shadow-lg w-full"
+        >
+          <motion.img 
+            src={img.startsWith('http') ? img : `${import.meta.env.VITE_SERVER_URL}${img}`}
+            alt={`Product view ${index + 1}`}
+            className="w-full h-auto object-cover"
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.3 }}
+          />
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  </motion.div>
+</motion.div>
         </motion.div>
       </div>
 

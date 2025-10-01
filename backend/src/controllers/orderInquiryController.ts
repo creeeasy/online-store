@@ -285,6 +285,196 @@ export class OrderInquiryController {
     }
   });
 
+  static saveInquiryToSheet = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.body;
+    console.log(req.body)
+    // Validate ID
+    if (!id) {
+      return ResponseHandler.error(
+        res,
+        'معرف الاستفسار مطلوب',
+        400,
+        [{
+          field: 'id',
+          message: 'معرف الاستفسار مطلوب',
+          value: id,
+          location: 'body'
+        }],
+        'VALIDATION_ERROR'
+      );
+    }
+
+    // Check if sheet exists and get spreadsheet ID
+    const sheetData = await Sheet.findOne({});
+    let SPREADSHEET_ID: string;
+
+    if (sheetData && sheetData.sheetID) {
+      SPREADSHEET_ID = sheetData.sheetID;
+      console.log('Using spreadsheet ID:', SPREADSHEET_ID);
+    } else {
+      return ResponseHandler.error(
+        res,
+        'لم يتم العثور على إعدادات جداول جوجل',
+        404,
+        [{
+          field: 'sheetID',
+          message: 'لم يتم العثور على إعدادات جداول جوجل',
+          value: '',
+          location: 'system'
+        }],
+        'SHEET_NOT_FOUND'
+      );
+    }
+
+    try {
+      // Try fetching from OrderInquiry
+      let inquiry = await OrderInquiry.findById(id)
+        .populate('product')
+        .populate('offerId');
+    
+      // If not found, try fetching from OrderFake
+      if (!inquiry) {
+        inquiry = await OrderFake.findById(id)
+          .populate('product')
+          .populate('offerId');
+      }
+    
+      // If still not found, return 404
+      if (!inquiry) {
+        return ResponseHandler.notFound(res, 'لم يتم العثور على الاستفسار');
+      }
+  
+
+      // Verify spreadsheet access (optional, like in previous code)
+      try {
+        await sheets.spreadsheets.get({
+          spreadsheetId: SPREADSHEET_ID,
+        });
+      } catch (error) {
+        console.error('Error accessing Google Sheets (continuing anyway):', error);
+        // Don't return error here, just log it like in previous code
+      }
+
+      // Prepare data for Google Sheets - matching the previous code structure
+      const customerData = inquiry.customerData || {};
+      const selectedVariantsValues = Object.values(customerData);
+      
+      // Get product name
+      const productName = (inquiry as any).product?.name || 'N/A';
+      
+      // Get offer details - matching previous code logic
+      let offerTitle = '';
+      let offerReference = '';
+      
+      if (inquiry.typeOfOrder === 'offer' && inquiry.offerId) {
+        if (typeof inquiry.offerId === 'object' && inquiry.offerId !== null) {
+          // If offerId is populated
+          offerTitle = (inquiry.offerId as any).title || '';
+          offerReference = (inquiry.offerId as any).reference || '';
+        }
+        // If offerId is just an ID, we don't fetch it (like in previous code)
+      }
+
+      // Get product reference
+      const productReference = (inquiry as any).product?.reference || '';
+
+      // Prepare row data - matching the exact structure from previous code
+      const rowData = [
+        ...selectedVariantsValues,           // Customer data (name, phone, wilaya, etc.)
+        productName,                        // Product name
+        inquiry.quantity || 1,              // Quantity
+        inquiry.typeOfOrder || 'quantity',  // Order type
+        inquiry.totalPrice || 0,            // Total price
+        offerTitle,                         // Offer title (if any)
+        offerReference,                     // Offer reference (if any)
+        productReference                    // Product reference
+      ];
+
+      // Append to Google Sheets - using same range and approach as previous code
+      try {
+        const appendResponse = await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "store!A:F", // Using same range as previous code
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [rowData],
+          },
+        });
+
+        console.log('Successfully appended inquiry to Google Sheets:', {
+          inquiryId: inquiry._id,
+          updatedCells: appendResponse.data.updates?.updatedCells,
+          updatedRange: appendResponse.data.updates?.updatedRange
+        });
+
+        // Return success response
+        ResponseHandler.success(
+          res,
+          {
+            inquiryId: inquiry._id,
+            sheetUpdate: {
+              updatedCells: appendResponse.data.updates?.updatedCells,
+              updatedRange: appendResponse.data.updates?.updatedRange,
+              success: true
+            },
+            data: {
+              customerName: customerData.name || customerData.fullName || 'N/A',
+              product: productName,
+              totalPrice: inquiry.totalPrice,
+              typeOfOrder: inquiry.typeOfOrder
+            }
+          },
+          'تم حفظ الاستفسار في جداول جوجل بنجاح',
+          200
+        );
+
+      } catch (sheetError: any) {
+        // Log the error but don't fail the request, similar to previous code
+        console.error('Failed to append to Google Sheets:', {
+          error: sheetError.message,
+          code: sheetError.code,
+          details: sheetError.errors?.[0]?.message || 'No additional details'
+        });
+
+        // Still return success since the main operation (finding inquiry) worked
+        ResponseHandler.success(
+          res,
+          {
+            inquiryId: inquiry._id,
+            sheetUpdate: {
+              success: false,
+              error: 'فشل في الحفظ في جداول جوجل ولكن الاستفسار موجود في النظام'
+            },
+            data: {
+              customerName: customerData.name || customerData.fullName || 'N/A',
+              product: productName,
+              totalPrice: inquiry.totalPrice,
+              typeOfOrder: inquiry.typeOfOrder
+            }
+          },
+          'تم العثور على الاستفسار ولكن فشل الحفظ في جداول جوجل',
+          200
+        );
+      }
+
+    } catch (error: any) {
+      console.error('Error processing inquiry:', error);
+      
+      return ResponseHandler.error(
+        res,
+        'فشل في معالجة الاستفسار',
+        500,
+        [{
+          field: 'system',
+          message: error.message,
+          value: '',
+          location: 'system'
+        }],
+        'PROCESSING_ERROR'
+      );
+    }
+  });
+
 
 
 

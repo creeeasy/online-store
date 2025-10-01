@@ -116,7 +116,12 @@ const products = await Product.find(filter)
 // @route   GET /api/products/:id
 // @access  Public
 export const getProduct = asyncHandler(async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id)
+  const fetchIdProduct = await Product.findOne({ reference: req.params.id });
+  if (!fetchIdProduct) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+  
+  const product = await Product.findById(fetchIdProduct._id)  
     .populate('createdBy', 'username email')
     .populate({
       path: 'offers',
@@ -371,20 +376,23 @@ export const updateProduct = [
                 description: offer.description,
                 originalPrice: offer.originalPrice,
                 discountedPrice: offer.discountedPrice,
-                validUntil: offer.validUntil,
                 reference: offer.reference,
                 titleFontFamily: offer.titleFontFamily,
                 titleFontSize: offer.titleFontSize,
                 titleFontBold: offer.titleFontBold,
+                titleColor: offer.titleColor,
                 descriptionFontFamily: offer.descriptionFontFamily,
                 descriptionFontSize: offer.descriptionFontSize,
                 descriptionFontBold: offer.descriptionFontBold,
+                descriptionColor: offer.descriptionColor,
                 originalPriceFontFamily: offer.originalPriceFontFamily,
                 originalPriceFontSize: offer.originalPriceFontSize,
                 originalPriceFontBold: offer.originalPriceFontBold,
+                originalPriceColor: offer.originalPriceColor,
                 discountedPriceFontFamily: offer.discountedPriceFontFamily,
                 discountedPriceFontSize: offer.discountedPriceFontSize,
                 discountedPriceFontBold: offer.discountedPriceFontBold,
+                discountedPriceColor: offer.discountedPriceColor,
                 isActive: offer.isActive !== false // Default to true if not specified
               },
               { new: true, runValidators: true }

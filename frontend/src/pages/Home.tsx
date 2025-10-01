@@ -336,7 +336,7 @@ const Home: React.FC = () => {
                 >
                   <ClientProductCard
                     product={product}
-                    onViewDetails={() => navigate(`/products/${product._id}`)}
+                    onViewDetails={() => navigate(`/products/${product.reference}`)}
                   />
                 </div>
               ))}
