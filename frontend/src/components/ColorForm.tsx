@@ -1,4 +1,4 @@
-import React, {  useRef } from 'react';
+import React, { useRef } from 'react';
 import { FiPlus, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProductColor, ColorFormProps } from '../types/product';
@@ -47,6 +47,21 @@ const ColorForm: React.FC<ColorFormProps> = ({
   const isValidHex = (hex: string): boolean =>
     /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
 
+  const isValidGradient = (value: string): boolean => {
+    const trimmed = value.trim().toLowerCase();
+    return (
+      trimmed.startsWith('linear-gradient(') ||
+      trimmed.startsWith('radial-gradient(') ||
+      trimmed.startsWith('conic-gradient(') ||
+      trimmed.startsWith('repeating-linear-gradient(') ||
+      trimmed.startsWith('repeating-radial-gradient(')
+    );
+  };
+
+  const isValidColorValue = (value: string): boolean => {
+    return isValidHex(value) || isValidGradient(value);
+  };
+
   const getColorNameError = (name: string, index: number): string => {
     if (!name.trim()) return 'Color name is required';
     if (name.length > 30) return 'Max 30 characters allowed';
@@ -58,11 +73,14 @@ const ColorForm: React.FC<ColorFormProps> = ({
   };
 
   const getHexCodeError = (hexCode: string, index: number): string => {
-    if (!isValidHex(hexCode)) return 'Invalid hex color code';
+    if (!hexCode.trim()) return 'Color value is required';
+    if (!isValidColorValue(hexCode)) {
+      return 'Invalid color (use hex like #FF0000 or gradient like linear-gradient(...))';
+    }
     const duplicate = colors.find(
       (color, i) => i !== index && color.hexCode.toLowerCase() === hexCode.toLowerCase()
     );
-    if (duplicate) return 'Hex code must be unique';
+    if (duplicate) return 'Color value must be unique';
     return '';
   };
 
@@ -70,6 +88,11 @@ const ColorForm: React.FC<ColorFormProps> = ({
     if (colors.length >= maxColors) return;
     const newColor: IProductColor = { ...color };
     onChange([...colors, newColor]);
+  };
+
+  const extractFirstColorFromGradient = (gradientStr: string): string => {
+    const hexMatch = gradientStr.match(/#[A-Fa-f0-9]{6}|#[A-Fa-f0-9]{3}/);
+    return hexMatch ? hexMatch[0] : '#000000';
   };
 
   const containerStyle: React.CSSProperties = {
@@ -81,7 +104,7 @@ const ColorForm: React.FC<ColorFormProps> = ({
 
   const colorItemStyle: React.CSSProperties = {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: '1rem',
     padding: '1rem',
     backgroundColor: theme.colors.background,
@@ -92,7 +115,7 @@ const ColorForm: React.FC<ColorFormProps> = ({
   };
 
   const inputStyle: React.CSSProperties = {
-    flex: 1,
+    width: '100%',
     padding: '0.75rem 1rem',
     border: `1px solid ${theme.colors.border}`,
     borderRadius: '8px',
@@ -101,15 +124,20 @@ const ColorForm: React.FC<ColorFormProps> = ({
     fontSize: '0.9rem',
   };
 
-  const colorPreviewStyle = (hexCode: string): React.CSSProperties => ({
-    width: '40px',
-    height: '40px',
-    borderRadius: '8px',
-    border: `2px solid ${theme.colors.border}`,
-    backgroundColor: hexCode,
-    cursor: 'pointer',
-    transition: 'transform 0.2s ease',
-  });
+  const colorPreviewStyle = (colorValue: string): React.CSSProperties => {
+    const isGradient = isValidGradient(colorValue);
+    return {
+      width: '50px',
+      height: '50px',
+      minWidth: '50px',
+      borderRadius: '8px',
+      border: `2px solid ${theme.colors.border}`,
+      background: colorValue,
+      cursor: isGradient ? 'default' : 'pointer',
+      transition: 'transform 0.2s ease',
+      marginTop: '4px',
+    };
+  };
 
   const addButtonStyle: React.CSSProperties = {
     display: 'flex',
@@ -138,12 +166,20 @@ const ColorForm: React.FC<ColorFormProps> = ({
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'color 0.2s ease',
+    marginTop: '4px',
   };
 
   const errorTextStyle: React.CSSProperties = {
     color: theme.colors.error,
     fontSize: '0.8rem',
-    marginTop: '2px',
+    marginTop: '4px',
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    ...inputStyle,
+    minHeight: '60px',
+    resize: 'vertical',
+    fontFamily: 'monospace',
   };
 
   return (
@@ -152,27 +188,32 @@ const ColorForm: React.FC<ColorFormProps> = ({
         <h3 style={{ margin: 0, color: theme.colors.text, fontSize: '1.1rem' }}>
           Product Colors
         </h3>
-        <p style={{ margin: 0, color: theme.colors.textMuted, fontSize: '0.9rem' }}>
-          Add up to {maxColors} colors. Each color must have a unique name and hex code.
+        <p style={{ margin: '0.5rem 0 0 0', color: theme.colors.textMuted, fontSize: '0.9rem' }}>
+          Add up to {maxColors} colors. Use hex codes (#FF0000) or CSS gradients.
         </p>
       </div>
 
       {colors.map((color, index) => {
         const nameError = getColorNameError(color.name, index);
         const hexError = getHexCodeError(color.hexCode, index);
+        const isGradient = isValidGradient(color.hexCode);
 
         return (
           <div key={index} style={colorItemStyle}>
             {/* Color preview + picker */}
             <div
               style={colorPreviewStyle(color.hexCode)}
-              onClick={() => hiddenColorInputs.current[index]?.click()}
-              title={`Pick a color (${color.hexCode})`}
+              onClick={() => {
+                if (!isGradient) {
+                  hiddenColorInputs.current[index]?.click();
+                }
+              }}
+              title={isGradient ? 'Gradient preview' : `Pick a color (${color.hexCode})`}
             />
             <input
               type="color"
               ref={(el) => (hiddenColorInputs.current[index] = el)}
-              value={color.hexCode}
+              value={isGradient ? extractFirstColorFromGradient(color.hexCode) : color.hexCode}
               onChange={(e) => updateColor(index, { hexCode: e.target.value.toUpperCase() })}
               style={{ display: 'none' }}
             />
@@ -180,67 +221,69 @@ const ColorForm: React.FC<ColorFormProps> = ({
             <div style={{ flex: 1, minWidth: 0 }}>
               <input
                 type="text"
-                placeholder="Color name (e.g., Red, Navy Blue)"
+                placeholder="Color name (e.g., Sunset Gradient, Red)"
                 value={color.name}
                 onChange={(e) => updateColor(index, { name: e.target.value })}
                 style={{
                   ...inputStyle,
                   borderColor: nameError ? theme.colors.error : theme.colors.border,
-                  marginBottom: '0.5rem',
+                  marginBottom: nameError ? '4px' : '0.75rem',
                 }}
                 maxLength={30}
               />
               {nameError && <div style={errorTextStyle}>{nameError}</div>}
 
-              <input
-                type="text"
-                placeholder="#FF0000"
+              <textarea
+                placeholder="Hex (#FF0000) or Gradient (linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%))"
                 value={color.hexCode}
-                onChange={(e) => updateColor(index, { hexCode: e.target.value.toUpperCase() })}
+                onChange={(e) => updateColor(index, { hexCode: e.target.value })}
                 style={{
-                  ...inputStyle,
+                  ...textareaStyle,
                   borderColor: hexError ? theme.colors.error : theme.colors.border,
-                  fontFamily: 'monospace',
+                  marginTop: nameError ? '0.75rem' : 0,
                 }}
+                rows={2}
               />
               {hexError && <div style={errorTextStyle}>{hexError}</div>}
             </div>
 
-            {showAvailability && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {showAvailability && (
+                <button
+                  type="button"
+                  onClick={() => toggleAvailability(index)}
+                  style={actionButtonStyle}
+                  title={color.isAvailable ? 'Mark as unavailable' : 'Mark as available'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                    e.currentTarget.style.color = color.isAvailable ? theme.colors.warning : theme.colors.success;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = theme.colors.textSecondary;
+                  }}
+                >
+                  {color.isAvailable ? <FiEye size={16} /> : <FiEyeOff size={16} />}
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={() => toggleAvailability(index)}
+                onClick={() => removeColor(index)}
                 style={actionButtonStyle}
-                title={color.isAvailable ? 'Mark as unavailable' : 'Mark as available'}
+                title="Remove color"
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
-                  e.currentTarget.style.color = color.isAvailable ? theme.colors.warning : theme.colors.success;
+                  e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                  e.currentTarget.style.color = theme.colors.error;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
                   e.currentTarget.style.color = theme.colors.textSecondary;
                 }}
               >
-                {color.isAvailable ? <FiEye size={16} /> : <FiEyeOff size={16} />}
+                <FiTrash2 size={16} />
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => removeColor(index)}
-              style={actionButtonStyle}
-              title="Remove color"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
-                e.currentTarget.style.color = theme.colors.error;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = theme.colors.textSecondary;
-              }}
-            >
-              <FiTrash2 size={16} />
-            </button>
+            </div>
           </div>
         );
       })}
@@ -268,12 +311,12 @@ const ColorForm: React.FC<ColorFormProps> = ({
         </button>
       )}
 
-      {colors.length > 0 && (
+      {colors.length < maxColors && (
         <div style={{ marginTop: '1.5rem' }}>
-          <h4 style={{ margin: 0, color: theme.colors.text, fontSize: '1rem' }}>
+          <h4 style={{ margin: '0 0 0.75rem 0', color: theme.colors.text, fontSize: '1rem' }}>
             Quick Color Palettes
           </h4>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             {DEFAULT_COLOR_PALETTES.map((palette) => (
               <div key={palette.name} style={{ display: 'flex', gap: '2px' }}>
                 {palette.colors.map((defaultColor) => (
@@ -297,6 +340,9 @@ const ColorForm: React.FC<ColorFormProps> = ({
               </div>
             ))}
           </div>
+          <p style={{ margin: '0.75rem 0 0 0', color: theme.colors.textMuted, fontSize: '0.85rem' }}>
+            💡 Tip: Try gradients like <code style={{ backgroundColor: theme.colors.backgroundSecondary, padding: '2px 6px', borderRadius: '4px' }}>linear-gradient(135deg, #667eea 0%, #764ba2 100%)</code>
+          </p>
         </div>
       )}
     </div>

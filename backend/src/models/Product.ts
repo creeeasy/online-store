@@ -62,6 +62,7 @@ export interface IProduct extends Document {
   discountPrice?: number;
   description?: string;
   offersTitle?: string;
+  backgroundFormColor?: string;
   
   // ✅ New offer title styling fields
   offerTitleFontFamily?: string;
@@ -104,7 +105,6 @@ const ProductColorSchema = new Schema({
     type: String, 
     required: true, 
     trim: true,
-    match: [/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Please provide a valid hex color code']
   },
   isAvailable: { 
     type: Boolean, 
@@ -143,6 +143,10 @@ const ProductSchema = new Schema({
     required: false,
   },
   offersTitle: { 
+    type: String, 
+    required: false,
+  },
+  backgroundFormColor: { 
     type: String, 
     required: false,
   },

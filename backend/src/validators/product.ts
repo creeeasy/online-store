@@ -44,7 +44,7 @@ body('maxQuantityPerInquiry')
     // Colors
     body('colors').optional().isArray({ max: 3 }).withMessage('Max 3 colors allowed'),
     body('colors.*.name').if(body('colors').exists()).trim().notEmpty().withMessage('Color name is required').isLength({ min: 1, max: 30 }),
-    body('colors.*.hexCode').if(body('colors').exists()).trim().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Hex code must be valid'),
+    body('colors.*.hexCode').if(body('colors').exists()).trim(),
     body('colors.*.isAvailable').if(body('colors').exists()).optional().isBoolean().withMessage('isAvailable must be boolean'),
 
     // Dynamic fields
@@ -120,7 +120,7 @@ body('maxQuantityPerInquiry')
   .toInt(),    // Colors validation for updates
     body('colors').optional().isArray({ max: 3 }).withMessage('Max 3 colors allowed'),
     body('colors.*.name').if(body('colors').exists()).trim().notEmpty().withMessage('Color name is required').isLength({ min: 1, max: 30 }),
-    body('colors.*.hexCode').if(body('colors').exists()).trim().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Hex code must be valid'),
+    body('colors.*.hexCode').if(body('colors').exists()).trim(),
     body('colors.*.isAvailable').if(body('colors').exists()).optional().isBoolean().withMessage('isAvailable must be boolean'),
     
     body('dynamicFields').optional().isArray().withMessage('Dynamic fields must be array'),

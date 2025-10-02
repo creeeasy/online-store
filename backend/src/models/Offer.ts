@@ -23,7 +23,10 @@ export interface IOffer extends Document {
   discountedPriceFontSize?: string;
   discountedPriceFontBold?: string;
   discountedPriceColor?: string;
+  discountedPriceBackgroundColor?: string;
   image?: string;
+  widthImage?:string,
+    heightImage?: string,
 }
 
 export const OfferSchema = new Schema<IOffer>({
@@ -46,6 +49,9 @@ export const OfferSchema = new Schema<IOffer>({
   discountedPriceFontSize: { type: String, required: false },
   discountedPriceFontBold: { type: String, required: false },
   discountedPriceColor: { type: String, required: false },
+  discountedPriceBackgroundColor: { type: String, required: false },
+  widthImage: { type: String, required: false },
+  heightImage: { type: String, required: false },
   image: { type: String, required: false },
   originalPrice: { type: Number, min: [0, 'Original price cannot be negative'] },
   discountedPrice: { 

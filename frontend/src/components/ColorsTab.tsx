@@ -70,7 +70,7 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
     width: '40px',
     height: '40px',
     borderRadius: '8px',
-    backgroundColor: color,
+    background: color,
     border: `2px solid ${theme.colors.border}`,
     boxShadow: `0 2px 4px ${theme.colors.shadow}`,
   });
@@ -88,11 +88,15 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
     margin: 0,
   };
 
-  const colorHexStyle: React.CSSProperties = {
+  const colorValueStyle: React.CSSProperties = {
     color: theme.colors.textMuted,
     fontSize: '0.85rem',
     fontFamily: 'monospace',
     margin: 0,
+    maxWidth: '300px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   };
 
   const usageTagStyle = (bgColor: string, textColor: string = '#ffffff'): React.CSSProperties => ({
@@ -159,7 +163,7 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
         <h2 style={headerStyle}>Product Colors</h2>
         <p style={descriptionStyle}>
           Add and manage color variations for your product. You can specify up to 3 colors, 
-          each with a unique name and hex code. Mark colors as available or unavailable based on stock.
+          each with a unique name and hex code or CSS gradient. Mark colors as available or unavailable based on stock.
         </p>
       </div>
 
@@ -174,7 +178,7 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
                     <div style={colorSwatchStyle(color.hex)}></div>
                     <div style={colorDetailsStyle}>
                       <div style={colorNameStyle}>{color.name}</div>
-                      <div style={colorHexStyle}>{color.hex}</div>
+                      <div style={colorValueStyle} title={color.hex}>{color.hex}</div>
                     </div>
                   </div>
                   <div style={usageTagStyle(usage.color)}>

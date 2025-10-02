@@ -661,17 +661,15 @@ useEffect(() => {
   // Enhanced container styles
   const containerStyle: React.CSSProperties = {
     backgroundColor: theme.colors.surface,
+    background:product.backgroundFormColor?product.backgroundFormColor:"linear-gradient(135deg, ${theme.colors.surface} 0%, ${colors.primaryAlpha(0.02)} 100%)",
     border: hasCustomColors 
       ? `2px solid ${colors.primaryAlpha(0.2)}`
       : `1px solid ${theme.colors.border}`,
     borderRadius: theme.borderRadius.lg,
-    padding:"14px",
+    padding:"20px",
     direction: 'rtl',
     textAlign: 'right',
     position: 'relative',
-    background: hasCustomColors 
-      ? `linear-gradient(135deg, ${theme.colors.surface} 0%, ${colors.primaryAlpha(0.02)} 100%)`
-      : theme.colors.surface,
     boxShadow: hasCustomColors 
       ? `0 8px 32px ${colors.primaryAlpha(0.1)}`
       : theme.shadows.md
@@ -701,13 +699,14 @@ useEffect(() => {
   const getOfferCardStyle = (isSelected: boolean): React.CSSProperties => ({
     display: 'flex',
     flexDirection: "row",
+    marginTop:"14px",
     alignItems: 'flex-start',
     gap: theme.spacing.md,
     padding: "20px 8px",
     border: `2px solid ${isSelected ? colors.primaryLight : 'transparent'}`,
     borderRadius: '16px',
     backgroundColor: isSelected 
-      ? `${colors.primaryLight}08`
+      ? `${colors.primaryLight}`
       : theme.colors.backgroundSecondary,
     cursor: 'pointer',
     transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -718,11 +717,14 @@ useEffect(() => {
       : '0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04)',
     transform: isSelected ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
     position: 'relative',
-    overflow: 'hidden',
     backdropFilter: isSelected ? 'blur(8px)' : 'none',
     background: isSelected
-      ? `linear-gradient(135deg, ${colors.primaryLight}12 0%, ${colors.primaryLight}05 100%)`
-      : theme.colors.backgroundSecondary,
+  ? `${colors.primaryLight}`
+  : theme.colors.backgroundSecondary,
+
+
+  
+
   });
  console.log(product)
   return (
@@ -974,7 +976,7 @@ useEffect(() => {
                 style={{
                   display: 'flex',
                   flexDirection: 'row', // default
-                  gap: theme.spacing.md,
+                  gap: "25px",
                   flexWrap: 'wrap',
                   justifyContent:product.dynamicFields[0].languageField==="fr"?"left":"right",
                 }}
@@ -1007,7 +1009,7 @@ useEffect(() => {
         }}
       />
 
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1,height:"100%",display:"flex",justifyContent:"center",gap:"10px",flexDirection:"column" }}>
         <div
           style={{
             display: 'flex',
@@ -1045,49 +1047,70 @@ useEffect(() => {
           </div>
         )}
 
-        <div
-          style={{
-            display: 'flex',
-            marginBottom: theme.spacing.xs,
-            justifyContent: product.dynamicFields[0].languageField === "fr" ? "left" : "right",
-            alignItems:"center"
-          }}
-        >
-          {offer.originalPrice && (
-            <span
-              style={{
-                fontSize: offer.originalPriceFontSize ? offer.originalPriceFontSize + "px" : "15px",
-                fontFamily: offer.originalPriceFontFamily ? offer.originalPriceFontFamily : "font-poppins",
-                fontWeight: offer.originalPriceFontBold ? offer.originalPriceFontBold : "bold",
-                color: offer.originalPriceColor,
-                textDecoration: 'line-through',
-                display: "flex",
-                alignItems: "center"
-              }}
-            >
-              {formatPrice(offer.originalPrice)}
-            </span>
-          )}
-          {offer.discountedPrice && (
-            <span
-              style={{
-                color: offer.discountedPriceColor,
-                fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "15px",
-                fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
-                fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "bold",
-              }}
-            >
-              {formatPrice(offer.discountedPrice)}
-            </span>
-          )}
-        </div>
+<div
+  style={{
+    display: 'flex',
+    gap: '12px',
+    marginBottom: theme.spacing.xs,
+    justifyContent: product.dynamicFields[0].languageField === "fr" ? "left" : "right",
+    alignItems: "center"
+  }}
+>
+  {offer.originalPrice && (
+    <span
+      style={{
+        fontSize: offer.originalPriceFontSize ? offer.originalPriceFontSize + "px" : "15px",
+        fontFamily: offer.originalPriceFontFamily ? offer.originalPriceFontFamily : "font-poppins",
+        fontWeight: offer.originalPriceFontBold ? offer.originalPriceFontBold : "500",
+        color: offer.originalPriceColor || '#999',
+        textDecoration: 'line-through',
+        display: "flex",
+        alignItems: "center"
+      }}
+    >
+      {formatPrice(offer.originalPrice)}
+    </span>
+  )}
+  {offer.discountedPrice && (
+    <span
+      style={{
+        backgroundColor: offer.discountedPriceBackgroundColor?offer.discountedPriceBackgroundColor:'#FF5722',
+        color: offer.discountedPriceColor?offer.discountedPriceColor:'#FFFFFF',
+        fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "18px",
+        fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
+        fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "700",
+        padding: '6px 16px',
+        borderRadius: '20px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        boxShadow: '0 4px 12px rgba(255, 87, 34, 0.3)',
+        position:"absolute",
+        top:"-14%"
+      }}
+    >
+      {formatPrice(offer.discountedPrice)}
+    </span>
+  )}
+</div>
       </div>
-      {offer.image &&  <div style={{display:"flex",height:"100%",alignItems:"center"}}>
-        <img 
-            src={offer.image} 
-            alt="Offer preview"
-            style={{maxWidth:"50px",maxHeight:"100px"}}
-          /></div>}
+      {offer.image && (
+  <div style={{ display: "flex", height: "100%", alignItems: "center" }}>
+    <img
+      src={offer.image}
+      alt="Offer preview"
+      style={{
+        width: offer.widthImage && offer.widthImage.trim() !== "" 
+          ? `${offer.widthImage}px` 
+          : "100px",
+        height: offer.heightImage && offer.heightImage.trim() !== "" 
+          ? `${offer.heightImage}px` 
+          : "100px",
+        objectFit: "cover", // Add this to maintain aspect ratio
+        borderRadius: "8px" // Optional: adds rounded corners
+      }}
+    />
+  </div>
+)}
     </motion.label>
   ))}
               </motion.div>

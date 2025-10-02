@@ -84,7 +84,10 @@ const OffersTab: React.FC<OffersTabProps> = ({
     discountedPriceFontSize: '',
     discountedPriceFontBold: '',
     discountedPriceColor: '',
-    image: null
+    discountedPriceBackgroundColor: '',
+    image: null,
+    widthImage: '',
+    heightImage: ''
   });
 
   // Fixed: Properly handle both array and object validation error structures
@@ -226,7 +229,10 @@ const OffersTab: React.FC<OffersTabProps> = ({
         discountedPriceFontSize: newOffer.discountedPriceFontSize || '',
         discountedPriceFontBold: newOffer.discountedPriceFontBold || '',
         discountedPriceColor: newOffer.discountedPriceColor || '',
-        image: newOffer.image || null
+        discountedPriceBackgroundColor: newOffer.discountedPriceBackgroundColor || '',
+        image: newOffer.image || null,
+        widthImage: newOffer.widthImage || '',
+        heightImage: newOffer.heightImage || ''
       } as IOffer]
     }));
     
@@ -254,7 +260,10 @@ const OffersTab: React.FC<OffersTabProps> = ({
       discountedPriceFontSize: '',
       discountedPriceFontBold: '',
       discountedPriceColor: '',
-      image: null
+      discountedPriceBackgroundColor: '',
+      image: null,
+      widthImage: '',
+      heightImage: ''
     });
   };
 
@@ -404,8 +413,6 @@ const OffersTab: React.FC<OffersTabProps> = ({
   };
 
   const imagePreviewStyle: React.CSSProperties = {
-    maxWidth: '200px',
-    maxHeight: '150px',
     borderRadius: '6px',
     objectFit: 'cover'
   };
@@ -471,11 +478,19 @@ const OffersTab: React.FC<OffersTabProps> = ({
   const ImageUpload = ({ 
     image, 
     onImageChange, 
-    onImageRemove 
+    onImageRemove,
+    widthImage,
+    heightImage,
+    onWidthImageChange,
+    onHeightImageChange
   }: { 
     image: string | null; 
     onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void; 
-    onImageRemove: () => void; 
+    onImageRemove: () => void;
+    widthImage: string;
+    heightImage: string;
+    onWidthImageChange: (value: string) => void;
+    onHeightImageChange: (value: string) => void;
   }) => (
     <div>
       <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
@@ -487,7 +502,11 @@ const OffersTab: React.FC<OffersTabProps> = ({
           <img 
             src={image} 
             alt="Offer preview" 
-            style={imagePreviewStyle}
+            style={{
+              ...imagePreviewStyle,
+              width: widthImage ? `${widthImage}px` : '200px',
+              height: heightImage ? `${heightImage}px` : '150px'
+            }}
           />
           <button 
             type="button"
@@ -517,6 +536,37 @@ const OffersTab: React.FC<OffersTabProps> = ({
           </div>
         </label>
       )}
+      
+      {/* Width and Height Inputs */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            WidthImage (px)
+          </label>
+          <input
+            type="number"
+            value={widthImage || ''}
+            onChange={(e) => onWidthImageChange(e.target.value)}
+            placeholder="e.g., 100"
+            min="1"
+            style={inputStyle}
+          />
+        </div>
+        
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            HeightImage (px)
+          </label>
+          <input
+            type="number"
+            value={heightImage || ''}
+            onChange={(e) => onHeightImageChange(e.target.value)}
+            placeholder="e.g., 150"
+            min="1"
+            style={inputStyle}
+          />
+        </div>
+      </div>
     </div>
   );
 
@@ -560,6 +610,10 @@ const OffersTab: React.FC<OffersTabProps> = ({
                   image={offer.image || null}
                   onImageChange={(e) => handleExistingOfferImageUpload(index, e)}
                   onImageRemove={() => removeExistingOfferImage(index)}
+                  widthImage={offer.widthImage || ''}
+                  heightImage={offer.heightImage || ''}
+                  onWidthImageChange={(value) => updateOffer(index, 'widthImage', value)}
+                  onHeightImageChange={(value) => updateOffer(index, 'heightImage', value)}
                 />
               </div>
 
@@ -824,6 +878,17 @@ const OffersTab: React.FC<OffersTabProps> = ({
                 </div>
               </div>
 
+              {/* Discounted Price Background Color */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Discounted Price Background Color
+                </label>
+                <ColorInput 
+                  value={offer.discountedPriceBackgroundColor || ''} 
+                  onChange={(value) => updateOffer(index, 'discountedPriceBackgroundColor', value)} 
+                />
+              </div>
+
               {/* Price Display */}
               {(offer.originalPrice || offer.discountedPrice || formData.price) && (
                 <div style={{ 
@@ -975,6 +1040,10 @@ const OffersTab: React.FC<OffersTabProps> = ({
             image={newOffer.image || null}
             onImageChange={handleNewOfferImageUpload}
             onImageRemove={removeNewOfferImage}
+            widthImage={newOffer.widthImage || ''}
+            heightImage={newOffer.heightImage || ''}
+            onWidthImageChange={(value) => setNewOffer({ ...newOffer, widthImage: value })}
+            onHeightImageChange={(value) => setNewOffer({ ...newOffer, heightImage: value })}
           />
         </div>
 
@@ -1232,6 +1301,17 @@ const OffersTab: React.FC<OffersTabProps> = ({
               onChange={(value) => setNewOffer({ ...newOffer, discountedPriceColor: value })} 
             />
           </div>
+        </div>
+
+        {/* Discounted Price Background Color for New Offer */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            Discounted Price Background Color
+          </label>
+          <ColorInput 
+            value={newOffer.discountedPriceBackgroundColor || ''} 
+            onChange={(value) => setNewOffer({ ...newOffer, discountedPriceBackgroundColor: value })} 
+          />
         </div>
 
         <div style={{ marginBottom: '1rem' }}>

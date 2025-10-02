@@ -667,7 +667,86 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
           </div>
         </div>
-
+        <div style={{ 
+  padding: '1.5rem', 
+  backgroundColor: theme.colors.backgroundSecondary, 
+  borderRadius: '12px',
+  border: `1px solid ${theme.colors.border}` 
+}}>
+  <h3 style={{ 
+    margin: '0 0 0.5rem 0', 
+    fontSize: '1rem', 
+    fontWeight: '600',
+    color: theme.colors.text 
+  }}>
+    Background of Form
+  </h3>
+  <p style={{ 
+    margin: '0 0 1rem 0', 
+    fontSize: '0.85rem',
+    color: theme.colors.textMuted,
+    lineHeight: 1.5
+  }}>
+    Enter CSS background value (e.g., solid color, gradient, or any valid CSS background property)
+  </p>
+  
+  <label style={{
+    display: 'block',
+    color: theme.colors.text,
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    marginBottom: '0.5rem',
+  }}>
+    Background CSS Code
+  </label>
+  <textarea
+    style={{
+      width: '100%',
+      minHeight: '100px',
+      padding: '0.75rem',
+      fontSize: '0.9rem',
+      fontFamily: 'monospace',
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      border: `1px solid ${theme.colors.border}`,
+      borderRadius: '8px',
+      resize: 'vertical',
+      outline: 'none',
+      boxSizing: 'border-box',
+    }}
+    value={formData.backgroundFormColor || ''}
+    onChange={(e) => handleInputChange('backgroundFormColor', e.target.value)}
+    placeholder="Example: linear-gradient(rgba(0, 0, 255, 0.5), rgba(255, 255, 0, 0.5))"
+    onFocus={(e) => {
+      e.target.style.borderColor = theme.colors.primary;
+      e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}15`;
+    }}
+    onBlur={(e) => {
+      e.target.style.borderColor = theme.colors.border;
+      e.target.style.boxShadow = 'none';
+    }}
+  />
+  
+  <div style={{
+    marginTop: '1rem',
+    padding: '1rem',
+    borderRadius: '8px',
+    border: `2px solid ${theme.colors.border}`,
+    minHeight: '80px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: formData.backgroundFormColor || theme.colors.background,
+  }}>
+    <span style={{
+      color: theme.colors.text,
+      fontSize: '0.9rem',
+      fontWeight: '500',
+    }}>
+      Background Preview
+    </span>
+  </div>
+</div>
         {/* Thank You Checkbox */}
         <div 
           style={checkboxContainerStyle}

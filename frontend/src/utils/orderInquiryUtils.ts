@@ -178,10 +178,7 @@ export const ProductValidation = {
         errors.push(`Color ${index + 1} name cannot exceed 30 characters`);
       }
       
-      const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-      if (!hexPattern.test(color.hexCode)) {
-        errors.push(`Color ${index + 1} has invalid hex code format`);
-      }
+      
     });
     
     return {

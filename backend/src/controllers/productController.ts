@@ -367,7 +367,6 @@ export const updateProduct = [
         // Process offers when array is not empty
         const offerIds: mongoose.Types.ObjectId[] = [];
         const existingOfferIds = new Set();
-
         // Process each offer in the request
         for (const offer of req.body.offers) {
           if (offer._id) {
@@ -400,7 +399,10 @@ export const updateProduct = [
                 discountedPriceFontSize: offer.discountedPriceFontSize,
                 discountedPriceFontBold: offer.discountedPriceFontBold,
                 discountedPriceColor: offer.discountedPriceColor,
+                discountedPriceBackgroundColor: offer.discountedPriceBackgroundColor,
                 image: offer.image,
+                heightImage:offer.heightImage,
+                widthImage:offer.widthImage,
                 isActive: offer.isActive !== false // Default to true if not specified
               },
               { new: true, runValidators: true }

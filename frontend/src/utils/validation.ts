@@ -374,28 +374,7 @@ const validateSingleColor = (
       message: `Color ${index + 1}: Hex code is required`,
       tab: 'colors'
     });
-  } else {
-    const hexPattern = /^#[0-9A-Fa-f]{6}$/;
-    if (!hexPattern.test(color.hexCode.trim())) {
-      errors.push({
-        field: `${fieldPrefix}.hexCode`,
-        message: `Color ${index + 1}: Invalid hex code format (use #RRGGBB)`,
-        tab: 'colors'
-      });
-    } else {
-      // Check for duplicate hex codes
-      const normalizedHex = color.hexCode.trim().toUpperCase();
-      if (hexCodes.has(normalizedHex)) {
-        errors.push({
-          field: `${fieldPrefix}.hexCode`,
-          message: `Color ${index + 1}: Duplicate hex code "${color.hexCode}"`,
-          tab: 'colors'
-        });
-      } else {
-        hexCodes.add(normalizedHex);
-      }
-    }
-  }
+  } 
 };
 
 const validatePredefinedFields = (formData: Partial<IProduct>, errors: ValidationError[]): void => {
