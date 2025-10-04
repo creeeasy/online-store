@@ -1009,7 +1009,7 @@ useEffect(() => {
         }}
       />
 
-      <div style={{ flex: 1,height:"100%",display:"flex",justifyContent:"center",gap:"10px",flexDirection:"column" }}>
+      <div style={{ flex: 1,height:"100%",paddingTop:"10px",display:"flex",justifyContent:"center",gap:"10px",flexDirection:"column" }}>
         <div
           style={{
             display: 'flex',
@@ -1072,24 +1072,34 @@ useEffect(() => {
     </span>
   )}
   {offer.discountedPrice && (
-    <span
-      style={{
-        backgroundColor: offer.discountedPriceBackgroundColor?offer.discountedPriceBackgroundColor:'#FF5722',
-        color: offer.discountedPriceColor?offer.discountedPriceColor:'#FFFFFF',
-        fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "18px",
-        fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
-        fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "700",
-        padding: '6px 16px',
-        borderRadius: '20px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        boxShadow: '0 4px 12px rgba(255, 87, 34, 0.3)',
-        position:"absolute",
-        top:"-14%"
-      }}
-    >
-      {formatPrice(offer.discountedPrice)}
-    </span>
+   <span
+   className="
+    absolute inline-flex items-center
+   before:content-[''] before:absolute
+   before:w-0 before:h-0
+   before:border-t-[10px]
+   before:border-l-[#000000] before:border-t-[#000000]
+   before:border-r-[10px]
+   before:border-r-transparent before:border-b-transparent
+   before:right-0 before:bottom-[-10px]
+ "
+   style={{
+     backgroundColor: offer.discountedPriceBackgroundColor ? offer.discountedPriceBackgroundColor : '#FF5722',
+     color: offer.discountedPriceColor ? offer.discountedPriceColor : '#FFFFFF',
+     fontSize: offer.discountedPriceFontSize ? offer.discountedPriceFontSize + "px" : "18px",
+     fontFamily: offer.discountedPriceFontFamily ? offer.discountedPriceFontFamily : "font-poppins",
+     fontWeight: offer.discountedPriceFontBold ? offer.discountedPriceFontBold : "700",
+     padding: '6px 16px',
+     borderRadius: '10px 0px 0px 10px',
+     boxShadow: '0 4px 12px rgba(255, 87, 34, 0.3)',
+     position: "absolute",
+     top: "-15%",
+     right:"-10px"
+   }}
+ >
+   {formatPrice(offer.discountedPrice)}
+ </span>
+
   )}
 </div>
       </div>

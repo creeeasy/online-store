@@ -7,8 +7,12 @@ const ClientNavbar: React.FC = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [minue, setMinue] = useState(false);
 
   useEffect(() => {
+    if (localStorage.getItem("adminUser")) {
+      setMinue(true);
+    }
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
@@ -130,7 +134,7 @@ const ClientNavbar: React.FC = () => {
     border: `1px solid ${theme.colors.border}`,
     backgroundColor: theme.colors.surface,
     cursor: 'pointer',
-    display: 'flex',
+    display: minue ? 'flex' : 'none',
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: theme.shadows.xs,
@@ -156,6 +160,7 @@ const ClientNavbar: React.FC = () => {
     transition: 'opacity 0.2s ease, transform 0.2s ease',
     transitionDelay: isMobileMenuOpen ? '0.1s' : '0s',
   };
+
   return (
     <>
       <nav style={navStyle}>
@@ -226,40 +231,42 @@ const ClientNavbar: React.FC = () => {
             </Link>
 
             {/* Enhanced Desktop Navigation */}
-            <div className="desktop-nav" style={desktopNavStyle}>
-              {[
-                { path: '/', label: 'Home' },
-                { path: '/products', label: 'Products' },
-                { path: '/contact', label: 'Contact' },
-                { path: '/admin', label: 'Admin' }
-              ].map(({ path, label }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  style={getNavLinkStyle(path)}
-                  onMouseEnter={(e) => {
-                    if (location.pathname !== path) {
-                      e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
-                      e.currentTarget.style.color = theme.colors.primary;
-                      e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = theme.shadows.xs;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (location.pathname !== path) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = theme.colors.textSecondary;
-                      e.currentTarget.style.borderColor = 'transparent';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }
-                  }}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
+            {minue && (
+              <div className="desktop-nav" style={desktopNavStyle}>
+                {[
+                  { path: '/', label: 'Home' },
+                  { path: '/products', label: 'Products' },
+                  { path: '/contact', label: 'Contact' },
+                  { path: '/admin', label: 'Admin' }
+                ].map(({ path, label }) => (
+                  <Link
+                    key={path}
+                    to={path}
+                    style={getNavLinkStyle(path)}
+                    onMouseEnter={(e) => {
+                      if (location.pathname !== path) {
+                        e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
+                        e.currentTarget.style.color = theme.colors.primary;
+                        e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = theme.shadows.xs;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (location.pathname !== path) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = theme.colors.textSecondary;
+                        e.currentTarget.style.borderColor = 'transparent';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {/* Enhanced Mobile Menu Button */}
             <button
@@ -302,41 +309,43 @@ const ClientNavbar: React.FC = () => {
         </div>
 
         {/* Enhanced Mobile Menu */}
-        <div style={mobileMenuStyle}>
-          <div style={mobileMenuContentStyle}>
-            {[
-              { path: '/', label: 'Home' },
-              { path: '/products', label: 'Products' },
-              { path: '/contact', label: 'Contact' },
-              { path: '/admin', label: 'Admin' }
-            ].map(({ path, label }) => (
-              <Link
-                key={path}
-                to={path}
-                style={getNavLinkStyle(path)}
-                onClick={() => setIsMobileMenuOpen(false)}
-                onMouseEnter={(e) => {
-                  if (location.pathname !== path) {
-                    e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
-                    e.currentTarget.style.color = theme.colors.primary;
-                    e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
-                    e.currentTarget.style.transform = 'translateX(4px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (location.pathname !== path) {
-                    e.currentTarget.style.backgroundColor = location.pathname === path ? `${theme.colors.primary}15` : 'transparent';
-                    e.currentTarget.style.color = location.pathname === path ? theme.colors.primary : theme.colors.textSecondary;
-                    e.currentTarget.style.borderColor = location.pathname === path ? `${theme.colors.primary}30` : 'transparent';
-                    e.currentTarget.style.transform = 'translateX(0)';
-                  }
-                }}
-              >
-                {label}
-              </Link>
-            ))}
+        {minue && (
+          <div style={mobileMenuStyle}>
+            <div style={mobileMenuContentStyle}>
+              {[
+                { path: '/', label: 'Home' },
+                { path: '/products', label: 'Products' },
+                { path: '/contact', label: 'Contact' },
+                { path: '/admin', label: 'Admin' }
+              ].map(({ path, label }) => (
+                <Link
+                  key={path}
+                  to={path}
+                  style={getNavLinkStyle(path)}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  onMouseEnter={(e) => {
+                    if (location.pathname !== path) {
+                      e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`;
+                      e.currentTarget.style.color = theme.colors.primary;
+                      e.currentTarget.style.borderColor = `${theme.colors.primary}20`;
+                      e.currentTarget.style.transform = 'translateX(4px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (location.pathname !== path) {
+                      e.currentTarget.style.backgroundColor = location.pathname === path ? `${theme.colors.primary}15` : 'transparent';
+                      e.currentTarget.style.color = location.pathname === path ? theme.colors.primary : theme.colors.textSecondary;
+                      e.currentTarget.style.borderColor = location.pathname === path ? `${theme.colors.primary}30` : 'transparent';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }
+                  }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </nav>
       {/* Spacer */}
       <div style={{ height: '80px' }} />

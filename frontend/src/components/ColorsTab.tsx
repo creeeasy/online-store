@@ -1,8 +1,8 @@
 // components/ColorsTab.tsx
 import React from 'react';
+import { FiPlus, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import type { IProduct, IProductColor } from '../types/product';
-import ColorForm from './ColorForm';
 
 interface ColorsTabProps {
   formData: Partial<IProduct>;
@@ -17,9 +17,116 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
   handleInputChange,
 }) => {
   const { theme } = useTheme();
+  const hiddenColorInputs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   const handleColorsChange = (colors: IProductColor[]) => {
     handleInputChange('colors', colors);
+  };
+
+  const colors = formData.colors || [];
+  const availableColors = colors.filter(color => color.isAvailable !== false);
+  const unavailableColors = colors.filter(color => color.isAvailable === false);
+
+  const isValidHex = (hex: string): boolean =>
+    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
+
+  const isValidGradient = (value: string): boolean => {
+    const trimmed = value.trim().toLowerCase();
+    return (
+      trimmed.startsWith('linear-gradient(') ||
+      trimmed.startsWith('radial-gradient(') ||
+      trimmed.startsWith('conic-gradient(') ||
+      trimmed.startsWith('repeating-linear-gradient(') ||
+      trimmed.startsWith('repeating-radial-gradient(')
+    );
+  };
+
+  const isValidColorValue = (value: string, index: number): boolean => {
+    // Second color (index 1) must be a gradient
+    if (index === 1) {
+      return isValidGradient(value);
+    }
+    // Other colors can be hex or gradient
+    return isValidHex(value) || isValidGradient(value);
+  };
+
+  const getColorNameError = (name: string, index: number): string => {
+    if (!name.trim()) return 'Color name is required';
+    if (name.length > 30) return 'Max 30 characters allowed';
+    const duplicate = colors.find(
+      (color, i) => i !== index && color.name.toLowerCase() === name.toLowerCase()
+    );
+    if (duplicate) return 'Color name must be unique';
+    return '';
+  };
+
+  const getHexCodeError = (hexCode: string, index: number): string => {
+    if (!hexCode.trim()) return 'Color value is required';
+    
+    // Special validation for second color (Offers & Highlights)
+    if (index === 1) {
+      if (!isValidGradient(hexCode)) {
+        return 'This color must be a linear gradient (e.g., linear-gradient(135deg, #10B981 0%, #059669 100%))';
+      }
+    } else {
+      if (!isValidColorValue(hexCode, index)) {
+        return 'Invalid color (use hex like #FF0000 or gradient like linear-gradient(...))';
+      }
+    }
+    
+    const duplicate = colors.find(
+      (color, i) => i !== index && color.hexCode.toLowerCase() === hexCode.toLowerCase()
+    );
+    if (duplicate) return 'Color value must be unique';
+    return '';
+  };
+
+  const extractFirstColorFromGradient = (gradientStr: string): string => {
+    const hexMatch = gradientStr.match(/#[A-Fa-f0-9]{6}|#[A-Fa-f0-9]{3}/);
+    return hexMatch ? hexMatch[0] : '#000000';
+  };
+
+  const addColor = () => {
+    if (colors.length >= 3) return;
+
+    const newColor: IProductColor = {
+      name: '',
+      hexCode: colors.length === 1 ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : '#000000',
+      isAvailable: true
+    };
+
+    handleColorsChange([...colors, newColor]);
+  };
+
+  const updateColor = (index: number, updates: Partial<IProductColor>) => {
+    const updatedColors = colors.map((color, i) =>
+      i === index ? { ...color, ...updates } : color
+    );
+    handleColorsChange(updatedColors);
+  };
+
+  const removeColor = (index: number) => {
+    const updatedColors = colors.filter((_, i) => i !== index);
+    handleColorsChange(updatedColors);
+  };
+
+  const toggleAvailability = (index: number) => {
+    updateColor(index, {
+      isAvailable: !colors[index].isAvailable
+    });
+  };
+
+  const getUsageLabel = (index: number): { label: string; color: string } => {
+    switch (index) {
+      case 0:
+        return { label: 'Borders & Frames', color: '#3B82F6' };
+      case 1:
+        return { label: 'Offers & Highlights', color: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' };
+      case 2:
+        return { label: 'Buttons & Titles', color: '#8B5CF6' };
+      default:
+        return { label: 'Extra Color', color: theme.colors.textMuted };
+    }
   };
 
   const containerStyle: React.CSSProperties = {
@@ -100,7 +207,7 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
   };
 
   const usageTagStyle = (bgColor: string, textColor: string = '#ffffff'): React.CSSProperties => ({
-    backgroundColor: bgColor,
+    background: bgColor,
     color: textColor,
     padding: '0.25rem 0.75rem',
     borderRadius: '20px',
@@ -140,21 +247,91 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
     margin: 0,
   };
 
-  const colors = formData.colors || [];
-  const availableColors = colors.filter(color => color.isAvailable !== false);
-  const unavailableColors = colors.filter(color => color.isAvailable === false);
+  const formContainerStyle: React.CSSProperties = {
+    backgroundColor: theme.colors.surface,
+    borderRadius: '12px',
+    border: `1px solid ${theme.colors.border}`,
+    padding: '1.5rem',
+  };
 
-  const getUsageLabel = (index: number): { label: string; color: string } => {
-    switch (index) {
-      case 0:
-        return { label: 'Borders & Frames', color: '#3B82F6' };
-      case 1:
-        return { label: 'Offers & Highlights', color: '#10B981' };
-      case 2:
-        return { label: 'Buttons & Titles', color: '#8B5CF6' };
-      default:
-        return { label: 'Extra Color', color: theme.colors.textMuted };
-    }
+  const colorFormItemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '1rem',
+    padding: '1rem',
+    backgroundColor: theme.colors.background,
+    borderRadius: '8px',
+    border: `1px solid ${theme.colors.border}`,
+    marginBottom: '0.75rem',
+    transition: 'all 0.2s ease',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: `1px solid ${theme.colors.border}`,
+    borderRadius: '8px',
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    fontSize: '0.9rem',
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    ...inputStyle,
+    minHeight: '60px',
+    resize: 'vertical',
+    fontFamily: 'monospace',
+  };
+
+  const colorPreviewStyle = (colorValue: string): React.CSSProperties => {
+    const isGradient = isValidGradient(colorValue);
+    return {
+      width: '50px',
+      height: '50px',
+      minWidth: '50px',
+      borderRadius: '8px',
+      border: `2px solid ${theme.colors.border}`,
+      background: colorValue,
+      cursor: isGradient ? 'default' : 'pointer',
+      transition: 'transform 0.2s ease',
+      marginTop: '4px',
+    };
+  };
+
+  const actionButtonStyle: React.CSSProperties = {
+    padding: '0.75rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    color: theme.colors.textSecondary,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'color 0.2s ease',
+    marginTop: '4px',
+  };
+
+  const errorTextStyle: React.CSSProperties = {
+    color: theme.colors.error,
+    fontSize: '0.8rem',
+    marginTop: '4px',
+  };
+
+  const addButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '1rem 1.5rem',
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.textOnPrimary,
+    border: 'none',
+    borderRadius: '12px',
+    cursor: colors.length >= 3 ? 'not-allowed' : 'pointer',
+    opacity: colors.length >= 3 ? 0.6 : 1,
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
   };
 
   return (
@@ -163,7 +340,7 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
         <h2 style={headerStyle}>Product Colors</h2>
         <p style={descriptionStyle}>
           Add and manage color variations for your product. You can specify up to 3 colors, 
-          each with a unique name and hex code or CSS gradient. Mark colors as available or unavailable based on stock.
+          each with a unique name and hex code or CSS gradient. <strong>Note: The second color (Offers & Highlights) must be a linear gradient.</strong>
         </p>
       </div>
 
@@ -175,10 +352,10 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
               return (
                 <div key={index} style={colorItemStyle}>
                   <div style={colorInfoStyle}>
-                    <div style={colorSwatchStyle(color.hex)}></div>
+                    <div style={colorSwatchStyle(color.hexCode)}></div>
                     <div style={colorDetailsStyle}>
                       <div style={colorNameStyle}>{color.name}</div>
-                      <div style={colorValueStyle} title={color.hex}>{color.hex}</div>
+                      <div style={colorValueStyle} title={color.hexCode}>{color.hexCode}</div>
                     </div>
                   </div>
                   <div style={usageTagStyle(usage.color)}>
@@ -206,12 +383,148 @@ const ColorsTab: React.FC<ColorsTabProps> = ({
         </>
       )}
 
-      <ColorForm
-        colors={colors}
-        onChange={handleColorsChange}
-        maxColors={3}
-        showAvailability={true}
-      />
+      <div style={formContainerStyle}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: 0, color: theme.colors.text, fontSize: '1.1rem' }}>
+            Product Colors
+          </h3>
+          <p style={{ margin: '0.5rem 0 0 0', color: theme.colors.textMuted, fontSize: '0.9rem' }}>
+            Add up to 3 colors. First and third colors: hex codes (#FF0000) or gradients. Second color: linear gradient only.
+          </p>
+        </div>
+
+        {colors.map((color, index) => {
+          const nameError = getColorNameError(color.name, index);
+          const hexError = getHexCodeError(color.hexCode, index);
+          const isGradient = isValidGradient(color.hexCode);
+          const isSecondColor = index === 1;
+
+          return (
+            <div key={index} style={colorFormItemStyle}>
+              <div
+                style={colorPreviewStyle(color.hexCode)}
+                onClick={() => {
+                  if (!isGradient && !isSecondColor) {
+                    hiddenColorInputs.current[index]?.click();
+                  }
+                }}
+                title={isGradient || isSecondColor ? 'Gradient preview' : `Pick a color (${color.hexCode})`}
+              />
+              {!isSecondColor && (
+                <input
+                  type="color"
+                  ref={(el) => (hiddenColorInputs.current[index] = el)}
+                  value={isGradient ? extractFirstColorFromGradient(color.hexCode) : color.hexCode}
+                  onChange={(e) => updateColor(index, { hexCode: e.target.value.toUpperCase() })}
+                  style={{ display: 'none' }}
+                />
+              )}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <input
+                  type="text"
+                  placeholder={isSecondColor ? "Color name (e.g., Vibrant Offer)" : "Color name (e.g., Red, Blue)"}
+                  value={color.name}
+                  onChange={(e) => updateColor(index, { name: e.target.value })}
+                  style={{
+                    ...inputStyle,
+                    borderColor: nameError ? theme.colors.error : theme.colors.border,
+                    marginBottom: nameError ? '4px' : '0.75rem',
+                  }}
+                  maxLength={30}
+                />
+                {nameError && <div style={errorTextStyle}>{nameError}</div>}
+
+                <textarea
+                  placeholder={
+                    isSecondColor 
+                      ? "Linear gradient REQUIRED (e.g., linear-gradient(135deg, #10B981 0%, #059669 100%))"
+                      : "Hex (#FF0000) or Gradient (linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%))"
+                  }
+                  value={color.hexCode}
+                  onChange={(e) => updateColor(index, { hexCode: e.target.value })}
+                  style={{
+                    ...textareaStyle,
+                    borderColor: hexError ? theme.colors.error : theme.colors.border,
+                    marginTop: nameError ? '0.75rem' : 0,
+                  }}
+                  rows={2}
+                />
+                {hexError && <div style={errorTextStyle}>{hexError}</div>}
+                {isSecondColor && !hexError && (
+                  <div style={{ 
+                    color: theme.colors.warning, 
+                    fontSize: '0.75rem', 
+                    marginTop: '4px',
+                    fontStyle: 'italic'
+                  }}>
+                    ⚠️ This color must be a linear gradient for Offers & Highlights
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => toggleAvailability(index)}
+                  style={actionButtonStyle}
+                  title={color.isAvailable ? 'Mark as unavailable' : 'Mark as available'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = theme.colors.backgroundSecondary;
+                    e.currentTarget.style.color = color.isAvailable ? theme.colors.warning : theme.colors.success;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = theme.colors.textSecondary;
+                  }}
+                >
+                  {color.isAvailable ? <FiEye size={16} /> : <FiEyeOff size={16} />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => removeColor(index)}
+                  style={actionButtonStyle}
+                  title="Remove color"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = `${theme.colors.error}15`;
+                    e.currentTarget.style.color = theme.colors.error;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = theme.colors.textSecondary;
+                  }}
+                >
+                  <FiTrash2 size={16} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {colors.length < 3 && (
+          <button
+            type="button"
+            onClick={addColor}
+            style={addButtonStyle}
+            onMouseEnter={(e) => {
+              if (colors.length < 3) {
+                e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (colors.length < 3) {
+                e.currentTarget.style.backgroundColor = theme.colors.primary;
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
+          >
+            <FiPlus size={16} />
+            Add Color
+          </button>
+        )}
+      </div>
 
       {validationErrors.colors && (
         <div style={{

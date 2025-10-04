@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-
 
 interface ProductGalleryProps {
   images: string[];
@@ -13,11 +12,26 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [isZoomed, setIsZoomed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Touch/Swipe state
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [dragVelocity, setDragVelocity] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const lastTouchTime = useRef<number>(0);
+  const lastTouchX = useRef<number>(0);
+
+  // Minimum swipe distance (in px) to trigger navigation
+  const minSwipeDistance = 30;
+  const velocityThreshold = 0.3;
 
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // 768px is typical breakpoint for lg:
+      setIsMobile(window.innerWidth < 768);
     };
 
     checkMobile();
@@ -39,12 +53,20 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   }, [images]);
 
   const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
+    if (currentIndex < images.length - 1) {
+      setIsTransitioning(true);
+      setCurrentIndex((prev) => prev + 1);
+      setTimeout(() => setIsTransitioning(false), 350);
+    }
     setIsZoomed(false);
   };
 
   const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (currentIndex > 0) {
+      setIsTransitioning(true);
+      setCurrentIndex((prev) => prev - 1);
+      setTimeout(() => setIsTransitioning(false), 350);
+    }
     setIsZoomed(false);
   };
 
@@ -52,6 +74,183 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     if (e.key === 'ArrowRight') nextImage();
     if (e.key === 'ArrowLeft') prevImage();
     if (e.key === 'Escape') setIsZoomed(false);
+  };
+
+  // Touch event handlers for swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(0);
+    const touchX = e.targetTouches[0].clientX;
+    setTouchStart(touchX);
+    setIsDragging(true);
+    lastTouchTime.current = Date.now();
+    lastTouchX.current = touchX;
+    setDragVelocity(0);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentTouch = e.targetTouches[0].clientX;
+    const currentTime = Date.now();
+    
+    // Calculate velocity
+    const timeDelta = currentTime - lastTouchTime.current;
+    const positionDelta = currentTouch - lastTouchX.current;
+    const velocity = positionDelta / (timeDelta || 1);
+    
+    setTouchEnd(currentTouch);
+    const offset = currentTouch - touchStart;
+    
+    // Add resistance at edges
+    let adjustedOffset = offset;
+    if ((currentIndex === 0 && offset > 0) || 
+        (currentIndex === images.length - 1 && offset < 0)) {
+      adjustedOffset = offset * 0.3; // Resistance effect
+    }
+    
+    setDragOffset(adjustedOffset);
+    setDragVelocity(velocity);
+    
+    lastTouchTime.current = currentTime;
+    lastTouchX.current = currentTouch;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || touchEnd === 0) {
+      setIsDragging(false);
+      setDragOffset(0);
+      return;
+    }
+
+    const distance = touchStart - touchEnd;
+    const absDistance = Math.abs(distance);
+    const absVelocity = Math.abs(dragVelocity);
+    
+    // Determine if swipe should trigger based on distance OR velocity
+    const shouldTrigger = absDistance > minSwipeDistance || absVelocity > velocityThreshold;
+    
+    if (shouldTrigger) {
+      if (distance > 0 && currentIndex < images.length - 1) {
+        nextImage();
+      } else if (distance < 0 && currentIndex > 0) {
+        prevImage();
+      }
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+    setTouchStart(0);
+    setTouchEnd(0);
+    setDragVelocity(0);
+  };
+
+  // Mouse event handlers for desktop drag (optional)
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
+    e.preventDefault();
+    setTouchEnd(0);
+    const mouseX = e.clientX;
+    setTouchStart(mouseX);
+    setIsDragging(true);
+    lastTouchTime.current = Date.now();
+    lastTouchX.current = mouseX;
+    setDragVelocity(0);
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || isMobile) return;
+    const currentMouse = e.clientX;
+    const currentTime = Date.now();
+    
+    // Calculate velocity
+    const timeDelta = currentTime - lastTouchTime.current;
+    const positionDelta = currentMouse - lastTouchX.current;
+    const velocity = positionDelta / (timeDelta || 1);
+    
+    setTouchEnd(currentMouse);
+    const offset = currentMouse - touchStart;
+    
+    // Add resistance at edges
+    let adjustedOffset = offset;
+    if ((currentIndex === 0 && offset > 0) || 
+        (currentIndex === images.length - 1 && offset < 0)) {
+      adjustedOffset = offset * 0.3;
+    }
+    
+    setDragOffset(adjustedOffset);
+    setDragVelocity(velocity);
+    
+    lastTouchTime.current = currentTime;
+    lastTouchX.current = currentMouse;
+  };
+
+  const onMouseUp = () => {
+    if (isMobile) return;
+    if (!touchStart || touchEnd === 0) {
+      setIsDragging(false);
+      setDragOffset(0);
+      return;
+    }
+
+    const distance = touchStart - touchEnd;
+    const absDistance = Math.abs(distance);
+    const absVelocity = Math.abs(dragVelocity);
+    
+    const shouldTrigger = absDistance > minSwipeDistance || absVelocity > velocityThreshold;
+    
+    if (shouldTrigger) {
+      if (distance > 0 && currentIndex < images.length - 1) {
+        nextImage();
+      } else if (distance < 0 && currentIndex > 0) {
+        prevImage();
+      }
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+    setTouchStart(0);
+    setTouchEnd(0);
+    setDragVelocity(0);
+  };
+
+  const onMouseLeave = () => {
+    if (isDragging && !isMobile) {
+      setIsDragging(false);
+      setDragOffset(0);
+      setTouchStart(0);
+      setTouchEnd(0);
+    }
+  };
+
+  // Calculate which images to show (current, previous, next)
+  const getVisibleImages = () => {
+    const visible = [];
+    
+    // Previous image
+    if (currentIndex > 0) {
+      visible.push({
+        index: currentIndex - 1,
+        position: -1,
+        image: images[currentIndex - 1]
+      });
+    }
+    
+    // Current image
+    visible.push({
+      index: currentIndex,
+      position: 0,
+      image: images[currentIndex]
+    });
+    
+    // Next image
+    if (currentIndex < images.length - 1) {
+      visible.push({
+        index: currentIndex + 1,
+        position: 1,
+        image: images[currentIndex + 1]
+      });
+    }
+    
+    return visible;
   };
 
   // Theme-based styles
@@ -65,7 +264,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   const mobileContainerStyle: React.CSSProperties = {
     ...containerStyle,
     width: '100vw',
-    marginLeft: 'calc(-50vw + 50%)', // Center align in parent
+    marginLeft: 'calc(-50vw + 50%)',
     marginRight: 'calc(-50vw + 50%)'
   };
 
@@ -106,14 +305,44 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     borderRadius: isMobile ? 0 : theme.borderRadius.lg,
     overflow: 'hidden',
     boxShadow: isMobile ? 'none' : theme.shadows.lg,
-    cursor: isZoomed ? 'zoom-out' : 'zoom-in'
+    cursor: isZoomed ? 'zoom-out' : (isMobile ? 'grab' : 'zoom-in'),
+    touchAction: 'pan-y pinch-zoom',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none'
   };
 
   const mobileMainImageContainerStyle: React.CSSProperties = {
     ...mainImageContainerStyle,
     width: '100vw',
     maxWidth: '100vw',
-    borderRadius: 0
+    borderRadius: 0,
+    cursor: isDragging ? 'grabbing' : 'grab'
+  };
+
+  const imagesWrapperStyle: React.CSSProperties = {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const imageSlideStyle = (position: number): React.CSSProperties => {
+    const containerWidth = imageContainerRef.current?.offsetWidth || window.innerWidth;
+    const baseTranslate = position * containerWidth;
+    const currentTranslate = baseTranslate + (isDragging ? dragOffset : 0);
+    
+    return {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      transition: (isDragging || isTransitioning) ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      transform: `translateX(${currentTranslate}px)`,
+      willChange: 'transform'
+    };
   };
 
   const loadingSpinnerStyle: React.CSSProperties = {
@@ -121,7 +350,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     inset: 0,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    zIndex: 10
   };
 
   const spinnerStyle: React.CSSProperties = {
@@ -133,19 +363,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     animation: 'spin 1s linear infinite'
   };
 
-  const mainImageStyle: React.CSSProperties = {
+  const slideImageStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    transition: 'all 0.7s ease',
-    transform: isZoomed ? 'scale(1.5)' : 'scale(1)',
     userSelect: 'none',
-  };
-
-  const mobileMainImageStyle: React.CSSProperties = {
-    ...mainImageStyle,
-    width: '100vw',
-    maxWidth: '100vw'
+    pointerEvents: 'none',
+    display: 'block'
   };
 
   const overlayStyle: React.CSSProperties = {
@@ -153,7 +377,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     inset: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     opacity: 0,
-    transition: 'opacity 0.3s ease'
+    transition: 'opacity 0.3s ease',
+    zIndex: 1
   };
 
   const zoomHintStyle: React.CSSProperties = {
@@ -162,7 +387,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     right: theme.spacing.lg,
     opacity: 0,
     transition: 'opacity 0.3s ease',
-    display: isMobile ? 'none' : 'block'
+    display: isMobile ? 'none' : 'block',
+    zIndex: 2
   };
 
   const zoomHintContentStyle: React.CSSProperties = {
@@ -197,7 +423,9 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    opacity: isMobile ? 1 : 0 // Always visible on mobile
+    opacity: isMobile ? 0.7 : 0,
+    pointerEvents: 'auto',
+    zIndex: 3
   };
 
   const counterStyle: React.CSSProperties = {
@@ -211,7 +439,9 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     padding: `${theme.spacing.xs} ${theme.spacing.md}`,
     borderRadius: '9999px',
     fontSize: '0.875rem',
-    fontWeight: theme.fonts.medium
+    fontWeight: theme.fonts.medium,
+    pointerEvents: 'none',
+    zIndex: 2
   };
 
   const dotsContainerStyle: React.CSSProperties = {
@@ -221,7 +451,9 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     right: 0,
     display: 'flex',
     justifyContent: 'center',
-    gap: theme.spacing.md
+    gap: theme.spacing.md,
+    pointerEvents: 'none',
+    zIndex: 2
   };
 
   const dotStyle = (isActive: boolean): React.CSSProperties => ({
@@ -233,11 +465,12 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     transition: 'all 0.3s ease',
     transform: isActive ? 'scale(1.25)' : 'scale(1)',
     boxShadow: isActive ? theme.shadows.md : 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    pointerEvents: 'auto'
   });
 
   const thumbnailGridStyle: React.CSSProperties = {
-    display: isMobile ? 'none' : 'grid', // Hide thumbnails on mobile
+    display: isMobile ? 'none' : 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: theme.spacing.md
   };
@@ -289,10 +522,27 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
 
   const zoomInstructionsStyle: React.CSSProperties = {
     textAlign: 'center',
-    display: isMobile ? 'none' : 'block' // Hide zoom instructions on mobile
+    display: isMobile ? 'none' : 'block'
   };
 
   const instructionsTextStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: theme.colors.textSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
+    padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+    borderRadius: '9999px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm
+  };
+
+  const swipeHintStyle: React.CSSProperties = {
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
+    display: isMobile ? 'block' : 'none'
+  };
+
+  const swipeHintTextStyle: React.CSSProperties = {
     fontSize: '0.875rem',
     color: theme.colors.textSecondary,
     backgroundColor: theme.colors.backgroundSecondary,
@@ -325,6 +575,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     );
   }
 
+  const visibleImages = getVisibleImages();
+
   return (
     <>
       <style>
@@ -341,9 +593,6 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           }
           .gallery-group:hover .gallery-nav-button {
             opacity: 1;
-          }
-          .gallery-group:hover .gallery-main-image {
-            transform: ${isMobile ? 'scale(1)' : 'scale(1.05)'};
           }
           .gallery-thumbnail:hover .gallery-thumbnail-image {
             transform: scale(1.1);
@@ -363,33 +612,47 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
         `}
       </style>
       <div style={isMobile ? mobileContainerStyle : containerStyle}>
-        {/* Main Image - Full width on mobile */}
+        {/* Main Image - Full width on mobile with swipe support */}
         <div 
+          ref={imageContainerRef}
           className="gallery-group"
           style={isMobile ? mobileMainImageContainerStyle : mainImageContainerStyle}
-          onClick={() => !isMobile && setIsZoomed(!isZoomed)} // Disable zoom on mobile
+          onClick={() => !isMobile && !isDragging && setIsZoomed(!isZoomed)}
           onKeyDown={handleKeyDown}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseLeave}
           tabIndex={0}
         >
-          {isLoading && (
+          {isLoading && currentIndex === 0 && (
             <div style={loadingSpinnerStyle}>
               <div style={spinnerStyle}></div>
             </div>
           )}
           
-          <img
-            src={
-              images?.[currentIndex]
-                ? `${images[currentIndex]}`
-                : 'https://picsum.photos/300/300?random=default'
-            }
-            alt={`Product view ${currentIndex + 1}`}
-            className="gallery-main-image"
-            style={{
-              ...(isMobile ? mobileMainImageStyle : mainImageStyle),
-              opacity: loadedImages.has(currentIndex) ? 1 : 0
-            }}
-          />
+          {/* Images wrapper with sliding effect */}
+          <div style={imagesWrapperStyle}>
+            {visibleImages.map((item) => (
+              <div
+                key={item.index}
+                style={imageSlideStyle(item.position)}
+              >
+                <img
+                  src={item.image}
+                  alt={`Product view ${item.index + 1}`}
+                  style={{
+                    ...slideImageStyle,
+                    opacity: loadedImages.has(item.index) ? 1 : 0
+                  }}
+                  draggable={false}
+                />
+              </div>
+            ))}
+          </div>
 
           {/* Overlay for zoom hint - Hidden on mobile */}
           <div className="gallery-overlay" style={overlayStyle}></div>
@@ -402,7 +665,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
             </div>
           </div>
 
-          {/* Navigation Arrows - Always visible on mobile */}
+          {/* Navigation Arrows - Semi-transparent on mobile */}
           {images.length > 1 && (
             <>
               <button
@@ -416,6 +679,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
                   left: isMobile ? '1rem' : theme.spacing.lg 
                 }}
                 aria-label="Previous image"
+                disabled={currentIndex === 0}
               >
                 <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -432,6 +696,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
                   right: isMobile ? '1rem' : theme.spacing.lg 
                 }}
                 aria-label="Next image"
+                disabled={currentIndex === images.length - 1}
               >
                 <svg style={{ width: '1.5rem', height: '1.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -448,7 +713,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
           )}
 
           {/* Dots Indicator */}
-          {images.length > 1 && isMobile && ( // Only show dots on mobile
+          {images.length > 1 && isMobile && (
             <div style={dotsContainerStyle}>
               {images.map((_, index) => (
                 <button
@@ -466,6 +731,18 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
             </div>
           )}
         </div>
+
+        {/* Swipe hint for mobile */}
+        {isMobile && images.length > 1 && (
+          <div style={swipeHintStyle}>
+            <p style={swipeHintTextStyle}>
+              <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+              </svg>
+              Swipe left or right to browse images
+            </p>
+          </div>
+        )}
 
         {/* Thumbnail Strip - Hidden on mobile */}
         {images.length > 1 && !isMobile && (

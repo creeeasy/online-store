@@ -95,7 +95,7 @@ const AppContent: React.FC = () => {
             } 
           />
           <Route 
-            path="/products/:id" 
+            path="/:id" 
             element={
               <>
                 <ClientNavbar />
@@ -113,14 +113,14 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/register"
             element={
               <ProtectedRoute requireAuth={false} redirectTo="/admin">
                 <Register />
               </ProtectedRoute>
             }
-          />
+          /> */}
 
           {/* Protected admin routes */}
           <Route

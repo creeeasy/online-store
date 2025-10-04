@@ -119,6 +119,7 @@ export const AlgerianPhoneInput: React.FC<AlgerianPhoneInputProps> = ({
             transition: 'all 0.2s ease',
             ...style,
           }}
+          maxLength={10}
           onFocus={(e) => {
             if (hasCustomColors) {
               e.currentTarget.style.borderColor = colors.primary;
